@@ -11,34 +11,41 @@
       This section uses a Guid to identify the package that provides the command defined inside it. -->
   <Commands package="guidVSShortcutsManagerPackage">
 
-    <!-- In this section you can define new menu groups. A menu group is a container for
-         other menus or buttons (commands); from a visual point of view you can see the
-         group as the part of a menu contained between two lines. The parent of a group
-         must be a menu. -->
     <Groups>
-      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutsMenuGroup" priority="0x0600">
+      <Group guid="guidVSShortcutsManagerCmdSet" id="VSShortcutsManagerGroup" priority="0x0650">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
       </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" priority="0x0000">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu"/>
+      </Group>
     </Groups>
+    
+    <Menus>
+      <Menu guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu" priority="0x0000" type="Menu">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="VSShortcutsManagerGroup" />
+        <Strings>
+          <ButtonText>&amp;Keyboard Shortcuts</ButtonText>
+        </Strings>
+      </Menu>
+    </Menus>
 
-    <!--Buttons section. -->
     <Buttons>
       <Button guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0200" type="Button">
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsMenuGroup" />
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
           <ButtonText>Backup Shortcuts</ButtonText>
           <MenuText>&amp;Backup Shortcuts...</MenuText>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="RestoreShortcutsCmdId" priority="0x0300" type="Button">
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsMenuGroup" />
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
           <ButtonText>Restore Shortcuts</ButtonText>
           <MenuText>&amp;Restore Shortcuts...</MenuText>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="ResetShortcutsCmdId" priority="0x0400" type="Button">
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsMenuGroup" />
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
           <ButtonText>Reset Shortcuts</ButtonText>
           <MenuText>&amp;Reset Shortcuts...</MenuText>
@@ -54,7 +61,9 @@
 
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidVSShortcutsManagerCmdSet" value="{cca0811b-addf-4d7b-9dd6-fdb412c44d8a}">
-      <IDSymbol name="ShortcutsMenuGroup" value="0x1020" />
+      <IDSymbol name="VSShortcutsManagerGroup" value="0x1010" />
+      <IDSymbol name="ShortcutsActionGroup" value="0x1020" />
+      <IDSymbol name="ShortcutsActionsMenu" value="0x1030" />
       <IDSymbol name="BackupShortcutsCmdId" value="0x0200" />
       <IDSymbol name="RestoreShortcutsCmdId" value="0x0300" />
       <IDSymbol name="ResetShortcutsCmdId" value="0x0400" />
