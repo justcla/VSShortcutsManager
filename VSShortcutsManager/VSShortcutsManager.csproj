@@ -71,6 +71,7 @@
     <Content Include="Blank.vssettings">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="ReleaseNotes.txt" />
     <Content Include="Resources\VSSettingsManagerPackage.ico" />
     <VSCTCompile Include="VSShortcutsManager.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
