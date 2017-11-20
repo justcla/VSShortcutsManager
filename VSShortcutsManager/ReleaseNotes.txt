@@ -1,0 +1,4 @@
+﻿VS Shortcuts Manager
+
+20-Nov-2017: v1.0.1 - Includes mapping scheme selector
+03-Nov-2017: v1.0.0 - Initial release
