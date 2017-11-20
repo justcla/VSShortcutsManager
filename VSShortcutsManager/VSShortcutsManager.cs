@@ -26,13 +26,16 @@ namespace VSShortcutsManager
         public const int BackupShortcutsCmdId = 0x1200;
         public const int RestoreShortcutsCmdId = 0x1300;
         public const int ResetShortcutsCmdId = 0x1400;
+        public const int ImportMappingSchemeCmdId = 0x1500;
         public const int ShortcutSchemesMenu = 0x2002;
         public const int DynamicThemeStartCmdId = 0x2A00;
+
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_RESTORE = "Restore Keyboard Shortcuts";
         private const string MSG_CAPTION_BACKUP = "Backup Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
+        private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
         private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
 
         /// <summary>
@@ -85,6 +88,7 @@ namespace VSShortcutsManager
                 commandService.AddCommand(CreateMenuItem(BackupShortcutsCmdId, this.BackupShortcuts));
                 commandService.AddCommand(CreateMenuItem(RestoreShortcutsCmdId, this.RestoreShortcuts));
                 commandService.AddCommand(CreateMenuItem(ResetShortcutsCmdId, this.ResetShortcuts));
+                commandService.AddCommand(CreateMenuItem(ImportMappingSchemeCmdId, this.ImportMappingScheme));
                 // Add a dummy entry for the mapping scheme menu (you can't execute a "menu")
                 commandService.AddCommand(CreateMenuItem(ShortcutSchemesMenu, null));
                 // Add an entry for the dyanmic/expandable menu item
@@ -116,6 +120,12 @@ namespace VSShortcutsManager
             const string Text = "Feature not implemented yet.\n\n" +
                 "Look for Reset under Tools->Options; Environment->Keyboard";
             MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
+        }
+
+        private void ImportMappingScheme(object sender, EventArgs e)
+        {
+            const string Text = "Feature not implemented yet.";
+            MessageBox.Show(Text, MSG_CAPTION_IMPORT, MessageBoxButtons.OK);
         }
 
         //-------- Backup Shortcuts --------
@@ -220,7 +230,8 @@ namespace VSShortcutsManager
             //It is a valid match if the command id is less than the total number of items the user has requested appear on our menu.
             List<string> mappingSchemes = GetMappingSchemes();
             // Returning an extra one to account for the "(Default)" mapping scheme - hence <= rather than <)
-            return ((commandId - (int)DynamicThemeStartCmdId) <= mappingSchemes.Count);
+            int itemRange = (commandId - (int)DynamicThemeStartCmdId);
+            return itemRange >= 0 && itemRange <= mappingSchemes.Count;
         }
 
         private List<string> GetMappingSchemes()
@@ -240,6 +251,7 @@ namespace VSShortcutsManager
 
         private List<string> FetchListOfMappingSchemes()
         {
+            // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
             return Directory.EnumerateFiles(GetVsInstallPath(), "*.vsk").Select(fn => Path.GetFileNameWithoutExtension(fn)).ToList();
         }
 
@@ -269,7 +281,7 @@ namespace VSShortcutsManager
 
         private string GetMappingSchemeName(int itemIndex)
         {
-            if (itemIndex < GetMappingSchemes().Count)
+            if (itemIndex >= 0 && itemIndex < GetMappingSchemes().Count)
             {
                 return GetMappingSchemes()[itemIndex];
             }
@@ -318,7 +330,6 @@ namespace VSShortcutsManager
 
         private void SetMappingScheme(string mappingSchemeName)
         {
-            // Make sure we're not using the Default keyboard mapping scheme
             DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
             Properties props = dte.Properties["Environment", "Keyboard"];
             Property prop = props.Item("SchemeName");
@@ -328,6 +339,7 @@ namespace VSShortcutsManager
         private void OnBeforeQueryStatusMappingSchemeDynamicItem(object sender, EventArgs args)
         {
             DynamicItemMenuCommand matchedCommand = (DynamicItemMenuCommand)sender;
+
             matchedCommand.Enabled = true;
             matchedCommand.Visible = true;
 
@@ -335,7 +347,7 @@ namespace VSShortcutsManager
             //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
             //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
             bool isRootItem = (matchedCommand.MatchedCommandId == 0);
-            int menuItemIndex = isRootItem ? 0 : matchedCommand.MatchedCommandId - DynamicThemeStartCmdId;
+            int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicThemeStartCmdId);
 
             string mappingSchemeName = GetMappingSchemeName(menuItemIndex);
             matchedCommand.Text = mappingSchemeName;

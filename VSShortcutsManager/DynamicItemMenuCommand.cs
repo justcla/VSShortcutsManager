@@ -18,12 +18,7 @@ namespace VSShortcutsManager
 
         public DynamicItemMenuCommand(CommandID rootId, Predicate<int> matches, EventHandler invokeHandler, EventHandler beforeQueryStatusHandler) : base(invokeHandler, null /*changeHandler*/, beforeQueryStatusHandler, rootId)
         {
-            if (matches == null)
-            {
-                throw new ArgumentNullException("matches");
-            }
-
-            this.matches = matches;
+            this.matches = matches ?? throw new ArgumentNullException("matches");
         }
 
         public override bool DynamicItemMatch(int cmdId)
