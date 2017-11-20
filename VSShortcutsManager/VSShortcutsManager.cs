@@ -192,9 +192,7 @@ namespace VSShortcutsManager
                 return;
             }
 
-            string text = $"Restore keyboard shortcuts from the last backup?\n" +
-                $"\nLast backup location:\n{backupFilePath}";
-            if (MessageBox.Show(text, MSG_CAPTION_RESTORE, MessageBoxButtons.OKCancel) != DialogResult.OK)
+            if (!ShortcutsImport.ImportShortcuts(backupFilePath))
             {
                 return;
             }
