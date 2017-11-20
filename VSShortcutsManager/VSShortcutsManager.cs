@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using Microsoft.Win32;
 using System.Linq;
+using EnvDTE;
 
 namespace VSShortcutsManager
 {
@@ -238,7 +239,6 @@ namespace VSShortcutsManager
         private List<string> FetchListOfMappingSchemes()
         {
             return Directory.EnumerateFiles(GetVsInstallPath(), "*.vsk").Select(fn => Path.GetFileNameWithoutExtension(fn)).ToList();
-            //string[] vskFiles = Directory.GetFiles(GetVsInstallPath(), "*.vsk");
         }
 
         internal string VSInstallationPath
@@ -248,10 +248,7 @@ namespace VSShortcutsManager
 
         string GetVsInstallPath()
         {
-            var reg = ServiceProvider.GetService(typeof(SLocalRegistry)) as ILocalRegistry2;
-
-            string root = null;
-            reg.GetLocalRegistryRoot(out root);
+            string root = GetRegistryRoot();
 
             using (var key = Registry.LocalMachine.OpenSubKey(root))
             {
@@ -261,7 +258,14 @@ namespace VSShortcutsManager
             }
         }
 
-        private string FormDisplayTextFromCommandId(int id)
+        private string GetRegistryRoot()
+        {
+            var reg = ServiceProvider.GetService(typeof(SLocalRegistry)) as ILocalRegistry2;
+            reg.GetLocalRegistryRoot(out string root);
+            return root;
+        }
+
+        private string GetMappingSchemeName(int id)
         {
             int itemIndex = id - DynamicThemeStartCmdId;
             return GetMappingSchemes()[itemIndex];
@@ -273,9 +277,39 @@ namespace VSShortcutsManager
             ApplyMappingScheme(invokedCommand.Text);
         }
 
-        private static void ApplyMappingScheme(string mappingSchemeName)
+        private void ApplyMappingScheme(string mappingSchemeName)
         {
             MessageBox.Show(string.Format("Apply mapping scheme: for item '{0}'", mappingSchemeName));
+            SetMappingScheme(mappingSchemeName);
+        }
+
+        private bool IsSelected(string mappingSchemeName)
+        {
+            using (var vsKey = Registry.CurrentUser.OpenSubKey(GetRegistryRoot()))
+            {
+                if (vsKey != null)
+                {
+                    using (var keyboardKey = vsKey.OpenSubKey("Keyboard"))
+                    {
+                        if (keyboardKey != null)
+                        {
+                            var schemeName = keyboardKey.GetValue("SchemeName") as string;
+
+                            return (!string.IsNullOrEmpty(schemeName) && string.Equals(mappingSchemeName + ".vsk", Path.GetFileName(schemeName), StringComparison.InvariantCultureIgnoreCase));
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private void SetMappingScheme(string mappingSchemeName)
+        {
+            // Make sure we're not using the Default keyboard mapping scheme
+            DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+            Properties props = dte.Properties["Environment", "Keyboard"];
+            Property prop = props.Item("SchemeName");
+            prop.Value = mappingSchemeName + ".vsk";
         }
 
         private void OnBeforeQueryStatusMappingSchemeDynamicItem(object sender, EventArgs args)
@@ -290,7 +324,9 @@ namespace VSShortcutsManager
             bool isRootItem = (matchedCommand.MatchedCommandId == 0);
             int idForDisplay = (isRootItem ? DynamicThemeStartCmdId : matchedCommand.MatchedCommandId);
 
-            matchedCommand.Text = FormDisplayTextFromCommandId(idForDisplay);
+            string mappingSchemeName = GetMappingSchemeName(idForDisplay);
+            matchedCommand.Text = mappingSchemeName;
+            matchedCommand.Checked = IsSelected(mappingSchemeName);
 
             //Clear this out here as we are done with it for this item.
             matchedCommand.MatchedCommandId = 0;
