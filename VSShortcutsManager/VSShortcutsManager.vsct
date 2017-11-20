@@ -15,8 +15,12 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="VSShortcutsManagerGroup" priority="0x0650">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
       </Group>
-      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" priority="0x0000">
+      <!-- Two main items on the Keyboard shortcuts menu: Actions, Schemes -->
+      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" priority="0x0100">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu"/>
+      </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup" priority="0x2000" >
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu" />
       </Group>
     </Groups>
     
@@ -25,6 +29,13 @@
         <Parent guid="guidVSShortcutsManagerCmdSet" id="VSShortcutsManagerGroup" />
         <Strings>
           <ButtonText>&amp;Keyboard Shortcuts</ButtonText>
+        </Strings>
+      </Menu>
+      <Menu guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesMenu" priority="0x1000" type="Menu">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Shortcut schemes (Dynamic)</ButtonText>
         </Strings>
       </Menu>
     </Menus>
@@ -51,6 +62,16 @@
           <MenuText>&amp;Reset Shortcuts...</MenuText>
         </Strings>
       </Button>
+
+      <!-- Our DynamicItemStart item which will expand to N items at runtime -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="DynamicThemeStartCmdId" priority="0x0000">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup"/>
+        <CommandFlag>DynamicItemStart</CommandFlag>
+        <Strings>
+          <ButtonText>Dynamic List Root</ButtonText>
+        </Strings>
+      </Button>
+
     </Buttons>
 
   </Commands>
@@ -61,12 +82,20 @@
 
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidVSShortcutsManagerCmdSet" value="{cca0811b-addf-4d7b-9dd6-fdb412c44d8a}">
-      <IDSymbol name="VSShortcutsManagerGroup" value="0x1010" />
+      <IDSymbol name="VSShortcutsManagerGroup" value="0x0010" />
       <IDSymbol name="ShortcutsActionGroup" value="0x1020" />
       <IDSymbol name="ShortcutsActionsMenu" value="0x1030" />
-      <IDSymbol name="BackupShortcutsCmdId" value="0x0200" />
-      <IDSymbol name="RestoreShortcutsCmdId" value="0x0300" />
-      <IDSymbol name="ResetShortcutsCmdId" value="0x0400" />
+      <IDSymbol name="ShortcutSchemesGroup" value="0x2001" />
+      <IDSymbol name="ShortcutSchemesMenu" value="0x2002" />
+
+      <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
+      <IDSymbol name="RestoreShortcutsCmdId" value="0x1300" />
+      <IDSymbol name="ResetShortcutsCmdId" value="0x1400" />
+      <!-- Mapping sheme dynamic menu -->
+      <!-- NOTE: The following command expands at run time to some number of ids.  
+         Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
+         If you must add a command id after it, make the gap very large (e.g. 0xB00) -->
+      <IDSymbol name="DynamicThemeStartCmdId" value="0x2A00" />
     </GuidSymbol>
 
   </Symbols>
