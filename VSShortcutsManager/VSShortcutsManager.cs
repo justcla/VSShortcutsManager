@@ -8,6 +8,8 @@ using Microsoft.VisualStudio;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
+using Microsoft.Win32;
+using System.Linq;
 
 namespace VSShortcutsManager
 {
@@ -230,8 +232,33 @@ namespace VSShortcutsManager
 
         private void PopulateMappingSchemes()
         {
-            MappingSchemes.Add("Visual C# 2005");
-            MappingSchemes.Add("Visual C++ 2005");
+            MappingSchemes.AddRange(FetchListOfMappingSchemes());
+        }
+
+        private List<string> FetchListOfMappingSchemes()
+        {
+            return Directory.EnumerateFiles(GetVsInstallPath(), "*.vsk").Select(fn => Path.GetFileNameWithoutExtension(fn)).ToList();
+            //string[] vskFiles = Directory.GetFiles(GetVsInstallPath(), "*.vsk");
+        }
+
+        internal string VSInstallationPath
+        {
+            get { return GetVsInstallPath(); }
+        }
+
+        string GetVsInstallPath()
+        {
+            var reg = ServiceProvider.GetService(typeof(SLocalRegistry)) as ILocalRegistry2;
+
+            string root = null;
+            reg.GetLocalRegistryRoot(out root);
+
+            using (var key = Registry.LocalMachine.OpenSubKey(root))
+            {
+                var installDir = key.GetValue("InstallDir") as string;
+
+                return Path.GetDirectoryName(installDir);
+            }
         }
 
         private string FormDisplayTextFromCommandId(int id)
