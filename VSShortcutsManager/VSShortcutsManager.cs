@@ -267,9 +267,8 @@ namespace VSShortcutsManager
             return root;
         }
 
-        private string GetMappingSchemeName(int id)
+        private string GetMappingSchemeName(int itemIndex)
         {
-            int itemIndex = id - DynamicThemeStartCmdId;
             if (itemIndex < GetMappingSchemes().Count)
             {
                 return GetMappingSchemes()[itemIndex];
@@ -336,7 +335,7 @@ namespace VSShortcutsManager
             //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
             //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
             bool isRootItem = (matchedCommand.MatchedCommandId == 0);
-            int menuItemIndex = (isRootItem ? DynamicThemeStartCmdId : matchedCommand.MatchedCommandId);
+            int menuItemIndex = isRootItem ? 0 : matchedCommand.MatchedCommandId - DynamicThemeStartCmdId;
 
             string mappingSchemeName = GetMappingSchemeName(menuItemIndex);
             matchedCommand.Text = mappingSchemeName;
