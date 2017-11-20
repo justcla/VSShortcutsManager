@@ -33,6 +33,7 @@ namespace VSShortcutsManager
         private const string MSG_CAPTION_RESTORE = "Restore Keyboard Shortcuts";
         private const string MSG_CAPTION_BACKUP = "Backup Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
+        private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
 
         /// <summary>
         /// VS Package that provides this command, not null.
@@ -218,7 +219,8 @@ namespace VSShortcutsManager
         {
             //It is a valid match if the command id is less than the total number of items the user has requested appear on our menu.
             List<string> mappingSchemes = GetMappingSchemes();
-            return ((commandId - (int)DynamicThemeStartCmdId) < mappingSchemes.Count);
+            // Returning an extra one to account for the "(Default)" mapping scheme - hence <= rather than <)
+            return ((commandId - (int)DynamicThemeStartCmdId) <= mappingSchemes.Count);
         }
 
         private List<string> GetMappingSchemes()
@@ -268,7 +270,15 @@ namespace VSShortcutsManager
         private string GetMappingSchemeName(int id)
         {
             int itemIndex = id - DynamicThemeStartCmdId;
-            return GetMappingSchemes()[itemIndex];
+            if (itemIndex < GetMappingSchemes().Count)
+            {
+                return GetMappingSchemes()[itemIndex];
+            }
+            else
+            {
+                // It's the "(Default)" mapping scheme
+                return DEFAULT_MAPPING_SCHEME_NAME;
+            }
         }
 
         private void ExecuteMappingSchemeCommand(object sender, EventArgs args)
@@ -279,8 +289,8 @@ namespace VSShortcutsManager
 
         private void ApplyMappingScheme(string mappingSchemeName)
         {
-            MessageBox.Show(string.Format("Apply mapping scheme: for item '{0}'", mappingSchemeName));
             SetMappingScheme(mappingSchemeName);
+            MessageBox.Show(string.Format("Mapping scheme changed to {0}", mappingSchemeName));
         }
 
         private bool IsSelected(string mappingSchemeName)
@@ -294,8 +304,12 @@ namespace VSShortcutsManager
                         if (keyboardKey != null)
                         {
                             var schemeName = keyboardKey.GetValue("SchemeName") as string;
+                            if (string.IsNullOrEmpty(schemeName))
+                            {
+                                return mappingSchemeName == DEFAULT_MAPPING_SCHEME_NAME;
+                            }
 
-                            return (!string.IsNullOrEmpty(schemeName) && string.Equals(mappingSchemeName + ".vsk", Path.GetFileName(schemeName), StringComparison.InvariantCultureIgnoreCase));
+                            return string.Equals(mappingSchemeName + ".vsk", Path.GetFileName(schemeName), StringComparison.InvariantCultureIgnoreCase);
                         }
                     }
                 }
@@ -309,7 +323,7 @@ namespace VSShortcutsManager
             DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
             Properties props = dte.Properties["Environment", "Keyboard"];
             Property prop = props.Item("SchemeName");
-            prop.Value = mappingSchemeName + ".vsk";
+            prop.Value = mappingSchemeName == DEFAULT_MAPPING_SCHEME_NAME ? "" : mappingSchemeName + ".vsk";
         }
 
         private void OnBeforeQueryStatusMappingSchemeDynamicItem(object sender, EventArgs args)
@@ -322,9 +336,9 @@ namespace VSShortcutsManager
             //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
             //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
             bool isRootItem = (matchedCommand.MatchedCommandId == 0);
-            int idForDisplay = (isRootItem ? DynamicThemeStartCmdId : matchedCommand.MatchedCommandId);
+            int menuItemIndex = (isRootItem ? DynamicThemeStartCmdId : matchedCommand.MatchedCommandId);
 
-            string mappingSchemeName = GetMappingSchemeName(idForDisplay);
+            string mappingSchemeName = GetMappingSchemeName(menuItemIndex);
             matchedCommand.Text = mappingSchemeName;
             matchedCommand.Checked = IsSelected(mappingSchemeName);
 
