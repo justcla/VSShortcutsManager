@@ -120,6 +120,7 @@ namespace VSShortcutsManager
             const string Text = "Feature not implemented yet.\n\n" +
                 "Look for Reset under Tools->Options; Environment->Keyboard";
             MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
+            // Tools.ImportandExportSettings [/export:filename | /import:filename | /reset]   //https://msdn.microsoft.com/en-us/library/ms241277.aspx
         }
 
         private void ImportMappingScheme(object sender, EventArgs e)
@@ -168,9 +169,15 @@ namespace VSShortcutsManager
         private static IVsProfileSettingsTree GetKeyboardOnlyExportSettings(IVsProfileDataManager vsProfileDataManager)
         {
             vsProfileDataManager.GetSettingsForExport(out IVsProfileSettingsTree profileSettingsTree);
-            // Disable all settings for export
+            EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
+            return profileSettingsTree;
+        }
+
+        private static void EnableKeyboardOnlyInProfileSettingsTree(IVsProfileSettingsTree profileSettingsTree)
+        {
+            // Disable all settings
             profileSettingsTree.SetEnabled(0, 1);
-            // Enable Keyboard settings for export
+            // Enable Keyboard settings
             profileSettingsTree.FindChildTree("Environment_Group\\Environment_KeyBindings", out IVsProfileSettingsTree keyboardSettingsTree);
             if (keyboardSettingsTree != null)
             {
@@ -178,7 +185,7 @@ namespace VSShortcutsManager
                 int setChildren = 0;  // true  (redundant)
                 keyboardSettingsTree.SetEnabled(enabledValue, setChildren);
             }
-            return profileSettingsTree;
+            return;
         }
 
         //------------ Load User Shortcuts --------------
@@ -205,7 +212,30 @@ namespace VSShortcutsManager
                 return;
             }
 
-            ImportSettingsFromFilePath(importFilePath);
+            IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsToImport(importFilePath);
+            ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
+        }
+
+        private IVsProfileSettingsTree GetShortcutsToImport(string importFilePath)
+        {
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            vsProfileDataManager.GetSettingsFiles(uint.MaxValue, out IVsProfileSettingsFileCollection vsProfileSettingsFileCollection);
+            vsProfileSettingsFileCollection.AddBrowseFile(importFilePath, out IVsProfileSettingsFileInfo profileSettingsFileInfo);
+            profileSettingsFileInfo.GetSettingsForImport(out IVsProfileSettingsTree profileSettingsTree);
+            EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
+
+            return profileSettingsTree;
+        }
+
+        private void ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
+        {
+            //EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            if (ErrorHandler.Failed(vsProfileDataManager.ImportSettings(profileSettingsTree, out IVsSettingsErrorInformation errorInfo)))
+            {
+                // Something went wrong. TODO: Handle error.
+                MessageBox.Show("Error occurred attempting to import settings.");
+            }
         }
 
         private void ImportUserSettings(string settingsFileName)
