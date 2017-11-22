@@ -32,7 +32,7 @@ namespace VSShortcutsManager
 
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
-        private const string MSG_CAPTION_RESTORE = "Restore Keyboard Shortcuts";
+        private const string MSG_CAPTION_RESTORE = "Import Keyboard Shortcuts";
         private const string MSG_CAPTION_BACKUP = "Backup Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
@@ -117,15 +117,34 @@ namespace VSShortcutsManager
 
         private void ResetShortcuts(object sender, EventArgs e)
         {
-            const string Text = "Feature not implemented yet.\n\n" +
-                "Look for Reset under Tools->Options; Environment->Keyboard";
-            MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
+            ResetSettingsViaPostExecCmd();
+            //const string Text = "Feature not implemented yet.\n\n" +
+            //    "Look for Reset under Tools->Options; Environment->Keyboard";
+            //MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
+            // Tools.ImportandExportSettings [/export:filename | /import:filename | /reset]   //https://msdn.microsoft.com/en-us/library/ms241277.aspx
         }
 
         private void ImportMappingScheme(object sender, EventArgs e)
         {
             const string Text = "Feature not implemented yet.";
             MessageBox.Show(Text, MSG_CAPTION_IMPORT, MessageBoxButtons.OK);
+        }
+
+        //-------- Reset Shortcuts --------
+
+        public static void ResetSettingsViaPostExecCmd()
+        {
+            IVsUIShell shell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
+            if (shell == null)
+            {
+                return;
+            }
+
+            var group = VSConstants.CMDSETID.StandardCommandSet2K_guid;
+            object arguments = "-reset";
+            // NOTE: Call to PostExecCommand could fail. Callers should consider catching the exception. Otherwise, UI will show the error in a messagebox.
+            shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
+            MessageBox.Show($"Keyboard shortcuts Reset", MSG_CAPTION_RESET);
         }
 
         //-------- Backup Shortcuts --------
@@ -168,9 +187,15 @@ namespace VSShortcutsManager
         private static IVsProfileSettingsTree GetKeyboardOnlyExportSettings(IVsProfileDataManager vsProfileDataManager)
         {
             vsProfileDataManager.GetSettingsForExport(out IVsProfileSettingsTree profileSettingsTree);
-            // Disable all settings for export
+            EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
+            return profileSettingsTree;
+        }
+
+        private static void EnableKeyboardOnlyInProfileSettingsTree(IVsProfileSettingsTree profileSettingsTree)
+        {
+            // Disable all settings
             profileSettingsTree.SetEnabled(0, 1);
-            // Enable Keyboard settings for export
+            // Enable Keyboard settings
             profileSettingsTree.FindChildTree("Environment_Group\\Environment_KeyBindings", out IVsProfileSettingsTree keyboardSettingsTree);
             if (keyboardSettingsTree != null)
             {
@@ -178,28 +203,64 @@ namespace VSShortcutsManager
                 int setChildren = 0;  // true  (redundant)
                 keyboardSettingsTree.SetEnabled(enabledValue, setChildren);
             }
-            return profileSettingsTree;
+            return;
         }
 
-        //------------ Restore Shortcuts --------------
+        //------------ Load User Shortcuts --------------
 
         public void ExecuteRestoreShortcuts()
         {
             string backupFilePath = GetSavedBackupFilePath();
-            if (String.IsNullOrEmpty(backupFilePath))
+            //if (String.IsNullOrEmpty(backupFilePath))
+            //{
+            //    MessageBox.Show("Unable to restore keyboard shortcuts.\n\nReason: No known backup file has been created.", MSG_CAPTION_RESTORE);
+            //    return;
+            //}
+
+            string importFilePath = backupFilePath;
+            if (!ShortcutsImport.ImportShortcuts(ref importFilePath))
             {
-                MessageBox.Show("Unable to restore keyboard shortcuts.\n\nReason: No known backup file has been created.", MSG_CAPTION_RESTORE);
+                // Cancel or ESC pressed
                 return;
             }
 
-            if (!ShortcutsImport.ImportShortcuts(backupFilePath))
+            if (!File.Exists(importFilePath))
             {
+                MessageBox.Show($"File does not exist: {importFilePath}", MSG_CAPTION_RESTORE);
                 return;
             }
 
-            ImportSettingsFromFilePath(backupFilePath);
+            IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsToImport(importFilePath);
+            bool success = ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
+            if (success)
+            {
+                MessageBox.Show($"Keyboard shortcuts successfully imported: {Path.GetFileName(importFilePath)}", MSG_CAPTION_RESTORE);
+            }
+        }
 
-            MessageBox.Show("Keyboard shortcuts successfully restored.", MSG_CAPTION_RESTORE);
+        private IVsProfileSettingsTree GetShortcutsToImport(string importFilePath)
+        {
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            vsProfileDataManager.GetSettingsFiles(uint.MaxValue, out IVsProfileSettingsFileCollection vsProfileSettingsFileCollection);
+            vsProfileSettingsFileCollection.AddBrowseFile(importFilePath, out IVsProfileSettingsFileInfo profileSettingsFileInfo);
+            profileSettingsFileInfo.GetSettingsForImport(out IVsProfileSettingsTree profileSettingsTree);
+            EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
+
+            return profileSettingsTree;
+        }
+
+        private bool ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
+        {
+            //EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            int result = vsProfileDataManager.ImportSettings(profileSettingsTree, out IVsSettingsErrorInformation errorInfo);
+            if (ErrorHandler.Failed(result))
+            {
+                // Something went wrong. TODO: Handle error.
+                MessageBox.Show("Error occurred attempting to import settings.");
+                return false;
+            } 
+            return true;
         }
 
         private void ImportUserSettings(string settingsFileName)
@@ -210,14 +271,26 @@ namespace VSShortcutsManager
             ImportSettingsFromFilePath(settingsFilePath);
         }
 
-        private void ImportSettingsFromFilePath(string settingsFilePath)
+        public static void ImportSettingsFromFilePath(string settingsFilePath)
         {
             var group = VSConstants.CMDSETID.StandardCommandSet2K_guid;
-            if (ServiceProvider.GetService(typeof(SVsUIShell)) is IVsUIShell shell)
+            IVsUIShell shell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
+            //if (ServiceProvider.GetService(typeof(SVsUIShell)) is IVsUIShell shell)
+            if (shell != null)
             {
                 object arguments = string.Format(CultureInfo.InvariantCulture, "-import:\"{0}\"", settingsFilePath);
                 // NOTE: Call to PostExecCommand could fail. Callers should consider catching the exception. Otherwise, UI will show the error in a messagebox.
-                shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
+                try
+                {
+                    shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
+                }
+                catch (Exception)
+                {
+                    // TODO: This does not seem to be catching the exeption. Needs more work.
+                    MessageBox.Show("Exception occurred trying to import shortcuts.", MSG_CAPTION_RESTORE);
+                    return;
+                }
+                MessageBox.Show($"Keyboard shortcuts successfully restored: {Path.GetFileName(settingsFilePath)}", MSG_CAPTION_RESTORE);
             }
         }
 

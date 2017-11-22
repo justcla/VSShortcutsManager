@@ -1,24 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+
 
 namespace VSShortcutsManager
 {
 
     public class ShortcutsImportViewModel : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         private string _importPath;
         public string ImportPath
         {
@@ -28,9 +20,7 @@ namespace VSShortcutsManager
                 if (!string.Equals(_importPath, value, StringComparison.Ordinal))
                 {
                     _importPath = value;
-                    PropertyChangedEventArgs pce = new PropertyChangedEventArgs(nameof(ImportPath));
-                    if (PropertyChanged != null)
-                    { PropertyChanged(this, pce); }
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ImportPath)));
                 }
             }
         }
@@ -47,19 +37,11 @@ namespace VSShortcutsManager
         //    }
         //}
 
-        public event PropertyChangedEventHandler PropertyChanged;
     }
-    /// <summary>
-    /// Interaction logic for UserControl1.xaml
-    /// </summary>
+
     public partial class ShortcutsImportDialog : Window
     {
         private ShortcutsImportViewModel viewModel;
-
-        //public ShortcutsImportDialog()
-        //{
-        //    InitializeComponent();
-        //}
 
         public ShortcutsImportDialog(ShortcutsImportViewModel viewModel)
         {
@@ -70,7 +52,10 @@ namespace VSShortcutsManager
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.OpenFileDialog fileDialog = new System.Windows.Forms.OpenFileDialog();
-            fileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
+            fileDialog.Filter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";
+            if (File.Exists(viewModel.ImportPath)) {
+                fileDialog.InitialDirectory = Path.GetDirectoryName(viewModel.ImportPath);
+            }
             if (fileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 this.viewModel.ImportPath = fileDialog.FileName;
@@ -92,7 +77,7 @@ namespace VSShortcutsManager
 
     public class ShortcutsImport
     {
-        public static bool ImportShortcuts(string defaultPath)
+        public static bool ImportShortcuts(ref string defaultPath)
         {
             ShortcutsImportViewModel viewModel = new ShortcutsImportViewModel();
             viewModel.ImportPath = defaultPath;
@@ -101,7 +86,8 @@ namespace VSShortcutsManager
             dlg.DataContext = viewModel;
 
             bool? wasOK = dlg.ShowDialog();
-            return wasOK != null && wasOK == true;
+            defaultPath = viewModel.ImportPath;
+            return wasOK.HasValue && wasOK.Equals(true);
         }
     }
 }
