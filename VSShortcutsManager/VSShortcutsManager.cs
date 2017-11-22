@@ -32,7 +32,7 @@ namespace VSShortcutsManager
 
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
-        private const string MSG_CAPTION_RESTORE = "Restore Keyboard Shortcuts";
+        private const string MSG_CAPTION_RESTORE = "Import Keyboard Shortcuts";
         private const string MSG_CAPTION_BACKUP = "Backup Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
@@ -181,25 +181,31 @@ namespace VSShortcutsManager
             return profileSettingsTree;
         }
 
-        //------------ Restore Shortcuts --------------
+        //------------ Load User Shortcuts --------------
 
         public void ExecuteRestoreShortcuts()
         {
             string backupFilePath = GetSavedBackupFilePath();
-            if (String.IsNullOrEmpty(backupFilePath))
+            //if (String.IsNullOrEmpty(backupFilePath))
+            //{
+            //    MessageBox.Show("Unable to restore keyboard shortcuts.\n\nReason: No known backup file has been created.", MSG_CAPTION_RESTORE);
+            //    return;
+            //}
+
+            string importFilePath = backupFilePath;
+            if (!ShortcutsImport.ImportShortcuts(ref importFilePath))
             {
-                MessageBox.Show("Unable to restore keyboard shortcuts.\n\nReason: No known backup file has been created.", MSG_CAPTION_RESTORE);
+                // Cancel or ESC pressed
                 return;
             }
 
-            if (!ShortcutsImport.ImportShortcuts(backupFilePath))
+            if (!File.Exists(importFilePath))
             {
+                MessageBox.Show($"File does not exist: {importFilePath}", MSG_CAPTION_RESTORE);
                 return;
             }
 
-            ImportSettingsFromFilePath(backupFilePath);
-
-            MessageBox.Show("Keyboard shortcuts successfully restored.", MSG_CAPTION_RESTORE);
+            ImportSettingsFromFilePath(importFilePath);
         }
 
         private void ImportUserSettings(string settingsFileName)
@@ -210,14 +216,26 @@ namespace VSShortcutsManager
             ImportSettingsFromFilePath(settingsFilePath);
         }
 
-        private void ImportSettingsFromFilePath(string settingsFilePath)
+        public static void ImportSettingsFromFilePath(string settingsFilePath)
         {
             var group = VSConstants.CMDSETID.StandardCommandSet2K_guid;
-            if (ServiceProvider.GetService(typeof(SVsUIShell)) is IVsUIShell shell)
+            IVsUIShell shell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
+            //if (ServiceProvider.GetService(typeof(SVsUIShell)) is IVsUIShell shell)
+            if (shell != null)
             {
                 object arguments = string.Format(CultureInfo.InvariantCulture, "-import:\"{0}\"", settingsFilePath);
                 // NOTE: Call to PostExecCommand could fail. Callers should consider catching the exception. Otherwise, UI will show the error in a messagebox.
-                shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
+                try
+                {
+                    shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
+                }
+                catch (Exception)
+                {
+                    // TODO: This does not seem to be catching the exeption. Needs more work.
+                    MessageBox.Show("Exception occurred trying to import shortcuts.", MSG_CAPTION_RESTORE);
+                    return;
+                }
+                MessageBox.Show($"Keyboard shortcuts successfully restored: {Path.GetFileName(settingsFilePath)}", MSG_CAPTION_RESTORE);
             }
         }
 
