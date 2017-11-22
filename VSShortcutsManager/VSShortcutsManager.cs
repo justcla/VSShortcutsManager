@@ -117,9 +117,10 @@ namespace VSShortcutsManager
 
         private void ResetShortcuts(object sender, EventArgs e)
         {
-            const string Text = "Feature not implemented yet.\n\n" +
-                "Look for Reset under Tools->Options; Environment->Keyboard";
-            MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
+            ResetSettingsViaPostExecCmd();
+            //const string Text = "Feature not implemented yet.\n\n" +
+            //    "Look for Reset under Tools->Options; Environment->Keyboard";
+            //MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
             // Tools.ImportandExportSettings [/export:filename | /import:filename | /reset]   //https://msdn.microsoft.com/en-us/library/ms241277.aspx
         }
 
@@ -127,6 +128,23 @@ namespace VSShortcutsManager
         {
             const string Text = "Feature not implemented yet.";
             MessageBox.Show(Text, MSG_CAPTION_IMPORT, MessageBoxButtons.OK);
+        }
+
+        //-------- Reset Shortcuts --------
+
+        public static void ResetSettingsViaPostExecCmd()
+        {
+            IVsUIShell shell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
+            if (shell == null)
+            {
+                return;
+            }
+
+            var group = VSConstants.CMDSETID.StandardCommandSet2K_guid;
+            object arguments = "-reset";
+            // NOTE: Call to PostExecCommand could fail. Callers should consider catching the exception. Otherwise, UI will show the error in a messagebox.
+            shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
+            MessageBox.Show($"Keyboard shortcuts Reset", MSG_CAPTION_RESET);
         }
 
         //-------- Backup Shortcuts --------
@@ -213,7 +231,11 @@ namespace VSShortcutsManager
             }
 
             IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsToImport(importFilePath);
-            ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
+            bool success = ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
+            if (success)
+            {
+                MessageBox.Show($"Keyboard shortcuts successfully imported: {Path.GetFileName(importFilePath)}", MSG_CAPTION_RESTORE);
+            }
         }
 
         private IVsProfileSettingsTree GetShortcutsToImport(string importFilePath)
@@ -227,15 +249,18 @@ namespace VSShortcutsManager
             return profileSettingsTree;
         }
 
-        private void ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
+        private bool ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
         {
             //EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
             IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
-            if (ErrorHandler.Failed(vsProfileDataManager.ImportSettings(profileSettingsTree, out IVsSettingsErrorInformation errorInfo)))
+            int result = vsProfileDataManager.ImportSettings(profileSettingsTree, out IVsSettingsErrorInformation errorInfo);
+            if (ErrorHandler.Failed(result))
             {
                 // Something went wrong. TODO: Handle error.
                 MessageBox.Show("Error occurred attempting to import settings.");
-            }
+                return false;
+            } 
+            return true;
         }
 
         private void ImportUserSettings(string settingsFileName)
