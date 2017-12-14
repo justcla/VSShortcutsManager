@@ -1,4 +1,5 @@
 ﻿VS Shortcuts Manager
 
+14-Dec-2017: v1.0.2 - Implemented Reset operation. Provides file picker for Restore.
 20-Nov-2017: v1.0.1 - Includes mapping scheme selector
 03-Nov-2017: v1.0.0 - Initial release
