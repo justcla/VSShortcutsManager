@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Microsoft.Win32;
 using System.Linq;
 using EnvDTE;
+using System.Diagnostics;
 
 namespace VSShortcutsManager
 {
@@ -117,10 +118,13 @@ namespace VSShortcutsManager
 
         private void ResetShortcuts(object sender, EventArgs e)
         {
-            ResetSettingsViaPostExecCmd();
-            //const string Text = "Feature not implemented yet.\n\n" +
-            //    "Look for Reset under Tools->Options; Environment->Keyboard";
-            //MessageBox.Show(Text, MSG_CAPTION_RESET, MessageBoxButtons.OK);
+            // Confirm Reset operation
+            if (MessageBox.Show("Reset keyboard shortcuts to default settings?", MSG_CAPTION_RESET, MessageBoxButtons.OKCancel) != DialogResult.OK)
+            {
+                return;
+            }
+
+            ResetShortcutsViaProfileManager();
             // Tools.ImportandExportSettings [/export:filename | /import:filename | /reset]   //https://msdn.microsoft.com/en-us/library/ms241277.aspx
         }
 
@@ -131,6 +135,37 @@ namespace VSShortcutsManager
         }
 
         //-------- Reset Shortcuts --------
+
+        private bool ResetShortcutsViaProfileManager()
+        {
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            IVsProfileSettingsFileInfo profileSettingsFileInfo = GetDefaultProfileSettingsFileInfo(vsProfileDataManager);
+            if (profileSettingsFileInfo == null)
+            {
+                MessageBox.Show("Unable to find Default Shortcuts file.");
+                return false;
+            }
+
+            // Apply the Reset
+            int result = vsProfileDataManager.ResetSettings(profileSettingsFileInfo, out IVsSettingsErrorInformation errorInfo);
+            if (ErrorHandler.Failed(result))
+            {
+                // Something went wrong. TODO: Handle error.
+                MessageBox.Show("Error occurred attempting to reset keyboard shortcuts.");
+                return false;
+            }
+
+            MessageBox.Show("Success! Keyboard shortcuts have been reset.", MSG_CAPTION_RESET, MessageBoxButtons.OK);
+            return true;
+        }
+
+        private IVsProfileSettingsFileInfo GetDefaultProfileSettingsFileInfo(IVsProfileDataManager manager)
+        {
+            const string DEFAULT_SHORTCUTS_FILENAME = "DefaultShortcuts.vssettings";
+            string extensionDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string resetFilePath = Path.Combine(extensionDir, DEFAULT_SHORTCUTS_FILENAME);
+            return GetProfileSettingsFileInfo(resetFilePath);
+        }
 
         public static void ResetSettingsViaPostExecCmd()
         {
@@ -240,13 +275,19 @@ namespace VSShortcutsManager
 
         private IVsProfileSettingsTree GetShortcutsToImport(string importFilePath)
         {
-            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
-            vsProfileDataManager.GetSettingsFiles(uint.MaxValue, out IVsProfileSettingsFileCollection vsProfileSettingsFileCollection);
-            vsProfileSettingsFileCollection.AddBrowseFile(importFilePath, out IVsProfileSettingsFileInfo profileSettingsFileInfo);
+            IVsProfileSettingsFileInfo profileSettingsFileInfo = GetProfileSettingsFileInfo(importFilePath);
             profileSettingsFileInfo.GetSettingsForImport(out IVsProfileSettingsTree profileSettingsTree);
             EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
 
             return profileSettingsTree;
+        }
+
+        private IVsProfileSettingsFileInfo GetProfileSettingsFileInfo(string importFilePath)
+        {
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            vsProfileDataManager.GetSettingsFiles(uint.MaxValue, out IVsProfileSettingsFileCollection vsProfileSettingsFileCollection);
+            vsProfileSettingsFileCollection.AddBrowseFile(importFilePath, out IVsProfileSettingsFileInfo profileSettingsFileInfo);
+            return profileSettingsFileInfo;
         }
 
         private bool ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
