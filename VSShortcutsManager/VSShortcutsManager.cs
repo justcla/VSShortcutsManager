@@ -532,6 +532,7 @@ namespace VSShortcutsManager
                 // - prepare copy script
                 // - execute copy script
                 MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
+                ConfirmAndCopyVSKs(vskCopyList);
             }
 
             // Process VSSettings files
@@ -552,6 +553,38 @@ namespace VSShortcutsManager
             // If NewVSSettings.Count == 1
             // - Prompt to load the new VSSettings
             // - If confirmed: Load(newSettings)
+        }
+
+        private void ConfirmAndCopyVSKs(List<VskMappingInfo> vskCopyList)
+        {
+            foreach (VskMappingInfo vskMappingInfo in vskCopyList)
+            {
+                // Confirm and Copy single VSK
+                if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.filepath}", MSG_CAPTION_IMPORT, MessageBoxButtons.OKCancel) != DialogResult.OK)
+                {
+                    return;
+                }
+                string name = vskMappingInfo.name;  // TODO: Prompt user for name
+                CopyVSKToIDEDir(vskMappingInfo.filepath, name);
+            }
+        }
+
+        private void CopyVSKToIDEDir(string filepath, string name)
+        {
+            CopyVskUsingXCopy(filepath);
+        }
+
+        private void CopyVskUsingXCopy(string installPath)
+        {
+            var process = new System.Diagnostics.Process();
+            process.StartInfo.FileName = @"xcopy.exe";
+            process.StartInfo.Arguments = string.Format(@"""{0}"" ""{1}""", installPath, GetVsInstallPath());
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major > 5)
+            {
+                process.StartInfo.Verb = "runas";
+            }
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            process.Start();
         }
 
         private static VskMappingInfo GenerateNewVskMappingInfo(FileInfo fileInfo)
