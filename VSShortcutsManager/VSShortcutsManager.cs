@@ -44,6 +44,7 @@ namespace VSShortcutsManager
         /// </summary>
         private readonly Package package;
         private List<string> MappingSchemes;
+        private List<VskMappingInfo> VskImports;    // TODO: This needs to be persisted
 
         /// <summary>
         /// Gets the service provider from the owner package.
@@ -99,12 +100,17 @@ namespace VSShortcutsManager
                     ExecuteMappingSchemeCommand, 
                     OnBeforeQueryStatusMappingSchemeDynamicItem));
             }
+
+            VskImports = new List<VskMappingInfo>();
+            ScanForNewShortcuts();
         }
 
         private MenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
         {
             return new MenuCommand(menuItemCallback, new CommandID(VSShortcutsManagerCmdSetGuid, cmdId));
         }
+
+        //----------------  Command entry points -------------
 
         private void BackupShortcuts(object sender, EventArgs e)
         {
@@ -489,5 +495,126 @@ namespace VSShortcutsManager
             return backupFilePath;
         }
 
+        //----------- Scanning ----------------------
+
+        public void ScanForNewShortcuts()
+        {
+
+            // Process VSK files
+            List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
+            // Scan user extension directory - look for VSK files
+            List<string> vskFilesInExtDir = GetFilesFromShortcutsFromExtensionsDir("*.vsk");
+            // For each VSK found,
+            foreach (string vskFilePath in vskFilesInExtDir)
+            {
+                FileInfo fileInfo = new FileInfo(vskFilePath);
+
+                // Check existing VSK registry
+                // Compare date/time to existing datetime of VSK. If dates same, skip.
+                VskMappingInfo vskMappingInfo = GetMappingFileInfo(vskFilePath);
+                if (vskMappingInfo != null && vskMappingInfo.lastWriteTime.Equals(fileInfo.LastWriteTime))
+                {
+                    // This entry is already registered and has not changed.
+                    continue;
+                }
+
+                // Add to VSK copy list (consider name)
+                VskMappingInfo item = GenerateNewVskMappingInfo(fileInfo);
+                vskCopyList.Add(item);
+                // Add it to the registry
+                VskImports.Add(item);
+            }
+
+            // Copy VSK files
+            // If VSKCopyList is not empty
+            if (vskCopyList.Count > 0)
+            {
+                // - prepare copy script
+                // - execute copy script
+                MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
+            }
+
+            // Process VSSettings files
+            //List<string> vsSettingsFilesInExtDir = GetFilesFromShortcutsFromExtensionsDir("*.vssettings");
+            // For each VSSettings found,
+            // - check VSSettings registry
+            // - if found
+            //   - Check update flag.
+            //   - If never, skip
+            //   - if always, add to UpdatedVSSettingsList
+            //   - If Prompt
+            //     - If different dates, add to UpdatedVSSettingsList
+            // - else
+            //   - add to VSSettings registry (update: prompt)
+            //   - add to NewVSSettingsList
+
+            // Load new shortcuts
+            // If NewVSSettings.Count == 1
+            // - Prompt to load the new VSSettings
+            // - If confirmed: Load(newSettings)
+        }
+
+        private static VskMappingInfo GenerateNewVskMappingInfo(FileInfo fileInfo)
+        {
+            return new VskMappingInfo
+            {
+                filepath = fileInfo.FullName,
+                name = Path.GetFileNameWithoutExtension(fileInfo.FullName),
+                updateFlag = 1,
+                lastWriteTime = fileInfo.LastWriteTime
+            };
+        }
+
+        private bool IsRegisteredMappingFile(string vskFilePath)
+        {
+            // Check Mapping File Registry for entry with same vskFilePath
+            return VskImports.Exists(x => x.filepath.Equals(vskFilePath));
+        }
+
+        private VskMappingInfo GetMappingFileInfo(string vskFilePath)
+        {
+            foreach(var item in VskImports)
+            {
+                if (item.filepath != null && item.filepath.Equals(vskFilePath))
+                {
+                    return item;
+                }
+            }
+            return null;
+            //return VskImports.First(x => x.filepath.Equals(vskFilePath));
+        }
+
+        private bool HasSameDates(VskMappingInfo vskInfo, DateTime lastWriteTime)
+        {
+            return vskInfo.lastWriteTime.Equals(lastWriteTime);
+        }
+
+        private List<string> GetFilesFromShortcutsFromExtensionsDir(string searchPattern)
+        {
+            // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
+            List<string> allFiles = new List<string>();
+
+            string allUsersExtensionsFolder = Path.Combine(GetVsInstallPath(), "Extensions");
+            DirectoryInfo allUsersExtensionDir = new DirectoryInfo(allUsersExtensionsFolder);
+            DirectoryInfo[] directories = allUsersExtensionDir.GetDirectories();
+
+            foreach (DirectoryInfo extensionDir in directories)
+            {
+                List<string> matchingFiles = Directory.EnumerateFiles(extensionDir.FullName, searchPattern, SearchOption.TopDirectoryOnly).ToList();
+                allFiles.AddRange(matchingFiles);
+            }
+
+            return allFiles;
+        }
+
     }
+
+    internal class VskMappingInfo
+    {
+        public string name;
+        public string filepath;
+        public DateTime lastWriteTime;
+        public int updateFlag; // 0 = never; 1 = prompt; 2 = always
+    }
+
 }
