@@ -12,6 +12,8 @@ using Microsoft.Win32;
 using System.Linq;
 using EnvDTE;
 using System.Diagnostics;
+using System.Xml;
+using System.Text;
 
 namespace VSShortcutsManager
 {
@@ -43,8 +45,13 @@ namespace VSShortcutsManager
         /// VS Package that provides this command, not null.
         /// </summary>
         private readonly Package package;
+        private readonly int UPDATE_NEVER = 0;
+        private readonly int UPDATE_PROMPT = 1;
+        private readonly int UPDATE_ALWAYS = 2;
         private List<string> MappingSchemes;
         private List<VskMappingInfo> VskImports;    // TODO: This needs to be persisted
+        private List<UserShortcutsDef> userShortcutsRegistry = new List<UserShortcutsDef>();    // TODO: This needs to be persisted
+
 
         private string _AllUsersExtensionsPath;
         private string AllUsersExtensionsPath
@@ -306,6 +313,11 @@ namespace VSShortcutsManager
                 return;
             }
 
+            LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
+        }
+
+        public void LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
+        {
             if (!File.Exists(importFilePath))
             {
                 MessageBox.Show($"File does not exist: {importFilePath}", MSG_CAPTION_RESTORE);
@@ -581,23 +593,69 @@ namespace VSShortcutsManager
             }
 
             // Process VSSettings files
-            //List<string> vsSettingsFilesInExtDir = GetFilesFromShortcutsFromExtensionsDir("*.vssettings");
-            // For each VSSettings found,
-            // - check VSSettings registry
-            // - if found
-            //   - Check update flag.
-            //   - If never, skip
-            //   - if always, add to UpdatedVSSettingsList
-            //   - If Prompt
-            //     - If different dates, add to UpdatedVSSettingsList
-            // - else
-            //   - add to VSSettings registry (update: prompt)
-            //   - add to NewVSSettingsList
+            // Scan All-Users and local-user extension directories for VSSettings files
+            List<string> vsSettingsFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vssettings");
+            vsSettingsFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vssettings"));
+            // For each VSSettings found, check VSSettings registry
+            List<string> newVsSettings = new List<string>();
+            List<string> updatedVsSettings = new List<string>();
+            foreach (string vsSettingsFile in vsSettingsFilesInExtDirs)
+            {
+                var thisEntry = userShortcutsRegistry.Find(x => x.Filepath.Equals(vsSettingsFile));
+                if (thisEntry == null)
+                {
+                    // - New VSSettings file
+                    // Add to VSSettings registry (update: prompt)
+                    userShortcutsRegistry.Add(new UserShortcutsDef(vsSettingsFile));
+                    // Add to NewVSSettingsList
+                    newVsSettings.Add(vsSettingsFile);
+                }
+                else
+                {
+                    // Existing entry
+                    //   - Check notify flag.
+                    int notifyFlag = thisEntry.NotifyFlag;
+                    //   - If never, skip
+                    if (notifyFlag == UPDATE_NEVER) continue;
+                    // If dates are the same, skip
+                    if (thisEntry.LastWriteTime == new FileInfo(vsSettingsFile).LastWriteTime) continue;
+                    //   else, add to UpdatedVSSettingsList
+                    updatedVsSettings.Add(vsSettingsFile);
+                }
+            }
 
-            // Load new shortcuts
+            // Alert user of new and updated shortcut defs
             // If NewVSSettings.Count == 1
-            // - Prompt to load the new VSSettings
-            // - If confirmed: Load(newSettings)
+            if (newVsSettings.Count == 1)
+            {
+                // Prompt to load the new VSSettings
+                // If confirmed: Load(newSettings)
+                if (MessageBox.Show($"One new user shortcut definition was found.\n\n{PrintList(newVsSettings)}\n\nWould you like to load these shortcuts now?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    // Load the settings
+                    LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
+                }
+            }
+            else if (newVsSettings.Count > 1)
+            {
+                MessageBox.Show($"There were {newVsSettings.Count} new user shortcut files found.\n\n{PrintList(newVsSettings)}");
+            }
+            // Updated settings files
+            if (updatedVsSettings.Count > 0)
+            {
+                MessageBox.Show($"There were {updatedVsSettings.Count} updated user shortcut files found.\n\n{PrintList(updatedVsSettings)}\n\nYou might want to reapply these shortcuts.\nTool->Keyboard Shortcuts");
+            }
+        }
+
+        private object PrintList(List<string> items)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (string item in items)
+            {
+                if (sb.Length > 0) sb.Append("\n");
+                sb.Append(item);
+            }
+            return sb.ToString();
         }
 
         private void ConfirmAndCopyVSKs(List<VskMappingInfo> vskCopyList)
@@ -718,6 +776,53 @@ namespace VSShortcutsManager
         private string GetExtensionsPath(Environment.SpecialFolder folder)
         {
             return Path.Combine(GetVisualStudioVersionPath(Environment.GetFolderPath(folder), GetVSInstanceId()), "Extensions");
+        }
+
+    }
+
+    internal class UserShortcutsDef
+    {
+        private string vsSettingsFile;
+
+        public string Filepath { get; set; }
+        public int NotifyFlag { get; set; }
+        public string Name { get; set; }
+        public DateTime LastWriteTime { get; set; }
+        public string ExtensionName { get; set; }
+
+        public UserShortcutsDef(string filepath)
+        {
+            Name = Path.GetFileNameWithoutExtension(filepath);
+            ExtensionName = GetExtensionNameFromPath(filepath);
+            Filepath = filepath;
+            NotifyFlag = 1;
+            LastWriteTime = new FileInfo(filepath).LastWriteTime;
+        }
+
+        private string GetExtensionNameFromPath(string filepath)
+        {
+            string directory = Path.GetDirectoryName(filepath);
+            string extensionManifest = Path.Combine(directory, "extension.manifest");
+            if (File.Exists(extensionManifest))
+            {
+                // TODO: Read extension manifest as XML and parse for extension name
+                return GetExtensionNameFromExtensionManifest(extensionManifest);
+            }
+            return Path.GetFileNameWithoutExtension(filepath);  // HACK!
+        }
+
+        private string GetExtensionNameFromExtensionManifest(string extensionManifestFile)
+        {
+            // Load the document and set the root element.  
+            XmlDocument doc = new XmlDocument();
+            doc.Load(extensionManifestFile);
+            XmlNode root = doc.DocumentElement;
+            XmlNode node = root.SelectSingleNode("/PackageManifest/Metadata/DisplayName");
+            if (node != null)
+            {
+                return node.Value;
+            }
+            return null;
         }
 
     }
