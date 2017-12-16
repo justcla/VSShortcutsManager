@@ -46,6 +46,47 @@ namespace VSShortcutsManager
         private List<string> MappingSchemes;
         private List<VskMappingInfo> VskImports;    // TODO: This needs to be persisted
 
+        private string _AllUsersExtensionsPath;
+        private string AllUsersExtensionsPath
+        {
+            get
+            {
+                if (_AllUsersExtensionsPath == null)
+                {
+                    _AllUsersExtensionsPath = GetAllUsersExtensionsPath();
+                }
+                return _AllUsersExtensionsPath;
+            }
+        }
+
+        private string _LocalUserExtensionsPath;
+
+        private string LocalUserExtensionsPath
+        {
+            get
+            {
+                if (_LocalUserExtensionsPath == null)
+                {
+                    _LocalUserExtensionsPath = GetExtensionsPath(Environment.SpecialFolder.LocalApplicationData);
+                }
+                return _LocalUserExtensionsPath;
+            }
+        }
+
+        public string _RoamingAppDataVSPath;
+
+        private string RoamingAppDataVSPath
+        {
+            get
+            {
+                if (_RoamingAppDataVSPath == null)
+                {
+                    _RoamingAppDataVSPath = GetExtensionsPath(Environment.SpecialFolder.ApplicationData);
+                }
+                return _RoamingAppDataVSPath;
+            }
+        }
+
         /// <summary>
         /// Gets the service provider from the owner package.
         /// </summary>
@@ -499,13 +540,17 @@ namespace VSShortcutsManager
 
         public void ScanForNewShortcuts()
         {
+            // TODO: Make these fields of the class. Lazy load, fetched once.
+            //string allUsersExtensionsPath = GetAllUsersExtensionsPath();
+            //string localUserExtensionsPath = GetLocalUserExtensionsPath();
 
             // Process VSK files
             List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
-            // Scan user extension directory - look for VSK files
-            List<string> vskFilesInExtDir = GetFilesFromShortcutsFromExtensionsDir("*.vsk");
-            // For each VSK found,
-            foreach (string vskFilePath in vskFilesInExtDir)
+            // Scan All-Users and local-user extension directories for VSK files
+            List<string> vskFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vsk");
+            vskFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vsk"));
+            // Check each VSK against VSK registry to see if it's new or updated.
+            foreach (string vskFilePath in vskFilesInExtDirs)
             {
                 FileInfo fileInfo = new FileInfo(vskFilePath);
 
@@ -562,7 +607,7 @@ namespace VSShortcutsManager
                 // Confirm and Copy single VSK
                 if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.filepath}", MSG_CAPTION_IMPORT, MessageBoxButtons.OKCancel) != DialogResult.OK)
                 {
-                    return;
+                    continue;
                 }
                 string name = vskMappingInfo.name;  // TODO: Prompt user for name
                 CopyVSKToIDEDir(vskMappingInfo.filepath, name);
@@ -622,22 +667,57 @@ namespace VSShortcutsManager
             return vskInfo.lastWriteTime.Equals(lastWriteTime);
         }
 
-        private List<string> GetFilesFromShortcutsFromExtensionsDir(string searchPattern)
+        private List<string> GetFilesFromFolder(string folder, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
             List<string> allFiles = new List<string>();
 
-            string allUsersExtensionsFolder = Path.Combine(GetVsInstallPath(), "Extensions");
-            DirectoryInfo allUsersExtensionDir = new DirectoryInfo(allUsersExtensionsFolder);
-            DirectoryInfo[] directories = allUsersExtensionDir.GetDirectories();
-
+            DirectoryInfo[] directories = new DirectoryInfo(folder).GetDirectories();
             foreach (DirectoryInfo extensionDir in directories)
             {
-                List<string> matchingFiles = Directory.EnumerateFiles(extensionDir.FullName, searchPattern, SearchOption.TopDirectoryOnly).ToList();
+                //const SearchOption topDirectoryOnly = SearchOption.TopDirectoryOnly;
+                List<string> matchingFiles = Directory.EnumerateFiles(extensionDir.FullName, searchPattern, searchOption).ToList();
                 allFiles.AddRange(matchingFiles);
             }
 
             return allFiles;
+        }
+
+        private string GetAllUsersExtensionsPath()
+        {
+            return Path.Combine(GetVsInstallPath(), "Extensions");
+        }
+
+        private object GetVirtualRegistryRoot()
+        {
+            // Note: A different way of getting the registry root
+            IVsShell shell = (IVsShell)Package.GetGlobalService(typeof(SVsShell));
+            shell.GetProperty((int)__VSSPROPID.VSSPROPID_VirtualRegistryRoot, out object root);
+            return root;
+        }
+
+        private string GetVSInstanceId()
+        {
+            return Path.GetFileName(GetVirtualRegistryRoot().ToString());
+        }
+
+        private void InitializePathVariables()
+        {
+            // Gets the version number with the /rootsuffix. Example: "15.0_6bb4f128Exp"
+            string vsInstanceId = GetVSInstanceId();
+
+            _LocalUserExtensionsPath = GetVisualStudioVersionPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), vsInstanceId);
+            _RoamingAppDataVSPath = GetVisualStudioVersionPath(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), vsInstanceId);
+        }
+
+        private static string GetVisualStudioVersionPath(string appData, string version)
+        {
+            return Path.Combine(appData, "Microsoft\\VisualStudio", version);
+        }
+
+        private string GetExtensionsPath(Environment.SpecialFolder folder)
+        {
+            return Path.Combine(GetVisualStudioVersionPath(Environment.GetFolderPath(folder), GetVSInstanceId()), "Extensions");
         }
 
     }
