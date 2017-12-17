@@ -68,8 +68,8 @@
       <Button guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
-          <ButtonText>Backup Shortcuts</ButtonText>
-          <MenuText>&amp;Backup Shortcuts...</MenuText>
+          <ButtonText>Save current shortcuts</ButtonText>
+          <MenuText>&amp;Save current shortcuts...</MenuText>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="RestoreShortcutsCmdId" priority="0x0300" type="Button">
