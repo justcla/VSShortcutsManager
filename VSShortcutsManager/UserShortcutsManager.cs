@@ -19,14 +19,21 @@ namespace VSShortcutsManager
         private static readonly string FLAGS = "Flags";
         private static readonly string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
 
-        public UserShortcutsManager(IServiceProvider package) {
-            Initialize(package);
-        }
-
-        public void Initialize(IServiceProvider package)
+        public UserShortcutsManager(IServiceProvider package)
         {
             ShellSettingsManager = new ShellSettingsManager(package);
-            UserSettingsStore = ShellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
+            InitUserSettingsStore(ShellSettingsManager);
+        }
+
+        public UserShortcutsManager(ShellSettingsManager settingsManager)
+        {
+            ShellSettingsManager = settingsManager;
+            InitUserSettingsStore(ShellSettingsManager);
+        }
+
+        private void InitUserSettingsStore(ShellSettingsManager settingsManager)
+        {
+            UserSettingsStore = settingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
         }
 
         public List<UserShortcutsDef> FetchUserShortcutsRegistry()
@@ -72,6 +79,12 @@ namespace VSShortcutsManager
             UserSettingsStore.SetString(collectionPath, EXTENSION_NAME, userShortcutsDef.ExtensionName);
             UserSettingsStore.SetString(collectionPath, LAST_WRITE_TIME, userShortcutsDef.LastWriteTime.ToString(DATETIME_FORMAT));
             UserSettingsStore.SetInt32(collectionPath, FLAGS, userShortcutsDef.NotifyFlag);
+        }
+
+        public void DeleteUserShortcutsDef(string shortcutDef)
+        {
+            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDef}";
+            UserSettingsStore.DeleteCollection(collectionPath);
         }
 
         public void ResetUserShortcutsRegistry()

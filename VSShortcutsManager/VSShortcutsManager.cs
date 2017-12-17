@@ -56,20 +56,13 @@ namespace VSShortcutsManager
         private readonly int UPDATE_ALWAYS = 2;
         private List<string> MappingSchemes;
 
-        private SettingsManager ShellSettingsManager;
-        //private WritableSettingsStore UserSettingsStore;
+        private ShellSettingsManager ShellSettingsManager;
         private UserShortcutsManager userShortcutsManager;
         private List<VskMappingInfo> VskImportsRegistry;
         private List<UserShortcutsDef> UserShortcutsRegistry;
 
-        //// Initialize settings manager (TODO: could be done lazily on get)
-        //private const string SID_SVsSettingsPersistenceManager = "9B164E40-C3A2-4363-9BC5-EB4039DEF653";
-        //public static ISettingsManager SettingsManager { get; private set; }
-        //// A horrible hack but SVsSettingsPersistenceManager isn't public and we need something with the right GUID to get the service.
-        //[Guid(SID_SVsSettingsPersistenceManager)]
-        //private class SVsSettingsPersistenceManager
-        //{ }
 
+        #region
         private string _AllUsersExtensionsPath;
         private string AllUsersExtensionsPath
         {
@@ -111,6 +104,7 @@ namespace VSShortcutsManager
                 return _RoamingAppDataVSPath;
             }
         }
+        #endregion
 
         /// <summary>
         /// Gets the service provider from the owner package.
@@ -154,17 +148,24 @@ namespace VSShortcutsManager
             RegisterCommandHandlers();
 
             ShellSettingsManager = new ShellSettingsManager(package);
-            userShortcutsManager = new UserShortcutsManager(package);
+            userShortcutsManager = new UserShortcutsManager(ShellSettingsManager);
 
-            // For fun (Use these later)
-            var appExtensions = ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.ApplicationExtensions);
-            var localSettings = ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.LocalSettings);
+            // Initialise path for AppDataRoaming and AppDataLocal (Optional - alternative method)
+            _RoamingAppDataVSPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.ApplicationExtensions), "Extensions");
+            _LocalUserExtensionsPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.LocalSettings), "Extensions");
 
             // Load user shortcut registries
             //userShortcutsManager.ResetUserShortcutsRegistry();
-            InitialiseUserSettings();
+            //userShortcutsManager.DeleteUserShortcutsDef("WindowHideShortcuts");
+            UserShortcutsRegistry = userShortcutsManager.FetchUserShortcutsRegistry();
+            // Load imported VSKs registry
+            VskImportsRegistry = FetchVskImportsRegistry();
 
-            ScanForNewShortcuts();
+            if (RequiresNewScanOfExtensionsDir())
+            {
+                ScanForAllExtensionShortcuts();
+            }
+
         }
 
         private void RegisterCommandHandlers()
@@ -184,13 +185,6 @@ namespace VSShortcutsManager
                     ExecuteMappingSchemeCommand,
                     OnBeforeQueryStatusMappingSchemeDynamicItem));
             }
-        }
-
-        private void InitialiseUserSettings()
-        {
-            // Fetch the user's shortcut registries
-            VskImportsRegistry = FetchVskImportsRegistry();
-            UserShortcutsRegistry = userShortcutsManager.FetchUserShortcutsRegistry();
         }
 
         private List<VskMappingInfo> FetchVskImportsRegistry()
@@ -599,11 +593,26 @@ namespace VSShortcutsManager
 
         //----------- Scanning ----------------------
 
-        public void ScanForNewShortcuts()
+        private bool RequiresNewScanOfExtensionsDir()
         {
-            // Process VSK files
-            //ScanForMappingSchemes();
+            // TODO: Work out if there's been an update to anything in the user extensions dir or in the All-users extension dir
+            // TODO: Include check for User setting to Scan/NotScan at startup.
+            return true;
+        }
 
+        public void ScanForAllExtensionShortcuts()
+        {
+            // Tip: Best to scan for VSK files first, because then they are available if a VSSetting file wants it.
+
+            // Scan for new VSK files
+            //ScanForMappingSchemes();   - Disabled for now until it's working with the SettingsStore
+
+            // Scan for new VSSettings files
+            ScanForNewShortcutsDefs();
+        }
+
+        public void ScanForNewShortcutsDefs()
+        {
             // Process VSSettings files
             // Scan All-Users and local-user extension directories for VSSettings files
             List<string> vsSettingsFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vssettings");
@@ -618,24 +627,27 @@ namespace VSShortcutsManager
                 {
                     // - New VSSettings file
                     // Add to VSSettings registry (update: prompt)
-                    UserShortcutsDef userShortcutsDef = new UserShortcutsDef(vsSettingsFile);
-                    // Add to NewVSSettingsList
+                    thisEntry = new UserShortcutsDef(vsSettingsFile);
+                    // Add to NewVSSettingsList (to alert users)
                     newVsSettings.Add(vsSettingsFile);
                     // Update the VSSettingsRegsitry
-                    AddUserShortcutsToRegistry(userShortcutsDef);
+                    UserShortcutsRegistry.Add(thisEntry);
+                    // Update the SettingsStore
+                    userShortcutsManager.UpdateShortcutsDefInSettingsStore(thisEntry);
                 }
                 else
                 {
-                    // Existing entry
+                    // We already know
                     if (thisEntry.NotifyFlag == UPDATE_NEVER) continue;
+
                     FileInfo vsSettingsFileInfo = new FileInfo(vsSettingsFile);
                     if (thisEntry.LastWriteTimeEquals(vsSettingsFileInfo.LastWriteTime)) continue;
                     // This entry has been updated since it was added to the registry. Update the entry.
                     thisEntry.LastWriteTime = vsSettingsFileInfo.LastWriteTime;
                     // Add to UpdatedVSSettingsList (to alert users)
                     updatedVsSettings.Add(vsSettingsFile);
-                    // Update the VSSettingsRegsitry
-                    AddUserShortcutsToRegistry(thisEntry);
+                    // Update the SettingsStore
+                    userShortcutsManager.UpdateShortcutsDefInSettingsStore(thisEntry);
                 }
             }
 
@@ -662,12 +674,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private static bool HasSameLastWriteTime(FileInfo fileInfo, UserShortcutsDef userShortcutsDef)
-        {
-            return userShortcutsDef.LastWriteTimeEquals(fileInfo.LastWriteTime);
-        }
-
-        private void ScanForMappingSchemes()
+        public void ScanForMappingSchemes()
         {
             List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
             // Scan All-Users and local-user extension directories for VSK files
@@ -700,12 +707,6 @@ namespace VSShortcutsManager
                 MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
                 ConfirmAndCopyVSKs(vskCopyList);
             }
-        }
-
-        private void AddUserShortcutsToRegistry(UserShortcutsDef userShortcutsDef)
-        {
-            UserShortcutsRegistry.Add(userShortcutsDef);
-            userShortcutsManager.UpdateShortcutsDefInSettingsStore(userShortcutsDef);
         }
 
         private void AddVskToRegistry(VskMappingInfo vskMappingInfo)
