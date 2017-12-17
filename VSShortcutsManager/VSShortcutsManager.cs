@@ -14,6 +14,9 @@ using EnvDTE;
 using System.Diagnostics;
 using System.Xml;
 using System.Text;
+using Microsoft.VisualStudio.Settings;
+using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.Shell.Settings;
 
 namespace VSShortcutsManager
 {
@@ -40,6 +43,10 @@ namespace VSShortcutsManager
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
         private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
+        private const string VSK_IMPORTS_REGISTRY_KEY = "VskImportsRegistry";
+        private const string USER_SHORTCUTS_REGISTRY_KEY = "UserShortcutsRegistry";
+        private const string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
+        private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
 
         /// <summary>
         /// VS Package that provides this command, not null.
@@ -49,9 +56,19 @@ namespace VSShortcutsManager
         private readonly int UPDATE_PROMPT = 1;
         private readonly int UPDATE_ALWAYS = 2;
         private List<string> MappingSchemes;
-        private List<VskMappingInfo> VskImports;    // TODO: This needs to be persisted
-        private List<UserShortcutsDef> userShortcutsRegistry = new List<UserShortcutsDef>();    // TODO: This needs to be persisted
 
+        private SettingsManager ShellSettingsManager;
+        private WritableSettingsStore UserSettingsStore;
+        private List<VskMappingInfo> VskImportsRegistry;
+        private List<UserShortcutsDef> UserShortcutsRegistry;
+
+        //// Initialize settings manager (TODO: could be done lazily on get)
+        //private const string SID_SVsSettingsPersistenceManager = "9B164E40-C3A2-4363-9BC5-EB4039DEF653";
+        //public static ISettingsManager SettingsManager { get; private set; }
+        //// A horrible hack but SVsSettingsPersistenceManager isn't public and we need something with the right GUID to get the service.
+        //[Guid(SID_SVsSettingsPersistenceManager)]
+        //private class SVsSettingsPersistenceManager
+        //{ }
 
         private string _AllUsersExtensionsPath;
         private string AllUsersExtensionsPath
@@ -130,9 +147,19 @@ namespace VSShortcutsManager
         /// <param name="package">Owner package, not null.</param>
         private VSShortcutsManager(Package package)
         {
-            // Register this command with the Global Command Service
             this.package = package ?? throw new ArgumentNullException("package");
 
+            // Register all the command handlers with the Global Command Service
+            RegisterCommandHandlers();
+
+            // Load settings
+            InitialiseUserSettings();
+
+            ScanForNewShortcuts();
+        }
+
+        private void RegisterCommandHandlers()
+        {
             if (ServiceProvider.GetService(typeof(IMenuCommandService)) is OleMenuCommandService commandService)
             {
                 commandService.AddCommand(CreateMenuItem(BackupShortcutsCmdId, this.BackupShortcuts));
@@ -143,14 +170,62 @@ namespace VSShortcutsManager
                 commandService.AddCommand(CreateMenuItem(ShortcutSchemesMenu, null));
                 // Add an entry for the dyanmic/expandable menu item
                 CommandID dynamicItemRootId = new CommandID(VSShortcutsManagerCmdSetGuid, DynamicThemeStartCmdId);
-                commandService.AddCommand(new DynamicItemMenuCommand(dynamicItemRootId, 
-                    IsValidMappingSchemeItem, 
-                    ExecuteMappingSchemeCommand, 
+                commandService.AddCommand(new DynamicItemMenuCommand(dynamicItemRootId,
+                    IsValidMappingSchemeItem,
+                    ExecuteMappingSchemeCommand,
                     OnBeforeQueryStatusMappingSchemeDynamicItem));
             }
+        }
 
-            VskImports = new List<VskMappingInfo>();
-            ScanForNewShortcuts();
+        private void InitialiseUserSettings()
+        {
+            // Initialize settings manager (TODO: could be done lazily on get)
+            //SettingsManager = (ISettingsManager)ServiceProvider.GetService(typeof(SVsSettingsPersistenceManager));
+            ShellSettingsManager = new ShellSettingsManager(package);
+            UserSettingsStore = ShellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
+
+            // Fetch the user's shortcut registries
+            VskImportsRegistry = FetchVskImportsRegistry();
+            UserShortcutsRegistry = FetchUserShortcutsRegistry();
+        }
+
+        private List<VskMappingInfo> FetchVskImportsRegistry()
+        {
+            if ((VSShortcutsManagerPackage.SettingsManager.TryGetValue(VSK_IMPORTS_REGISTRY_KEY, out List<VskMappingInfo> storedData) != GetValueResult.Success) || storedData == null)
+            {
+                return new List<VskMappingInfo>();
+            }
+            return storedData;
+        }
+
+        private List<UserShortcutsDef> FetchUserShortcutsRegistry()
+        {
+            List<UserShortcutsDef> userShortcutsRegistry = new List<UserShortcutsDef>();
+            if (UserSettingsStore.CollectionExists(USER_SHORTCUTS_DEFS))
+            {
+                var shortcutDefs = UserSettingsStore.GetSubCollectionNames(USER_SHORTCUTS_DEFS);
+                foreach (var shortcutDef in shortcutDefs)
+                {
+                    // Parse the settings to create a UserShortcutsDefs object
+                    string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDef}";
+                    //string filepath = UserSettingsStore.GetString(collectionPath, "Filepath");
+                    //string name = UserSettingsStore.GetString(collectionPath, "Name");
+                    //string extensionName = UserSettingsStore.GetString(collectionPath, "ExtensionName");
+                    //DateTime lastWriteTime = DateTime.Parse(UserSettingsStore.GetString(collectionPath, "LastWriteTime"));
+                    //int flags = UserSettingsStore.GetInt32(collectionPath, "Flags", 0);
+                    //UserShortcutsDef userShortcutsDef = new UserShortcutsDef()
+                    //{
+                    //    Filepath = filepath,
+                    //    Name = name,
+                    //    ExtensionName = extensionName,
+                    //    LastWriteTime = lastWriteTime,
+                    //    NotifyFlag = flags
+                    //};
+                    UserShortcutsDef userShortcutsDef = ExtractShortcutsDef(collectionPath);
+                    userShortcutsRegistry.Add(userShortcutsDef);
+                }
+            }
+            return userShortcutsRegistry;
         }
 
         private MenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
@@ -359,7 +434,7 @@ namespace VSShortcutsManager
                 // Something went wrong. TODO: Handle error.
                 MessageBox.Show("Error occurred attempting to import settings.");
                 return false;
-            } 
+            }
             return true;
         }
 
@@ -552,45 +627,8 @@ namespace VSShortcutsManager
 
         public void ScanForNewShortcuts()
         {
-            // TODO: Make these fields of the class. Lazy load, fetched once.
-            //string allUsersExtensionsPath = GetAllUsersExtensionsPath();
-            //string localUserExtensionsPath = GetLocalUserExtensionsPath();
-
             // Process VSK files
-            List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
-            // Scan All-Users and local-user extension directories for VSK files
-            List<string> vskFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vsk");
-            vskFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vsk"));
-            // Check each VSK against VSK registry to see if it's new or updated.
-            foreach (string vskFilePath in vskFilesInExtDirs)
-            {
-                FileInfo fileInfo = new FileInfo(vskFilePath);
-
-                // Check existing VSK registry
-                // Compare date/time to existing datetime of VSK. If dates same, skip.
-                VskMappingInfo vskMappingInfo = GetMappingFileInfo(vskFilePath);
-                if (vskMappingInfo != null && vskMappingInfo.lastWriteTime.Equals(fileInfo.LastWriteTime))
-                {
-                    // This entry is already registered and has not changed.
-                    continue;
-                }
-
-                // Add to VSK copy list (consider name)
-                VskMappingInfo item = GenerateNewVskMappingInfo(fileInfo);
-                vskCopyList.Add(item);
-                // Add it to the registry
-                VskImports.Add(item);
-            }
-
-            // Copy VSK files
-            // If VSKCopyList is not empty
-            if (vskCopyList.Count > 0)
-            {
-                // - prepare copy script
-                // - execute copy script
-                MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
-                ConfirmAndCopyVSKs(vskCopyList);
-            }
+            //ScanForMappingSchemes();
 
             // Process VSSettings files
             // Scan All-Users and local-user extension directories for VSSettings files
@@ -601,14 +639,16 @@ namespace VSShortcutsManager
             List<string> updatedVsSettings = new List<string>();
             foreach (string vsSettingsFile in vsSettingsFilesInExtDirs)
             {
-                var thisEntry = userShortcutsRegistry.Find(x => x.Filepath.Equals(vsSettingsFile));
+                var thisEntry = UserShortcutsRegistry.Find(x => x.Filepath.Equals(vsSettingsFile));
                 if (thisEntry == null)
                 {
                     // - New VSSettings file
                     // Add to VSSettings registry (update: prompt)
-                    userShortcutsRegistry.Add(new UserShortcutsDef(vsSettingsFile));
+                    UserShortcutsDef userShortcutsDef = new UserShortcutsDef(vsSettingsFile);
                     // Add to NewVSSettingsList
                     newVsSettings.Add(vsSettingsFile);
+                    // Update the VSSettingsRegsitry
+                    AddUserShortcutsToRegistry(userShortcutsDef);
                 }
                 else
                 {
@@ -618,9 +658,14 @@ namespace VSShortcutsManager
                     //   - If never, skip
                     if (notifyFlag == UPDATE_NEVER) continue;
                     // If dates are the same, skip
-                    if (thisEntry.LastWriteTime == new FileInfo(vsSettingsFile).LastWriteTime) continue;
-                    //   else, add to UpdatedVSSettingsList
+                    DateTime lastWriteTime = new FileInfo(vsSettingsFile).LastWriteTime;
+                    if (thisEntry.LastWriteTime == lastWriteTime) continue;
+                    // Update the entry
+                    thisEntry.LastWriteTime = lastWriteTime;
+                    // Add to UpdatedVSSettingsList (to alert users)
                     updatedVsSettings.Add(vsSettingsFile);
+                    // Update the VSSettingsRegsitry
+                    AddUserShortcutsToRegistry(thisEntry);
                 }
             }
 
@@ -645,6 +690,96 @@ namespace VSShortcutsManager
             {
                 MessageBox.Show($"There were {updatedVsSettings.Count} updated user shortcut files found.\n\n{PrintList(updatedVsSettings)}\n\nYou might want to reapply these shortcuts.\nTool->Keyboard Shortcuts");
             }
+        }
+
+        private void ScanForMappingSchemes()
+        {
+            List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
+            // Scan All-Users and local-user extension directories for VSK files
+            List<string> vskFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vsk");
+            vskFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vsk"));
+            // Check each VSK against VSK registry to see if it's new or updated.
+            foreach (string vskFilePath in vskFilesInExtDirs)
+            {
+                FileInfo fileInfo = new FileInfo(vskFilePath);
+
+                // Check existing VSK registry
+                // Compare date/time to existing datetime of VSK. If dates same, skip.
+                VskMappingInfo vskMappingInfo = GetMappingFileInfo(vskFilePath);
+                if (vskMappingInfo != null && vskMappingInfo.lastWriteTime.Equals(fileInfo.LastWriteTime))
+                {
+                    // This entry is already registered and has not changed.
+                    continue;
+                }
+
+                // Add to VSK copy list (consider name)
+                VskMappingInfo item = GenerateNewVskMappingInfo(fileInfo);
+                vskCopyList.Add(item);
+                // Add it to the registry
+                AddVskToRegistry(item);
+            }
+
+            // Copy VSK files
+            // If VSKCopyList is not empty
+            if (vskCopyList.Count > 0)
+            {
+                // - prepare copy script
+                // - execute copy script
+                MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
+                ConfirmAndCopyVSKs(vskCopyList);
+            }
+        }
+
+        private void AddUserShortcutsToRegistry(UserShortcutsDef userShortcutsDef)
+        {
+            UserShortcutsRegistry.Add(userShortcutsDef);
+
+            // Update the UserSettingsStore
+            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{userShortcutsDef.Name}";
+            UserSettingsStore.CreateCollection(collectionPath);
+            UserSettingsStore.SetString(collectionPath, "Name", userShortcutsDef.Name);
+            UserSettingsStore.SetString(collectionPath, "Filepath", userShortcutsDef.Filepath);
+            UserSettingsStore.SetString(collectionPath, "ExtensionName", userShortcutsDef.ExtensionName);
+            UserSettingsStore.SetString(collectionPath, "LastWriteTime", userShortcutsDef.LastWriteTime.ToString(DATETIME_FORMAT));
+            UserSettingsStore.SetInt32(collectionPath, "Flags", userShortcutsDef.NotifyFlag);
+
+            // Test if it worked
+            UserShortcutsDef userShortcutsDefNew = ExtractShortcutsDef(collectionPath);
+
+            var newFilePath = userShortcutsDefNew.Filepath;
+            MessageBox.Show("Found user setting: " + newFilePath);
+        }
+
+        private UserShortcutsDef ExtractShortcutsDef(string collectionPath)
+        {
+            string filepath = UserSettingsStore.GetString(collectionPath, "Filepath");
+            string name = UserSettingsStore.GetString(collectionPath, "Name");
+            string extensionName = UserSettingsStore.GetString(collectionPath, "ExtensionName");
+            string lastWriteTimeStr = DateTime.MinValue.ToString(DATETIME_FORMAT);
+            try
+            {
+                lastWriteTimeStr = UserSettingsStore.GetString(collectionPath, "LastWriteTime", "NO-DATE");
+            } catch
+            {
+                // Do Nothing
+            }
+            bool success = DateTime.TryParse(lastWriteTimeStr, out DateTime lastWriteTime);
+            int flags = UserSettingsStore.GetInt32(collectionPath, "Flags", 0);
+            UserShortcutsDef userShortcutsDefNew = new UserShortcutsDef()
+            {
+                Filepath = filepath,
+                Name = name,
+                ExtensionName = extensionName,
+                LastWriteTime = lastWriteTime,
+                NotifyFlag = flags
+            };
+            return userShortcutsDefNew;
+        }
+
+        private void AddVskToRegistry(VskMappingInfo vskMappingInfo)
+        {
+            VskImportsRegistry.Add(vskMappingInfo);
+            VSShortcutsManagerPackage.SettingsManager.SetValueAsync(VSK_IMPORTS_REGISTRY_KEY, vskMappingInfo, isMachineLocal: true);
         }
 
         private object PrintList(List<string> items)
@@ -704,12 +839,12 @@ namespace VSShortcutsManager
         private bool IsRegisteredMappingFile(string vskFilePath)
         {
             // Check Mapping File Registry for entry with same vskFilePath
-            return VskImports.Exists(x => x.filepath.Equals(vskFilePath));
+            return VskImportsRegistry.Exists(x => x.filepath.Equals(vskFilePath));
         }
 
         private VskMappingInfo GetMappingFileInfo(string vskFilePath)
         {
-            foreach(var item in VskImports)
+            foreach (var item in VskImportsRegistry)
             {
                 if (item.filepath != null && item.filepath.Equals(vskFilePath))
                 {
@@ -782,13 +917,13 @@ namespace VSShortcutsManager
 
     internal class UserShortcutsDef
     {
-        private string vsSettingsFile;
-
         public string Filepath { get; set; }
         public int NotifyFlag { get; set; }
         public string Name { get; set; }
         public DateTime LastWriteTime { get; set; }
         public string ExtensionName { get; set; }
+
+        public UserShortcutsDef() { }
 
         public UserShortcutsDef(string filepath)
         {
