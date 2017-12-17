@@ -12,7 +12,6 @@ using Microsoft.Win32;
 using System.Linq;
 using EnvDTE;
 using System.Diagnostics;
-using System.Xml;
 using System.Text;
 using Microsoft.VisualStudio.Settings;
 using System.Runtime.InteropServices;
@@ -36,17 +35,17 @@ namespace VSShortcutsManager
         public const int ShortcutSchemesMenu = 0x2002;
         public const int DynamicThemeStartCmdId = 0x2A00;
 
-
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_RESTORE = "Import Keyboard Shortcuts";
         private const string MSG_CAPTION_BACKUP = "Backup Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
         private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
+
+        // UserSettingsStore constants
         private const string VSK_IMPORTS_REGISTRY_KEY = "VskImportsRegistry";
-        private const string USER_SHORTCUTS_REGISTRY_KEY = "UserShortcutsRegistry";
-        private const string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
-        private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
+        //private const string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
+        //private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
 
         /// <summary>
         /// VS Package that provides this command, not null.
@@ -58,7 +57,8 @@ namespace VSShortcutsManager
         private List<string> MappingSchemes;
 
         private SettingsManager ShellSettingsManager;
-        private WritableSettingsStore UserSettingsStore;
+        //private WritableSettingsStore UserSettingsStore;
+        private UserShortcutsManager userShortcutsManager;
         private List<VskMappingInfo> VskImportsRegistry;
         private List<UserShortcutsDef> UserShortcutsRegistry;
 
@@ -91,6 +91,7 @@ namespace VSShortcutsManager
             {
                 if (_LocalUserExtensionsPath == null)
                 {
+                    // TODO: Replace with SettingsManager.GetLocalApplicationData
                     _LocalUserExtensionsPath = GetExtensionsPath(Environment.SpecialFolder.LocalApplicationData);
                 }
                 return _LocalUserExtensionsPath;
@@ -152,7 +153,15 @@ namespace VSShortcutsManager
             // Register all the command handlers with the Global Command Service
             RegisterCommandHandlers();
 
-            // Load settings
+            ShellSettingsManager = new ShellSettingsManager(package);
+            userShortcutsManager = new UserShortcutsManager(package);
+
+            // For fun (Use these later)
+            var appExtensions = ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.ApplicationExtensions);
+            var localSettings = ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.LocalSettings);
+
+            // Load user shortcut registries
+            //userShortcutsManager.ResetUserShortcutsRegistry();
             InitialiseUserSettings();
 
             ScanForNewShortcuts();
@@ -179,14 +188,9 @@ namespace VSShortcutsManager
 
         private void InitialiseUserSettings()
         {
-            // Initialize settings manager (TODO: could be done lazily on get)
-            //SettingsManager = (ISettingsManager)ServiceProvider.GetService(typeof(SVsSettingsPersistenceManager));
-            ShellSettingsManager = new ShellSettingsManager(package);
-            UserSettingsStore = ShellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
-
             // Fetch the user's shortcut registries
             VskImportsRegistry = FetchVskImportsRegistry();
-            UserShortcutsRegistry = FetchUserShortcutsRegistry();
+            UserShortcutsRegistry = userShortcutsManager.FetchUserShortcutsRegistry();
         }
 
         private List<VskMappingInfo> FetchVskImportsRegistry()
@@ -196,36 +200,6 @@ namespace VSShortcutsManager
                 return new List<VskMappingInfo>();
             }
             return storedData;
-        }
-
-        private List<UserShortcutsDef> FetchUserShortcutsRegistry()
-        {
-            List<UserShortcutsDef> userShortcutsRegistry = new List<UserShortcutsDef>();
-            if (UserSettingsStore.CollectionExists(USER_SHORTCUTS_DEFS))
-            {
-                var shortcutDefs = UserSettingsStore.GetSubCollectionNames(USER_SHORTCUTS_DEFS);
-                foreach (var shortcutDef in shortcutDefs)
-                {
-                    // Parse the settings to create a UserShortcutsDefs object
-                    string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDef}";
-                    //string filepath = UserSettingsStore.GetString(collectionPath, "Filepath");
-                    //string name = UserSettingsStore.GetString(collectionPath, "Name");
-                    //string extensionName = UserSettingsStore.GetString(collectionPath, "ExtensionName");
-                    //DateTime lastWriteTime = DateTime.Parse(UserSettingsStore.GetString(collectionPath, "LastWriteTime"));
-                    //int flags = UserSettingsStore.GetInt32(collectionPath, "Flags", 0);
-                    //UserShortcutsDef userShortcutsDef = new UserShortcutsDef()
-                    //{
-                    //    Filepath = filepath,
-                    //    Name = name,
-                    //    ExtensionName = extensionName,
-                    //    LastWriteTime = lastWriteTime,
-                    //    NotifyFlag = flags
-                    //};
-                    UserShortcutsDef userShortcutsDef = ExtractShortcutsDef(collectionPath);
-                    userShortcutsRegistry.Add(userShortcutsDef);
-                }
-            }
-            return userShortcutsRegistry;
         }
 
         private MenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
@@ -653,15 +627,11 @@ namespace VSShortcutsManager
                 else
                 {
                     // Existing entry
-                    //   - Check notify flag.
-                    int notifyFlag = thisEntry.NotifyFlag;
-                    //   - If never, skip
-                    if (notifyFlag == UPDATE_NEVER) continue;
-                    // If dates are the same, skip
-                    DateTime lastWriteTime = new FileInfo(vsSettingsFile).LastWriteTime;
-                    if (thisEntry.LastWriteTime == lastWriteTime) continue;
-                    // Update the entry
-                    thisEntry.LastWriteTime = lastWriteTime;
+                    if (thisEntry.NotifyFlag == UPDATE_NEVER) continue;
+                    FileInfo vsSettingsFileInfo = new FileInfo(vsSettingsFile);
+                    if (thisEntry.LastWriteTimeEquals(vsSettingsFileInfo.LastWriteTime)) continue;
+                    // This entry has been updated since it was added to the registry. Update the entry.
+                    thisEntry.LastWriteTime = vsSettingsFileInfo.LastWriteTime;
                     // Add to UpdatedVSSettingsList (to alert users)
                     updatedVsSettings.Add(vsSettingsFile);
                     // Update the VSSettingsRegsitry
@@ -692,6 +662,11 @@ namespace VSShortcutsManager
             }
         }
 
+        private static bool HasSameLastWriteTime(FileInfo fileInfo, UserShortcutsDef userShortcutsDef)
+        {
+            return userShortcutsDef.LastWriteTimeEquals(fileInfo.LastWriteTime);
+        }
+
         private void ScanForMappingSchemes()
         {
             List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
@@ -719,12 +694,9 @@ namespace VSShortcutsManager
                 AddVskToRegistry(item);
             }
 
-            // Copy VSK files
-            // If VSKCopyList is not empty
+            // Copy VSK files if VSKCopyList is not empty
             if (vskCopyList.Count > 0)
             {
-                // - prepare copy script
-                // - execute copy script
                 MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
                 ConfirmAndCopyVSKs(vskCopyList);
             }
@@ -733,47 +705,7 @@ namespace VSShortcutsManager
         private void AddUserShortcutsToRegistry(UserShortcutsDef userShortcutsDef)
         {
             UserShortcutsRegistry.Add(userShortcutsDef);
-
-            // Update the UserSettingsStore
-            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{userShortcutsDef.Name}";
-            UserSettingsStore.CreateCollection(collectionPath);
-            UserSettingsStore.SetString(collectionPath, "Name", userShortcutsDef.Name);
-            UserSettingsStore.SetString(collectionPath, "Filepath", userShortcutsDef.Filepath);
-            UserSettingsStore.SetString(collectionPath, "ExtensionName", userShortcutsDef.ExtensionName);
-            UserSettingsStore.SetString(collectionPath, "LastWriteTime", userShortcutsDef.LastWriteTime.ToString(DATETIME_FORMAT));
-            UserSettingsStore.SetInt32(collectionPath, "Flags", userShortcutsDef.NotifyFlag);
-
-            // Test if it worked
-            UserShortcutsDef userShortcutsDefNew = ExtractShortcutsDef(collectionPath);
-
-            var newFilePath = userShortcutsDefNew.Filepath;
-            MessageBox.Show("Found user setting: " + newFilePath);
-        }
-
-        private UserShortcutsDef ExtractShortcutsDef(string collectionPath)
-        {
-            string filepath = UserSettingsStore.GetString(collectionPath, "Filepath");
-            string name = UserSettingsStore.GetString(collectionPath, "Name");
-            string extensionName = UserSettingsStore.GetString(collectionPath, "ExtensionName");
-            string lastWriteTimeStr = DateTime.MinValue.ToString(DATETIME_FORMAT);
-            try
-            {
-                lastWriteTimeStr = UserSettingsStore.GetString(collectionPath, "LastWriteTime", "NO-DATE");
-            } catch
-            {
-                // Do Nothing
-            }
-            bool success = DateTime.TryParse(lastWriteTimeStr, out DateTime lastWriteTime);
-            int flags = UserSettingsStore.GetInt32(collectionPath, "Flags", 0);
-            UserShortcutsDef userShortcutsDefNew = new UserShortcutsDef()
-            {
-                Filepath = filepath,
-                Name = name,
-                ExtensionName = extensionName,
-                LastWriteTime = lastWriteTime,
-                NotifyFlag = flags
-            };
-            return userShortcutsDefNew;
+            userShortcutsManager.UpdateShortcutsDefInSettingsStore(userShortcutsDef);
         }
 
         private void AddVskToRegistry(VskMappingInfo vskMappingInfo)
@@ -911,53 +843,6 @@ namespace VSShortcutsManager
         private string GetExtensionsPath(Environment.SpecialFolder folder)
         {
             return Path.Combine(GetVisualStudioVersionPath(Environment.GetFolderPath(folder), GetVSInstanceId()), "Extensions");
-        }
-
-    }
-
-    internal class UserShortcutsDef
-    {
-        public string Filepath { get; set; }
-        public int NotifyFlag { get; set; }
-        public string Name { get; set; }
-        public DateTime LastWriteTime { get; set; }
-        public string ExtensionName { get; set; }
-
-        public UserShortcutsDef() { }
-
-        public UserShortcutsDef(string filepath)
-        {
-            Name = Path.GetFileNameWithoutExtension(filepath);
-            ExtensionName = GetExtensionNameFromPath(filepath);
-            Filepath = filepath;
-            NotifyFlag = 1;
-            LastWriteTime = new FileInfo(filepath).LastWriteTime;
-        }
-
-        private string GetExtensionNameFromPath(string filepath)
-        {
-            string directory = Path.GetDirectoryName(filepath);
-            string extensionManifest = Path.Combine(directory, "extension.manifest");
-            if (File.Exists(extensionManifest))
-            {
-                // TODO: Read extension manifest as XML and parse for extension name
-                return GetExtensionNameFromExtensionManifest(extensionManifest);
-            }
-            return Path.GetFileNameWithoutExtension(filepath);  // HACK!
-        }
-
-        private string GetExtensionNameFromExtensionManifest(string extensionManifestFile)
-        {
-            // Load the document and set the root element.  
-            XmlDocument doc = new XmlDocument();
-            doc.Load(extensionManifestFile);
-            XmlNode root = doc.DocumentElement;
-            XmlNode node = root.SelectSingleNode("/PackageManifest/Metadata/DisplayName");
-            if (node != null)
-            {
-                return node.Value;
-            }
-            return null;
         }
 
     }

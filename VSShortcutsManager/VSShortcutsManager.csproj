@@ -61,6 +61,8 @@
     <Compile Include="ShortcutsImportDialog.xaml.cs">
       <DependentUpon>ShortcutsImportDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UserShortcutsDef.cs" />
+    <Compile Include="UserShortcutsManager.cs" />
     <Compile Include="VSShortcutsManager.cs" />
     <Compile Include="VSShortcutsManagerPackage.cs" />
   </ItemGroup>
