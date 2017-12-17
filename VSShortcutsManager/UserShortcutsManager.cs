@@ -62,7 +62,7 @@ namespace VSShortcutsManager
             return new UserShortcutsDef()
             {
                 Filepath = filepath,
-                Name = name,
+                DisplayName = name,
                 ExtensionName = extensionName,
                 LastWriteTime = lastWriteTime,
                 NotifyFlag = flags
@@ -72,9 +72,9 @@ namespace VSShortcutsManager
         public void UpdateShortcutsDefInSettingsStore(UserShortcutsDef userShortcutsDef)
         {
             // Store values in UserSettingsStore. Use the "Name" property as the Collection key
-            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{userShortcutsDef.Name}";
+            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{userShortcutsDef.DisplayName}";
             UserSettingsStore.CreateCollection(collectionPath);
-            UserSettingsStore.SetString(collectionPath, NAME, userShortcutsDef.Name);
+            UserSettingsStore.SetString(collectionPath, NAME, userShortcutsDef.DisplayName);
             UserSettingsStore.SetString(collectionPath, FILEPATH, userShortcutsDef.Filepath);
             UserSettingsStore.SetString(collectionPath, EXTENSION_NAME, userShortcutsDef.ExtensionName);
             UserSettingsStore.SetString(collectionPath, LAST_WRITE_TIME, userShortcutsDef.LastWriteTime.ToString(DATETIME_FORMAT));

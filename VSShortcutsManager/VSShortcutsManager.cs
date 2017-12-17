@@ -34,6 +34,10 @@ namespace VSShortcutsManager
         public const int ImportMappingSchemeCmdId = 0x1500;
         public const int ShortcutSchemesMenu = 0x2002;
         public const int DynamicThemeStartCmdId = 0x2A00;
+        public const int UserShortcutsMenu = 0x1080;
+        public const int ImportUserShortcutsCmdId = 0x1130;
+        public const int ManageUserShortcutsCmdId = 0x1140;
+        public const int DynamicUserShortcutsStartCmdId = 0x3A00;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_RESTORE = "Import Keyboard Shortcuts";
@@ -178,12 +182,20 @@ namespace VSShortcutsManager
                 commandService.AddCommand(CreateMenuItem(ImportMappingSchemeCmdId, this.ImportMappingScheme));
                 // Add a dummy entry for the mapping scheme menu (you can't execute a "menu")
                 commandService.AddCommand(CreateMenuItem(ShortcutSchemesMenu, null));
-                // Add an entry for the dyanmic/expandable menu item
+                // Add an entry for the dyanmic/expandable menu item for mapping schemes
                 CommandID dynamicItemRootId = new CommandID(VSShortcutsManagerCmdSetGuid, DynamicThemeStartCmdId);
                 commandService.AddCommand(new DynamicItemMenuCommand(dynamicItemRootId,
                     IsValidMappingSchemeItem,
                     ExecuteMappingSchemeCommand,
                     OnBeforeQueryStatusMappingSchemeDynamicItem));
+
+                // Add a dummy entry for the user shortcuts menu
+                commandService.AddCommand(CreateMenuItem(UserShortcutsMenu, null));
+                // Add an entry for the dyanmic/expandable menu item for user shortcuts
+                commandService.AddCommand(new DynamicItemMenuCommand(new CommandID(VSShortcutsManagerCmdSetGuid, DynamicUserShortcutsStartCmdId),
+                    this.IsValidUserShortcutsItem,
+                    this.ExecuteUserShortcutsCommand,
+                    this.OnBeforeQueryStatusUserShortcutsDynamicItem));
             }
         }
 
@@ -435,6 +447,52 @@ namespace VSShortcutsManager
                 }
                 MessageBox.Show($"Keyboard shortcuts successfully restored: {Path.GetFileName(settingsFilePath)}", MSG_CAPTION_RESTORE);
             }
+        }
+
+        //---------- User Shortcuts ----------------
+
+        private bool IsValidUserShortcutsItem(int commandId)
+        {
+            //It is a valid match if the command id is less than the total number of items the user has requested appear on our menu.
+            int itemRange = (commandId - DynamicUserShortcutsStartCmdId);
+            return itemRange >= 0 && itemRange < UserShortcutsRegistry.Count;
+        }
+
+        private void OnBeforeQueryStatusUserShortcutsDynamicItem(object sender, EventArgs args)
+        {
+            DynamicItemMenuCommand matchedCommand = (DynamicItemMenuCommand)sender;
+
+            matchedCommand.Enabled = true;
+            matchedCommand.Visible = true;
+
+            //The root item in the expansion won't flow through IsValidDynamicItem as it will match against the actual DynamicItemMenuCommand based on the
+            //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
+            //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
+            bool isRootItem = (matchedCommand.MatchedCommandId == 0);
+            int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
+
+            matchedCommand.Text = UserShortcutsRegistry[menuItemIndex].DisplayName;
+
+            //Clear this out here as we are done with it for this item.
+            matchedCommand.MatchedCommandId = 0;
+        }
+
+        private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
+        {
+            DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
+            string shortcutDefName = invokedCommand.Text;
+            UserShortcutsDef userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
+            string importFilePath = userShortcutsDef.Filepath;
+            if (!File.Exists(importFilePath))
+            {
+                if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_RESTORE, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    UserShortcutsRegistry.Remove(userShortcutsDef);
+                    userShortcutsManager.DeleteUserShortcutsDef(shortcutDefName);
+                }
+                return;
+            }
+            LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
         }
 
         //---------- Mapping Schemes ----------------

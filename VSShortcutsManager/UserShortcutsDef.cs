@@ -6,7 +6,7 @@ namespace VSShortcutsManager
 {
     public class UserShortcutsDef
     {
-        public string Name { get; set; }
+        public string DisplayName { get; set; }
         public string Filepath { get; set; }
         public string ExtensionName { get; set; }
         public DateTime LastWriteTime { get; set; }
@@ -16,7 +16,7 @@ namespace VSShortcutsManager
 
         public UserShortcutsDef(string filepath)
         {
-            Name = Path.GetFileNameWithoutExtension(filepath);
+            DisplayName = Path.GetFileNameWithoutExtension(filepath);
             Filepath = filepath;
             ExtensionName = GetExtensionNameFromPath(filepath);
             LastWriteTime = new FileInfo(filepath).LastWriteTime;

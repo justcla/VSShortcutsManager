@@ -22,10 +22,16 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesGroup" priority="0x200" >
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu" />
       </Group>
-      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup" priority="0x2000" >
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" />
+      <Group guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsGroup" priority="0x0100" >
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsMenu" />
+      </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup" priority="0x0200" >
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsMenu" />
       </Group>
       <Group guid="guidVSShortcutsManagerCmdSet" id="MappingSchemeActionsGroup" priority="0x0100" >
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" />
+      </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup" priority="0x2000" >
         <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" />
       </Group>
     </Groups>
@@ -37,7 +43,13 @@
           <ButtonText>&amp;Keyboard Shortcuts</ButtonText>
         </Strings>
       </Menu>
-      <Menu guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" priority="0x0100" type="Menu">
+      <Menu guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsMenu" priority="0x0100" type="Menu">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
+        <Strings>
+          <ButtonText>&amp;Load Shortcuts</ButtonText>
+        </Strings>
+      </Menu>
+      <Menu guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" priority="0x0200" type="Menu">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesGroup" />
         <Strings>
           <ButtonText>&amp;Mapping Schemes</ButtonText>
@@ -75,19 +87,44 @@
         </Strings>
       </Button>
 
-      <!-- Our DynamicItemStart item which will expand to N items at runtime -->
-      <Button guid="guidVSShortcutsManagerCmdSet" id="DynamicThemeStartCmdId" priority="0x0000">
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup"/>
+      <!-- Buttons on the User Shortcuts menu -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ImportUserShortcutsCmdId" priority="0x0100">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup"/>
+        <Strings>
+          <ButtonText>Import User Shortcuts</ButtonText>
+          <MenuText>&amp;Import User Shortcuts...</MenuText>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ManageUserShortcutsCmdId" priority="0x0110">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup"/>
+        <Strings>
+          <ButtonText>Manage User Shortcuts</ButtonText>
+          <MenuText>&amp;Manage User Shortcuts...</MenuText>
+        </Strings>
+      </Button>
+      <!-- Our DynamicItemStart item for UserShortcuts which will expand to N items at runtime -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="DynamicUserShortcutsStartCmdId" priority="0x0000">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsGroup"/>
         <CommandFlag>DynamicItemStart</CommandFlag>
         <Strings>
           <ButtonText>Dynamic List Root</ButtonText>
         </Strings>
       </Button>
+
+      <!-- Buttons on the Mapping Schemes menu -->
       <Button guid="guidVSShortcutsManagerCmdSet" id="ImportMappingSchemeCmdId" priority="0x0100">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemeActionsGroup"/>
         <Strings>
           <ButtonText>Import Mapping Scheme</ButtonText>
           <MenuText>&amp;Import Mapping Scheme...</MenuText>
+        </Strings>
+      </Button>
+      <!-- Our DynamicItemStart item for MappingSchemes which will expand to N items at runtime -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="DynamicThemeStartCmdId" priority="0x0000">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup"/>
+        <CommandFlag>DynamicItemStart</CommandFlag>
+        <Strings>
+          <ButtonText>Dynamic List Root</ButtonText>
         </Strings>
       </Button>
 
@@ -109,16 +146,22 @@
       <IDSymbol name="ShortcutSchemesGroup" value="0x2001" />
       <IDSymbol name="ShortcutSchemesMenu" value="0x2002" />
       <IDSymbol name="MappingSchemeActionsGroup" value="0x1070" />
+      <IDSymbol name="UserShortcutsMenu" value="0x1080"/>
+      <IDSymbol name="UserShortcutsActionsGroup" value="0x1090"/>
+      <IDSymbol name="UserShortcutsGroup" value="0x1100"/>
       
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
       <IDSymbol name="RestoreShortcutsCmdId" value="0x1300" />
       <IDSymbol name="ResetShortcutsCmdId" value="0x1400" />
       <IDSymbol name="ImportMappingSchemeCmdId" value="0x1500" />
+      <IDSymbol name="ImportUserShortcutsCmdId" value="0x1130"/>
+      <IDSymbol name="ManageUserShortcutsCmdId" value="0x1140"/>
       <!-- Mapping sheme dynamic menu -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
          If you must add a command id after it, make the gap very large (e.g. 0xB00) -->
       <IDSymbol name="DynamicThemeStartCmdId" value="0x2A00" />
+      <IDSymbol name="DynamicUserShortcutsStartCmdId" value="0x3A00"/>
     </GuidSymbol>
 
   </Symbols>
