@@ -824,28 +824,6 @@ namespace VSShortcutsManager
             process.Start();
         }
 
-        //private static ShortcutFileInfo GenerateNewVskMappingInfo(FileInfo fileInfo)
-        //{
-        //    return new ShortcutFileInfo
-        //    {
-        //        Filepath = fileInfo.FullName,
-        //        DisplayName = Path.GetFileNameWithoutExtension(fileInfo.FullName),
-        //        NotifyFlag = 1,
-        //        LastWriteTime = fileInfo.LastWriteTime
-        //    };
-        //}
-
-        private bool IsRegisteredMappingFile(string vskFilePath)
-        {
-            // Check Mapping File Registry for entry with same vskFilePath
-            return VskImportsRegistry.Exists(x => x.Filepath.Equals(vskFilePath));
-        }
-
-        private bool HasSameDates(VskMappingInfo vskInfo, DateTime lastWriteTime)
-        {
-            return vskInfo.lastWriteTime.Equals(lastWriteTime);
-        }
-
         private List<string> GetFilesFromFolder(string folder, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
