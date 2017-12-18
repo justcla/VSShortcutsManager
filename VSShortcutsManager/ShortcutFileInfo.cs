@@ -4,7 +4,7 @@ using System.Xml;
 
 namespace VSShortcutsManager
 {
-    public class UserShortcutsDef
+    public class ShortcutFileInfo
     {
         public string DisplayName { get; set; }
         public string Filepath { get; set; }
@@ -12,9 +12,9 @@ namespace VSShortcutsManager
         public DateTime LastWriteTime { get; set; }
         public int NotifyFlag { get; set; }
 
-        public UserShortcutsDef() { }
+        public ShortcutFileInfo() { }
 
-        public UserShortcutsDef(string filepath)
+        public ShortcutFileInfo(string filepath)
         {
             DisplayName = Path.GetFileNameWithoutExtension(filepath);
             Filepath = filepath;

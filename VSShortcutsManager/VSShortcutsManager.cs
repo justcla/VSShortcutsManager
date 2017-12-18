@@ -62,8 +62,8 @@ namespace VSShortcutsManager
 
         private ShellSettingsManager ShellSettingsManager;
         private UserShortcutsManager userShortcutsManager;
-        private List<VskMappingInfo> VskImportsRegistry;
-        private List<UserShortcutsDef> UserShortcutsRegistry;
+        private List<ShortcutFileInfo> VskImportsRegistry;
+        private List<ShortcutFileInfo> UserShortcutsRegistry;
 
 
         #region
@@ -163,7 +163,7 @@ namespace VSShortcutsManager
             //userShortcutsManager.DeleteUserShortcutsDef("WindowHideShortcuts");
             UserShortcutsRegistry = userShortcutsManager.FetchUserShortcutsRegistry();
             // Load imported VSKs registry
-            VskImportsRegistry = FetchVskImportsRegistry();
+            VskImportsRegistry = userShortcutsManager.FetchVskImportsRegistry();
 
             if (RequiresNewScanOfExtensionsDir())
             {
@@ -197,15 +197,6 @@ namespace VSShortcutsManager
                     this.ExecuteUserShortcutsCommand,
                     this.OnBeforeQueryStatusUserShortcutsDynamicItem));
             }
-        }
-
-        private List<VskMappingInfo> FetchVskImportsRegistry()
-        {
-            if ((VSShortcutsManagerPackage.SettingsManager.TryGetValue(VSK_IMPORTS_REGISTRY_KEY, out List<VskMappingInfo> storedData) != GetValueResult.Success) || storedData == null)
-            {
-                return new List<VskMappingInfo>();
-            }
-            return storedData;
         }
 
         private MenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
@@ -317,7 +308,7 @@ namespace VSShortcutsManager
 
             // Save Backup file path to SettingsManager and to UserShortcutsRegistry
             SaveBackupFilePath(backupFilePath);
-            UserShortcutsDef userShortcutsDef = new UserShortcutsDef(backupFilePath);
+            ShortcutFileInfo userShortcutsDef = new ShortcutFileInfo(backupFilePath);
             // Update the VSSettingsRegsitry
             UserShortcutsRegistry.Add(userShortcutsDef);
             // Update the SettingsStore
@@ -487,7 +478,7 @@ namespace VSShortcutsManager
         {
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
             string shortcutDefName = invokedCommand.Text;
-            UserShortcutsDef userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
+            ShortcutFileInfo userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
             string importFilePath = userShortcutsDef.Filepath;
             if (!File.Exists(importFilePath))
             {
@@ -669,7 +660,7 @@ namespace VSShortcutsManager
             // Tip: Best to scan for VSK files first, because then they are available if a VSSetting file wants it.
 
             // Scan for new VSK files
-            //ScanForMappingSchemes();   - Disabled for now until it's working with the SettingsStore
+            ScanForMappingSchemes();
 
             // Scan for new VSSettings files
             ScanForNewShortcutsDefs();
@@ -691,7 +682,7 @@ namespace VSShortcutsManager
                 {
                     // - New VSSettings file
                     // Add to VSSettings registry (update: prompt)
-                    thisEntry = new UserShortcutsDef(vsSettingsFile);
+                    thisEntry = new ShortcutFileInfo(vsSettingsFile);
                     // Add to NewVSSettingsList (to alert users)
                     newVsSettings.Add(vsSettingsFile);
                     // Update the VSSettingsRegsitry
@@ -740,7 +731,7 @@ namespace VSShortcutsManager
 
         public void ScanForMappingSchemes()
         {
-            List<VskMappingInfo> vskCopyList = new List<VskMappingInfo>();
+            List<ShortcutFileInfo> vskCopyList = new List<ShortcutFileInfo>();
             // Scan All-Users and local-user extension directories for VSK files
             List<string> vskFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vsk");
             vskFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vsk"));
@@ -750,19 +741,36 @@ namespace VSShortcutsManager
                 FileInfo fileInfo = new FileInfo(vskFilePath);
 
                 // Check existing VSK registry
-                // Compare date/time to existing datetime of VSK. If dates same, skip.
-                VskMappingInfo vskMappingInfo = GetMappingFileInfo(vskFilePath);
-                if (vskMappingInfo != null && vskMappingInfo.lastWriteTime.Equals(fileInfo.LastWriteTime))
+                //if (VskImportsRegistry.Exists(x => x.Filepath.Equals(vskFilePath)))
+                ShortcutFileInfo vskMappingInfo = VskImportsRegistry.FirstOrDefault(x => x.Filepath.Equals(vskFilePath));
+                if (vskMappingInfo != null) 
                 {
-                    // This entry is already registered and has not changed.
-                    continue;
+                    // Compare date/time to existing datetime of VSK. If dates same, skip.
+                    if (vskMappingInfo.LastWriteTimeEquals(fileInfo.LastWriteTime))
+                    {
+                        // This entry is already registered and has not changed.
+                        continue;
+                    }
+                    else
+                    {
+                        // This entry has been updated.
+                        // Update the LastWriteTime
+                        vskMappingInfo.LastWriteTime = fileInfo.LastWriteTime;
+                        // Update the Settings Store Resistry
+                        userShortcutsManager.UpdateVskImportInfoInSettingsStore(vskMappingInfo);
+                    }
                 }
-
+                else
+                {
+                    // Create new VskImports entry
+                    vskMappingInfo = new ShortcutFileInfo(vskFilePath);
+                    // Add it to the registry
+                    VskImportsRegistry.Add(vskMappingInfo);
+                }
                 // Add to VSK copy list (consider name)
-                VskMappingInfo item = GenerateNewVskMappingInfo(fileInfo);
-                vskCopyList.Add(item);
-                // Add it to the registry
-                AddVskToRegistry(item);
+                vskCopyList.Add(vskMappingInfo);
+                // Update the Settings Store Resistry
+                userShortcutsManager.UpdateVskImportInfoInSettingsStore(vskMappingInfo);
             }
 
             // Copy VSK files if VSKCopyList is not empty
@@ -771,12 +779,6 @@ namespace VSShortcutsManager
                 MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
                 ConfirmAndCopyVSKs(vskCopyList);
             }
-        }
-
-        private void AddVskToRegistry(VskMappingInfo vskMappingInfo)
-        {
-            VskImportsRegistry.Add(vskMappingInfo);
-            VSShortcutsManagerPackage.SettingsManager.SetValueAsync(VSK_IMPORTS_REGISTRY_KEY, vskMappingInfo, isMachineLocal: true);
         }
 
         private object PrintList(List<string> items)
@@ -790,17 +792,17 @@ namespace VSShortcutsManager
             return sb.ToString();
         }
 
-        private void ConfirmAndCopyVSKs(List<VskMappingInfo> vskCopyList)
+        private void ConfirmAndCopyVSKs(List<ShortcutFileInfo> vskCopyList)
         {
-            foreach (VskMappingInfo vskMappingInfo in vskCopyList)
+            foreach (ShortcutFileInfo vskMappingInfo in vskCopyList)
             {
                 // Confirm and Copy single VSK
-                if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.filepath}", MSG_CAPTION_IMPORT, MessageBoxButtons.OKCancel) != DialogResult.OK)
+                if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.Filepath}", MSG_CAPTION_IMPORT, MessageBoxButtons.OKCancel) != DialogResult.OK)
                 {
                     continue;
                 }
-                string name = vskMappingInfo.name;  // TODO: Prompt user for name
-                CopyVSKToIDEDir(vskMappingInfo.filepath, name);
+                string name = vskMappingInfo.DisplayName;  // TODO: Prompt user for name
+                CopyVSKToIDEDir(vskMappingInfo.Filepath, name);
             }
         }
 
@@ -822,34 +824,21 @@ namespace VSShortcutsManager
             process.Start();
         }
 
-        private static VskMappingInfo GenerateNewVskMappingInfo(FileInfo fileInfo)
-        {
-            return new VskMappingInfo
-            {
-                filepath = fileInfo.FullName,
-                name = Path.GetFileNameWithoutExtension(fileInfo.FullName),
-                updateFlag = 1,
-                lastWriteTime = fileInfo.LastWriteTime
-            };
-        }
+        //private static ShortcutFileInfo GenerateNewVskMappingInfo(FileInfo fileInfo)
+        //{
+        //    return new ShortcutFileInfo
+        //    {
+        //        Filepath = fileInfo.FullName,
+        //        DisplayName = Path.GetFileNameWithoutExtension(fileInfo.FullName),
+        //        NotifyFlag = 1,
+        //        LastWriteTime = fileInfo.LastWriteTime
+        //    };
+        //}
 
         private bool IsRegisteredMappingFile(string vskFilePath)
         {
             // Check Mapping File Registry for entry with same vskFilePath
-            return VskImportsRegistry.Exists(x => x.filepath.Equals(vskFilePath));
-        }
-
-        private VskMappingInfo GetMappingFileInfo(string vskFilePath)
-        {
-            foreach (var item in VskImportsRegistry)
-            {
-                if (item.filepath != null && item.filepath.Equals(vskFilePath))
-                {
-                    return item;
-                }
-            }
-            return null;
-            //return VskImports.First(x => x.filepath.Equals(vskFilePath));
+            return VskImportsRegistry.Exists(x => x.Filepath.Equals(vskFilePath));
         }
 
         private bool HasSameDates(VskMappingInfo vskInfo, DateTime lastWriteTime)
@@ -910,14 +899,6 @@ namespace VSShortcutsManager
             return Path.Combine(GetVisualStudioVersionPath(Environment.GetFolderPath(folder), GetVSInstanceId()), "Extensions");
         }
 
-    }
-
-    internal class VskMappingInfo
-    {
-        public string name;
-        public string filepath;
-        public DateTime lastWriteTime;
-        public int updateFlag; // 0 = never; 1 = prompt; 2 = always
     }
 
 }

@@ -12,6 +12,7 @@ namespace VSShortcutsManager
 
         // UserSettingsStore keys
         private static readonly string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
+        private static readonly string IMPORTED_MAPPING_SCHEMES = "ImportedMappingSchemes";
         private static readonly string NAME = "Name";
         private static readonly string FILEPATH = "Filepath";
         private static readonly string EXTENSION_NAME = "ExtensionName";
@@ -36,22 +37,27 @@ namespace VSShortcutsManager
             UserSettingsStore = settingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
         }
 
-        public List<UserShortcutsDef> FetchUserShortcutsRegistry()
+        public List<ShortcutFileInfo> FetchUserShortcutsRegistry()
         {
-            List<UserShortcutsDef> userShortcutsRegistry = new List<UserShortcutsDef>();
-            if (UserSettingsStore.CollectionExists(USER_SHORTCUTS_DEFS))
+            return FetchShortcutFileInfo(USER_SHORTCUTS_DEFS);
+        }
+
+        public List<ShortcutFileInfo> FetchShortcutFileInfo(string collectionName)
+        {
+        List<ShortcutFileInfo> userShortcutsRegistry = new List<ShortcutFileInfo>();
+            if (UserSettingsStore.CollectionExists(collectionName))
             {
-                foreach (var shortcutDef in UserSettingsStore.GetSubCollectionNames(USER_SHORTCUTS_DEFS))
+                foreach (var shortcutDef in UserSettingsStore.GetSubCollectionNames(collectionName))
                 {
-                    userShortcutsRegistry.Add(ExtractShortcutsDefFromSettingsStore(shortcutDef));
+                    userShortcutsRegistry.Add(ExtractShortcutsInfoFromSettingsStore(collectionName, shortcutDef));
                 }
             }
             return userShortcutsRegistry;
         }
 
-        public UserShortcutsDef ExtractShortcutsDefFromSettingsStore(string shortcutDef)
+        private ShortcutFileInfo ExtractShortcutsInfoFromSettingsStore(string collectionName, string shortcutDef)
         {
-            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDef}";
+            string collectionPath = $"{collectionName}\\{shortcutDef}";
             // Extract values from UserSettingsStore
             string filepath = UserSettingsStore.GetString(collectionPath, FILEPATH);
             string name = UserSettingsStore.GetString(collectionPath, NAME);
@@ -59,7 +65,7 @@ namespace VSShortcutsManager
             DateTime lastWriteTime = DateTime.Parse(UserSettingsStore.GetString(collectionPath, LAST_WRITE_TIME));
             int flags = UserSettingsStore.GetInt32(collectionPath, FLAGS, 0);
 
-            return new UserShortcutsDef()
+            return new ShortcutFileInfo()
             {
                 Filepath = filepath,
                 DisplayName = name,
@@ -69,10 +75,15 @@ namespace VSShortcutsManager
             };
         }
 
-        public void UpdateShortcutsDefInSettingsStore(UserShortcutsDef userShortcutsDef)
+        public void UpdateShortcutsDefInSettingsStore(ShortcutFileInfo userShortcutsDef)
+        {
+            SaveUserShortcutsDefToSettingsStore(USER_SHORTCUTS_DEFS, userShortcutsDef);
+        }
+
+        private void SaveUserShortcutsDefToSettingsStore(string collectionPrefix, ShortcutFileInfo userShortcutsDef)
         {
             // Store values in UserSettingsStore. Use the "Name" property as the Collection key
-            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{userShortcutsDef.DisplayName}";
+            string collectionPath = $"{collectionPrefix}\\{userShortcutsDef.DisplayName}";
             UserSettingsStore.CreateCollection(collectionPath);
             UserSettingsStore.SetString(collectionPath, NAME, userShortcutsDef.DisplayName);
             UserSettingsStore.SetString(collectionPath, FILEPATH, userShortcutsDef.Filepath);
@@ -95,6 +106,18 @@ namespace VSShortcutsManager
         public static bool DateTimesAreEqual(DateTime dateTime1, DateTime dateTime2)
         {
             return dateTime1.ToString(DATETIME_FORMAT).Equals(dateTime2.ToString(DATETIME_FORMAT));
+        }
+
+        //-------- VskImports --------
+
+        public List<ShortcutFileInfo> FetchVskImportsRegistry()
+        {
+            return FetchShortcutFileInfo(IMPORTED_MAPPING_SCHEMES);
+        }
+
+        public void UpdateVskImportInfoInSettingsStore(ShortcutFileInfo shortcutFileInfo)
+        {
+            SaveUserShortcutsDefToSettingsStore(IMPORTED_MAPPING_SCHEMES, shortcutFileInfo);
         }
 
     }
