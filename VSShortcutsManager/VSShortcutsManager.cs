@@ -41,7 +41,7 @@ namespace VSShortcutsManager
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_RESTORE = "Import Keyboard Shortcuts";
-        private const string MSG_CAPTION_BACKUP = "Backup Keyboard Shortcuts";
+        private const string MSG_CAPTION_BACKUP = "Save Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
         private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
@@ -217,7 +217,7 @@ namespace VSShortcutsManager
 
         private void BackupShortcuts(object sender, EventArgs e)
         {
-            ExecuteBackupShortcuts();
+            ExecuteSaveShortcuts();
         }
 
         private void RestoreShortcuts(object sender, EventArgs e)
@@ -293,32 +293,38 @@ namespace VSShortcutsManager
 
         //-------- Backup Shortcuts --------
 
-        public void ExecuteBackupShortcuts()
+        public void ExecuteSaveShortcuts()
         {
-            // Confirm Backup operation
-            if (MessageBox.Show("Backup current keyboard shortcuts?", MSG_CAPTION_BACKUP, MessageBoxButtons.OKCancel) != DialogResult.OK)
-            {
-                return;
-            }
+            // Confirm Save operation
+            //if (MessageBox.Show("Save current keyboard shortcuts?", MSG_CAPTION_BACKUP, MessageBoxButtons.OKCancel) != DialogResult.OK)
+            //{
+            //    return;
+            //}
 
             IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
 
             // Get the filename where the vssettings file will be saved
+            // TODO: Prompt for user to name the settings file. (+including Browse for folder)
             string backupFilePath = GetExportFilePath(vsProfileDataManager);
 
             // Do the export
-            IVsProfileSettingsTree keyboardOnlyExportSettings = GetKeyboardOnlyExportSettings(vsProfileDataManager);
+            IVsProfileSettingsTree keyboardOnlyExportSettings = GetKeyboardSettingsTree(vsProfileDataManager);
             int result = vsProfileDataManager.ExportSettings(backupFilePath, keyboardOnlyExportSettings, out IVsSettingsErrorInformation errorInfo);
             if (result != VSConstants.S_OK)
             {
                 // Something went wrong. TODO: Handle error.
             }
 
-            // Save Backup file path to SettingsManager
+            // Save Backup file path to SettingsManager and to UserShortcutsRegistry
             SaveBackupFilePath(backupFilePath);
+            UserShortcutsDef userShortcutsDef = new UserShortcutsDef(backupFilePath);
+            // Update the VSSettingsRegsitry
+            UserShortcutsRegistry.Add(userShortcutsDef);
+            // Update the SettingsStore
+            userShortcutsManager.UpdateShortcutsDefInSettingsStore(userShortcutsDef);
 
             // Report success
-            string Text = $"Your keyboard shortcuts have been backed up to the following file:\n\n{backupFilePath}";
+            string Text = $"Your keyboard shortcuts have been saved to the following file:\n\n{backupFilePath}";
             MessageBox.Show(Text, MSG_CAPTION_BACKUP, MessageBoxButtons.OK);
         }
 
@@ -328,7 +334,7 @@ namespace VSShortcutsManager
             return exportFilePath;
         }
 
-        private static IVsProfileSettingsTree GetKeyboardOnlyExportSettings(IVsProfileDataManager vsProfileDataManager)
+        private static IVsProfileSettingsTree GetKeyboardSettingsTree(IVsProfileDataManager vsProfileDataManager)
         {
             vsProfileDataManager.GetSettingsForExport(out IVsProfileSettingsTree profileSettingsTree);
             EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
