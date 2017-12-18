@@ -14,7 +14,6 @@ using EnvDTE;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.Settings;
-using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Shell.Settings;
 
 namespace VSShortcutsManager
@@ -193,9 +192,9 @@ namespace VSShortcutsManager
                 commandService.AddCommand(CreateMenuItem(UserShortcutsMenu, null));
                 // Add an entry for the dyanmic/expandable menu item for user shortcuts
                 commandService.AddCommand(new DynamicItemMenuCommand(new CommandID(VSShortcutsManagerCmdSetGuid, DynamicUserShortcutsStartCmdId),
-                    this.IsValidUserShortcutsItem,
-                    this.ExecuteUserShortcutsCommand,
-                    this.OnBeforeQueryStatusUserShortcutsDynamicItem));
+                    IsValidUserShortcutsItem,
+                    ExecuteUserShortcutsCommand,
+                    OnBeforeQueryStatusUserShortcutsDynamicItem));
             }
         }
 
@@ -468,7 +467,8 @@ namespace VSShortcutsManager
             bool isRootItem = (matchedCommand.MatchedCommandId == 0);
             int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
 
-            matchedCommand.Text = UserShortcutsRegistry[menuItemIndex].DisplayName;
+            // Add an & to the front of the menu text so that the first letter becomes the accellerator key.
+            matchedCommand.Text = GetMenuTextWithAccelerator(UserShortcutsRegistry[menuItemIndex].DisplayName);
 
             //Clear this out here as we are done with it for this item.
             matchedCommand.MatchedCommandId = 0;
@@ -477,7 +477,7 @@ namespace VSShortcutsManager
         private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
         {
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
-            string shortcutDefName = invokedCommand.Text;
+            string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from of the menu text
             ShortcutFileInfo userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
             string importFilePath = userShortcutsDef.Filepath;
             if (!File.Exists(importFilePath))
@@ -564,7 +564,7 @@ namespace VSShortcutsManager
         private void ExecuteMappingSchemeCommand(object sender, EventArgs args)
         {
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
-            ApplyMappingScheme(invokedCommand.Text);
+            ApplyMappingScheme(invokedCommand.Text.Replace("&", ""));
         }
 
         private void ApplyMappingScheme(string mappingSchemeName)
@@ -619,11 +619,17 @@ namespace VSShortcutsManager
             int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicThemeStartCmdId);
 
             string mappingSchemeName = GetMappingSchemeName(menuItemIndex);
-            matchedCommand.Text = mappingSchemeName;
+            matchedCommand.Text = GetMenuTextWithAccelerator(mappingSchemeName);
             matchedCommand.Checked = IsSelected(mappingSchemeName);
 
             //Clear this out here as we are done with it for this item.
             matchedCommand.MatchedCommandId = 0;
+        }
+
+        private static string GetMenuTextWithAccelerator(string mappingSchemeName)
+        {
+            // Add an "&" to the front of the menu text so that the first letter becomes the accelerator key.
+            return $"&{mappingSchemeName}";
         }
 
         //---------- Helper methods -------------------
