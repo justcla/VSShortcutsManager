@@ -68,15 +68,8 @@
       <Button guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
-          <ButtonText>Save current shortcuts</ButtonText>
-          <MenuText>&amp;Save current shortcuts...</MenuText>
-        </Strings>
-      </Button>
-      <Button guid="guidVSShortcutsManagerCmdSet" id="RestoreShortcutsCmdId" priority="0x0300" type="Button">
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
-        <Strings>
-          <ButtonText>Restore Shortcuts</ButtonText>
-          <MenuText>&amp;Restore Shortcuts...</MenuText>
+          <ButtonText>Save Current Shortcuts</ButtonText>
+          <MenuText>&amp;Save Current Shortcuts...</MenuText>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="ResetShortcutsCmdId" priority="0x0400" type="Button">
@@ -92,7 +85,7 @@
         <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup"/>
         <Strings>
           <ButtonText>Import User Shortcuts</ButtonText>
-          <MenuText>&amp;Import User Shortcuts...</MenuText>
+          <MenuText>&amp;From File...</MenuText>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="ManageUserShortcutsCmdId" priority="0x0110">
@@ -138,6 +131,7 @@
 
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidVSShortcutsManagerCmdSet" value="{cca0811b-addf-4d7b-9dd6-fdb412c44d8a}">
+      <!-- Menus and Groups -->
       <IDSymbol name="VSShortcutsManagerGroup" value="0x0010" />
       <IDSymbol name="ShortcutsActionGroup" value="0x1020" />
       <IDSymbol name="ShortcutsActionsMenu" value="0x1030" />
@@ -149,17 +143,17 @@
       <IDSymbol name="UserShortcutsMenu" value="0x1080"/>
       <IDSymbol name="UserShortcutsActionsGroup" value="0x1090"/>
       <IDSymbol name="UserShortcutsGroup" value="0x1100"/>
-      
+
+      <!--Commands-->
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
-      <IDSymbol name="RestoreShortcutsCmdId" value="0x1300" />
       <IDSymbol name="ResetShortcutsCmdId" value="0x1400" />
       <IDSymbol name="ImportMappingSchemeCmdId" value="0x1500" />
       <IDSymbol name="ImportUserShortcutsCmdId" value="0x1130"/>
       <IDSymbol name="ManageUserShortcutsCmdId" value="0x1140"/>
-      <!-- Mapping sheme dynamic menu -->
+      <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
-         If you must add a command id after it, make the gap very large (e.g. 0xB00) -->
+         If you must add a command id after it, make the gap very large (e.g. 0x2B00) -->
       <IDSymbol name="DynamicThemeStartCmdId" value="0x2A00" />
       <IDSymbol name="DynamicUserShortcutsStartCmdId" value="0x3A00"/>
     </GuidSymbol>

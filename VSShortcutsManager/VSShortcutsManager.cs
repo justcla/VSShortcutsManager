@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel.Design;
-using System.Globalization;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System.Windows.Forms;
@@ -28,7 +27,6 @@ namespace VSShortcutsManager
         /// </summary>
         public static readonly Guid VSShortcutsManagerCmdSetGuid = new Guid("cca0811b-addf-4d7b-9dd6-fdb412c44d8a");
         public const int BackupShortcutsCmdId = 0x1200;
-        public const int RestoreShortcutsCmdId = 0x1300;
         public const int ResetShortcutsCmdId = 0x1400;
         public const int ImportMappingSchemeCmdId = 0x1500;
         public const int ShortcutSchemesMenu = 0x2002;
@@ -39,10 +37,10 @@ namespace VSShortcutsManager
         public const int DynamicUserShortcutsStartCmdId = 0x3A00;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
-        private const string MSG_CAPTION_RESTORE = "Import Keyboard Shortcuts";
+        private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
         private const string MSG_CAPTION_BACKUP = "Save Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
-        private const string MSG_CAPTION_IMPORT = "Import Keyboard Mapping Scheme";
+        private const string MSG_CAPTION_IMPORT_VSK = "Import Keyboard Mapping Scheme";
         private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
 
         // UserSettingsStore constants
@@ -176,8 +174,19 @@ namespace VSShortcutsManager
             if (ServiceProvider.GetService(typeof(IMenuCommandService)) is OleMenuCommandService commandService)
             {
                 commandService.AddCommand(CreateMenuItem(BackupShortcutsCmdId, this.BackupShortcuts));
-                commandService.AddCommand(CreateMenuItem(RestoreShortcutsCmdId, this.RestoreShortcuts));
                 commandService.AddCommand(CreateMenuItem(ResetShortcutsCmdId, this.ResetShortcuts));
+
+                // User Shortcuts
+                commandService.AddCommand(CreateMenuItem(ImportUserShortcutsCmdId, this.ImportShortcuts));
+                // Add a dummy entry for the user shortcuts menu
+                commandService.AddCommand(CreateMenuItem(UserShortcutsMenu, null));
+                // Add an entry for the dyanmic/expandable menu item for user shortcuts
+                commandService.AddCommand(new DynamicItemMenuCommand(new CommandID(VSShortcutsManagerCmdSetGuid, DynamicUserShortcutsStartCmdId),
+                    IsValidUserShortcutsItem,
+                    ExecuteUserShortcutsCommand,
+                    OnBeforeQueryStatusUserShortcutsDynamicItem));
+
+                // Mapping Scheme
                 commandService.AddCommand(CreateMenuItem(ImportMappingSchemeCmdId, this.ImportMappingScheme));
                 // Add a dummy entry for the mapping scheme menu (you can't execute a "menu")
                 commandService.AddCommand(CreateMenuItem(ShortcutSchemesMenu, null));
@@ -188,13 +197,6 @@ namespace VSShortcutsManager
                     ExecuteMappingSchemeCommand,
                     OnBeforeQueryStatusMappingSchemeDynamicItem));
 
-                // Add a dummy entry for the user shortcuts menu
-                commandService.AddCommand(CreateMenuItem(UserShortcutsMenu, null));
-                // Add an entry for the dyanmic/expandable menu item for user shortcuts
-                commandService.AddCommand(new DynamicItemMenuCommand(new CommandID(VSShortcutsManagerCmdSetGuid, DynamicUserShortcutsStartCmdId),
-                    IsValidUserShortcutsItem,
-                    ExecuteUserShortcutsCommand,
-                    OnBeforeQueryStatusUserShortcutsDynamicItem));
             }
         }
 
@@ -210,9 +212,9 @@ namespace VSShortcutsManager
             ExecuteSaveShortcuts();
         }
 
-        private void RestoreShortcuts(object sender, EventArgs e)
+        private void ImportShortcuts(object sender, EventArgs e)
         {
-            ExecuteRestoreShortcuts();
+            ExecuteImportShortcuts();
         }
 
         private void ResetShortcuts(object sender, EventArgs e)
@@ -230,7 +232,7 @@ namespace VSShortcutsManager
         private void ImportMappingScheme(object sender, EventArgs e)
         {
             const string Text = "Feature not implemented yet.";
-            MessageBox.Show(Text, MSG_CAPTION_IMPORT, MessageBoxButtons.OK);
+            MessageBox.Show(Text, MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OK);
         }
 
         //-------- Reset Shortcuts --------
@@ -298,7 +300,7 @@ namespace VSShortcutsManager
             string backupFilePath = GetExportFilePath(vsProfileDataManager);
 
             // Do the export
-            IVsProfileSettingsTree keyboardOnlyExportSettings = GetKeyboardSettingsTree(vsProfileDataManager);
+            IVsProfileSettingsTree keyboardOnlyExportSettings = GetShortcutsSettingsTreeForExport(vsProfileDataManager);
             int result = vsProfileDataManager.ExportSettings(backupFilePath, keyboardOnlyExportSettings, out IVsSettingsErrorInformation errorInfo);
             if (result != VSConstants.S_OK)
             {
@@ -307,11 +309,7 @@ namespace VSShortcutsManager
 
             // Save Backup file path to SettingsManager and to UserShortcutsRegistry
             SaveBackupFilePath(backupFilePath);
-            ShortcutFileInfo userShortcutsDef = new ShortcutFileInfo(backupFilePath);
-            // Update the VSSettingsRegsitry
-            UserShortcutsRegistry.Add(userShortcutsDef);
-            // Update the SettingsStore
-            userShortcutsManager.UpdateShortcutsDefInSettingsStore(userShortcutsDef);
+            AddUserShortcutsFileToRegistry(backupFilePath);
 
             // Report success
             string Text = $"Your keyboard shortcuts have been saved to the following file:\n\n{backupFilePath}";
@@ -324,7 +322,7 @@ namespace VSShortcutsManager
             return exportFilePath;
         }
 
-        private static IVsProfileSettingsTree GetKeyboardSettingsTree(IVsProfileDataManager vsProfileDataManager)
+        private static IVsProfileSettingsTree GetShortcutsSettingsTreeForExport(IVsProfileDataManager vsProfileDataManager)
         {
             vsProfileDataManager.GetSettingsForExport(out IVsProfileSettingsTree profileSettingsTree);
             EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
@@ -348,16 +346,10 @@ namespace VSShortcutsManager
 
         //------------ Load User Shortcuts --------------
 
-        public void ExecuteRestoreShortcuts()
+        public void ExecuteImportShortcuts()
         {
-            string backupFilePath = GetSavedBackupFilePath();
-            //if (String.IsNullOrEmpty(backupFilePath))
-            //{
-            //    MessageBox.Show("Unable to restore keyboard shortcuts.\n\nReason: No known backup file has been created.", MSG_CAPTION_RESTORE);
-            //    return;
-            //}
-
-            string importFilePath = backupFilePath;
+            // Open UI to let user browse for a file to import
+            string importFilePath = GetSavedBackupFilePath();
             if (!ShortcutsImport.ImportShortcuts(ref importFilePath))
             {
                 // Cancel or ESC pressed
@@ -365,25 +357,27 @@ namespace VSShortcutsManager
             }
 
             LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
+
+            AddUserShortcutsFileToRegistry(importFilePath);
         }
 
         public void LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
         {
             if (!File.Exists(importFilePath))
             {
-                MessageBox.Show($"File does not exist: {importFilePath}", MSG_CAPTION_RESTORE);
+                MessageBox.Show($"File does not exist: {importFilePath}", MSG_CAPTION_IMPORT);
                 return;
             }
 
-            IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsToImport(importFilePath);
+            IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsSettingsTreeForImport(importFilePath);
             bool success = ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
             if (success)
             {
-                MessageBox.Show($"Keyboard shortcuts successfully imported: {Path.GetFileName(importFilePath)}", MSG_CAPTION_RESTORE);
+                MessageBox.Show($"Keyboard shortcuts successfully imported: {Path.GetFileName(importFilePath)}", MSG_CAPTION_IMPORT);
             }
         }
 
-        private IVsProfileSettingsTree GetShortcutsToImport(string importFilePath)
+        private IVsProfileSettingsTree GetShortcutsSettingsTreeForImport(string importFilePath)
         {
             IVsProfileSettingsFileInfo profileSettingsFileInfo = GetProfileSettingsFileInfo(importFilePath);
             profileSettingsFileInfo.GetSettingsForImport(out IVsProfileSettingsTree profileSettingsTree);
@@ -414,35 +408,13 @@ namespace VSShortcutsManager
             return true;
         }
 
-        private void ImportUserSettings(string settingsFileName)
+        private void AddUserShortcutsFileToRegistry(string importFilePath)
         {
-            // import the settings file into Visual Studio
-            var asmDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var settingsFilePath = Path.Combine(asmDirectory, settingsFileName);
-            ImportSettingsFromFilePath(settingsFilePath);
-        }
-
-        public static void ImportSettingsFromFilePath(string settingsFilePath)
-        {
-            var group = VSConstants.CMDSETID.StandardCommandSet2K_guid;
-            IVsUIShell shell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
-            //if (ServiceProvider.GetService(typeof(SVsUIShell)) is IVsUIShell shell)
-            if (shell != null)
-            {
-                object arguments = string.Format(CultureInfo.InvariantCulture, "-import:\"{0}\"", settingsFilePath);
-                // NOTE: Call to PostExecCommand could fail. Callers should consider catching the exception. Otherwise, UI will show the error in a messagebox.
-                try
-                {
-                    shell.PostExecCommand(ref group, (uint)VSConstants.VSStd2KCmdID.ManageUserSettings, 0, ref arguments);
-                }
-                catch (Exception)
-                {
-                    // TODO: This does not seem to be catching the exeption. Needs more work.
-                    MessageBox.Show("Exception occurred trying to import shortcuts.", MSG_CAPTION_RESTORE);
-                    return;
-                }
-                MessageBox.Show($"Keyboard shortcuts successfully restored: {Path.GetFileName(settingsFilePath)}", MSG_CAPTION_RESTORE);
-            }
+            ShortcutFileInfo userShortcutsDef = new ShortcutFileInfo(importFilePath);
+            // Update the VSSettingsRegsitry
+            UserShortcutsRegistry.Add(userShortcutsDef);
+            // Update the SettingsStore
+            userShortcutsManager.UpdateShortcutsDefInSettingsStore(userShortcutsDef);
         }
 
         //---------- User Shortcuts ----------------
@@ -482,7 +454,7 @@ namespace VSShortcutsManager
             string importFilePath = userShortcutsDef.Filepath;
             if (!File.Exists(importFilePath))
             {
-                if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_RESTORE, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     UserShortcutsRegistry.Remove(userShortcutsDef);
                     userShortcutsManager.DeleteUserShortcutsDef(shortcutDefName);
@@ -803,7 +775,7 @@ namespace VSShortcutsManager
             foreach (ShortcutFileInfo vskMappingInfo in vskCopyList)
             {
                 // Confirm and Copy single VSK
-                if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.Filepath}", MSG_CAPTION_IMPORT, MessageBoxButtons.OKCancel) != DialogResult.OK)
+                if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.Filepath}", MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OKCancel) != DialogResult.OK)
                 {
                     continue;
                 }
