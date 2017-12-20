@@ -65,6 +65,7 @@
     </Menus>
 
     <Buttons>
+      <!-- Buttons on main shortcuts action group -->
       <Button guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
@@ -79,6 +80,13 @@
           <MenuText>&amp;Reset Shortcuts...</MenuText>
         </Strings>
       </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ScanExtensionsCmdId" priority="0x0500" type="Button">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
+        <Strings>
+          <ButtonText>Scan Extensions</ButtonText>
+          <MenuText>Scan &amp;Extensions</MenuText>
+        </Strings>
+      </Button>
 
       <!-- Buttons on the User Shortcuts menu -->
       <Button guid="guidVSShortcutsManagerCmdSet" id="ImportUserShortcutsCmdId" priority="0x0100">
@@ -88,18 +96,29 @@
           <MenuText>&amp;From File...</MenuText>
         </Strings>
       </Button>
-      <Button guid="guidVSShortcutsManagerCmdSet" id="ManageUserShortcutsCmdId" priority="0x0110">
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ClearUserShortcutsCmdId" priority="0x0110">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup"/>
+        <CommandFlag>DynamicVisibility</CommandFlag>  
+        <Strings>
+          <ButtonText>Clear Shortcuts List</ButtonText>
+          <MenuText>&amp;Clear Shortcuts List</MenuText>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ManageUserShortcutsCmdId" priority="0x0120">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup"/>
         <Strings>
           <ButtonText>Manage User Shortcuts</ButtonText>
-          <MenuText>&amp;Manage User Shortcuts...</MenuText>
+          <MenuText>&amp;Manage User Shortcuts</MenuText>
         </Strings>
       </Button>
       <!-- Our DynamicItemStart item for UserShortcuts which will expand to N items at runtime -->
       <Button guid="guidVSShortcutsManagerCmdSet" id="DynamicUserShortcutsStartCmdId" priority="0x0000">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsGroup"/>
-        <CommandFlag>DynamicItemStart</CommandFlag>
+        <CommandFlag>DynamicItemStart</CommandFlag>  
+        <CommandFlag>DynamicVisibility</CommandFlag>  
+        <CommandFlag>TextChanges</CommandFlag>  
         <Strings>
+          <!-- This text does not appear on a DynamicItem -->  
           <ButtonText>Dynamic List Root</ButtonText>
         </Strings>
       </Button>
@@ -150,6 +169,8 @@
       <IDSymbol name="ImportMappingSchemeCmdId" value="0x1500" />
       <IDSymbol name="ImportUserShortcutsCmdId" value="0x1130"/>
       <IDSymbol name="ManageUserShortcutsCmdId" value="0x1140"/>
+      <IDSymbol name="ClearUserShortcutsCmdId" value="0x1210"/>
+      <IDSymbol name="ScanExtensionsCmdId" value="0x1300"/>
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  

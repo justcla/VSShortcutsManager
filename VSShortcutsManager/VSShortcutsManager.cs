@@ -35,6 +35,8 @@ namespace VSShortcutsManager
         public const int ImportUserShortcutsCmdId = 0x1130;
         public const int ManageUserShortcutsCmdId = 0x1140;
         public const int DynamicUserShortcutsStartCmdId = 0x3A00;
+        public const int ClearUserShortcutsCmdId = 0x1210;
+        public const int ScanExtensionsCmdId = 0x1300;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
@@ -156,7 +158,6 @@ namespace VSShortcutsManager
             _LocalUserExtensionsPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.LocalSettings), "Extensions");
 
             // Load user shortcut registries
-            //userShortcutsManager.ResetUserShortcutsRegistry();
             //userShortcutsManager.DeleteUserShortcutsDef("WindowHideShortcuts");
             UserShortcutsRegistry = userShortcutsManager.FetchUserShortcutsRegistry();
             // Load imported VSKs registry
@@ -175,6 +176,10 @@ namespace VSShortcutsManager
             {
                 commandService.AddCommand(CreateMenuItem(BackupShortcutsCmdId, this.BackupShortcuts));
                 commandService.AddCommand(CreateMenuItem(ResetShortcutsCmdId, this.ResetShortcuts));
+                commandService.AddCommand(CreateMenuItem(ScanExtensionsCmdId, this.ScanUserShortcuts));
+                OleMenuCommand clearUserShortcutsCmd = CreateMenuItem(ClearUserShortcutsCmdId, this.ClearUserShortcuts);
+                clearUserShortcutsCmd.BeforeQueryStatus += new EventHandler(OnBeforeQueryStatusClearUserShortcuts);
+                commandService.AddCommand(clearUserShortcutsCmd);
 
                 // User Shortcuts
                 commandService.AddCommand(CreateMenuItem(ImportUserShortcutsCmdId, this.ImportShortcuts));
@@ -200,9 +205,9 @@ namespace VSShortcutsManager
             }
         }
 
-        private MenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
+        private OleMenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
         {
-            return new MenuCommand(menuItemCallback, new CommandID(VSShortcutsManagerCmdSetGuid, cmdId));
+            return new OleMenuCommand(menuItemCallback, new CommandID(VSShortcutsManagerCmdSetGuid, cmdId));
         }
 
         //----------------  Command entry points -------------
@@ -233,6 +238,30 @@ namespace VSShortcutsManager
         {
             const string Text = "Feature not implemented yet.";
             MessageBox.Show(Text, MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OK);
+        }
+
+        private void ScanUserShortcuts(object sender, EventArgs e)
+        {
+            bool foundShortcuts = ScanForAllExtensionShortcuts();
+            if (!foundShortcuts)
+            {
+                MessageBox.Show("Scan complete.\n\nNo new shortcut definitions were found in the extensions directories.");
+            }
+        }
+
+        private void OnBeforeQueryStatusClearUserShortcuts(object sender, EventArgs e)
+        {
+            OleMenuCommand command = (OleMenuCommand)sender;
+            bool hasShortcutDefs = UserShortcutsRegistry.Count > 0;
+            command.Visible = hasShortcutDefs;
+            command.Enabled = hasShortcutDefs;
+        }
+
+        private void ClearUserShortcuts(object sender, EventArgs e)
+        {
+            UserShortcutsRegistry.Clear();
+            userShortcutsManager.ResetUserShortcutsRegistry();
+            MessageBox.Show("User shortcuts list has been reset.");
         }
 
         //-------- Reset Shortcuts --------
@@ -428,19 +457,23 @@ namespace VSShortcutsManager
 
         private void OnBeforeQueryStatusUserShortcutsDynamicItem(object sender, EventArgs args)
         {
+            bool userShortcutsExist = UserShortcutsRegistry.Count > 0;
+
             DynamicItemMenuCommand matchedCommand = (DynamicItemMenuCommand)sender;
+            matchedCommand.Enabled = userShortcutsExist;
+            matchedCommand.Visible = userShortcutsExist;
 
-            matchedCommand.Enabled = true;
-            matchedCommand.Visible = true;
+            if (userShortcutsExist)
+            {
+                //The root item in the expansion won't flow through IsValidDynamicItem as it will match against the actual DynamicItemMenuCommand based on the
+                //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
+                //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
+                bool isRootItem = (matchedCommand.MatchedCommandId == 0);
+                int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
 
-            //The root item in the expansion won't flow through IsValidDynamicItem as it will match against the actual DynamicItemMenuCommand based on the
-            //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
-            //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
-            bool isRootItem = (matchedCommand.MatchedCommandId == 0);
-            int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
-
-            // Add an & to the front of the menu text so that the first letter becomes the accellerator key.
-            matchedCommand.Text = GetMenuTextWithAccelerator(UserShortcutsRegistry[menuItemIndex].DisplayName);
+                // Add an & to the front of the menu text so that the first letter becomes the accellerator key.
+                matchedCommand.Text = GetMenuTextWithAccelerator(UserShortcutsRegistry[menuItemIndex].DisplayName);
+            }
 
             //Clear this out here as we are done with it for this item.
             matchedCommand.MatchedCommandId = 0;
@@ -633,18 +666,20 @@ namespace VSShortcutsManager
             return true;
         }
 
-        public void ScanForAllExtensionShortcuts()
+        public bool ScanForAllExtensionShortcuts()
         {
             // Tip: Best to scan for VSK files first, because then they are available if a VSSetting file wants it.
 
             // Scan for new VSK files
-            ScanForMappingSchemes();
+            bool foundShortcuts = ScanForMappingSchemes();
 
             // Scan for new VSSettings files
-            ScanForNewShortcutsDefs();
+            foundShortcuts |= ScanForNewShortcutsDefs();
+
+            return foundShortcuts;
         }
 
-        public void ScanForNewShortcutsDefs()
+        public bool ScanForNewShortcutsDefs()
         {
             // Process VSSettings files
             // Scan All-Users and local-user extension directories for VSSettings files
@@ -705,9 +740,11 @@ namespace VSShortcutsManager
             {
                 MessageBox.Show($"There were {updatedVsSettings.Count} updated user shortcut files found.\n\n{PrintList(updatedVsSettings)}\n\nYou might want to reapply these shortcuts.\nTool->Keyboard Shortcuts");
             }
+
+            return newVsSettings.Count > 0 || updatedVsSettings.Count > 0;
         }
 
-        public void ScanForMappingSchemes()
+        public bool ScanForMappingSchemes()
         {
             List<ShortcutFileInfo> vskCopyList = new List<ShortcutFileInfo>();
             // Scan All-Users and local-user extension directories for VSK files
@@ -757,6 +794,8 @@ namespace VSShortcutsManager
                 MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
                 ConfirmAndCopyVSKs(vskCopyList);
             }
+
+            return vskCopyList.Count > 0;
         }
 
         private object PrintList(List<string> items)
