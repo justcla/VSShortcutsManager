@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.Settings;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Settings;
 using System;
 using System.Collections.Generic;
@@ -7,8 +8,10 @@ namespace VSShortcutsManager
 {
     public class UserShortcutsManager
     {
-        private ShellSettingsManager ShellSettingsManager;
         private WritableSettingsStore UserSettingsStore;
+
+        private List<ShortcutFileInfo> UserShortcutsRegistry;
+        private List<ShortcutFileInfo> VskImportsRegistry;
 
         // UserSettingsStore keys
         private static readonly string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
@@ -18,41 +21,40 @@ namespace VSShortcutsManager
         private static readonly string EXTENSION_NAME = "ExtensionName";
         private static readonly string LAST_WRITE_TIME = "LastWriteTime";
         private static readonly string FLAGS = "Flags";
-        private static readonly string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
 
-        public UserShortcutsManager(IServiceProvider package)
+        private static UserShortcutsManager instance;
+
+        private UserShortcutsManager()
         {
-            ShellSettingsManager = new ShellSettingsManager(package);
-            InitUserSettingsStore(ShellSettingsManager);
+            SettingsManager shellSettingsManager = new ShellSettingsManager(ServiceProvider.GlobalProvider);
+            UserSettingsStore = shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
         }
 
-        public UserShortcutsManager(ShellSettingsManager settingsManager)
+        public static UserShortcutsManager Instance
         {
-            ShellSettingsManager = settingsManager;
-            InitUserSettingsStore(ShellSettingsManager);
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new UserShortcutsManager();
+                }
+                return instance;
+            }
         }
 
-        private void InitUserSettingsStore(ShellSettingsManager settingsManager)
-        {
-            UserSettingsStore = settingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
-        }
-
-        public List<ShortcutFileInfo> FetchUserShortcutsRegistry()
-        {
-            return FetchShortcutFileInfo(USER_SHORTCUTS_DEFS);
-        }
+        //-------- Generic methods for handling ShortcutFileInfo in UserSettingsStore
 
         public List<ShortcutFileInfo> FetchShortcutFileInfo(string collectionName)
         {
-        List<ShortcutFileInfo> userShortcutsRegistry = new List<ShortcutFileInfo>();
+            List<ShortcutFileInfo> shortcutFiles = new List<ShortcutFileInfo>();
             if (UserSettingsStore.CollectionExists(collectionName))
             {
                 foreach (var shortcutDef in UserSettingsStore.GetSubCollectionNames(collectionName))
                 {
-                    userShortcutsRegistry.Add(ExtractShortcutsInfoFromSettingsStore(collectionName, shortcutDef));
+                    shortcutFiles.Add(ExtractShortcutsInfoFromSettingsStore(collectionName, shortcutDef));
                 }
             }
-            return userShortcutsRegistry;
+            return shortcutFiles;
         }
 
         private ShortcutFileInfo ExtractShortcutsInfoFromSettingsStore(string collectionName, string shortcutDef)
@@ -75,21 +77,44 @@ namespace VSShortcutsManager
             };
         }
 
-        public void UpdateShortcutsDefInSettingsStore(ShortcutFileInfo userShortcutsDef)
-        {
-            SaveUserShortcutsDefToSettingsStore(USER_SHORTCUTS_DEFS, userShortcutsDef);
-        }
-
-        private void SaveUserShortcutsDefToSettingsStore(string collectionPrefix, ShortcutFileInfo userShortcutsDef)
+        private void SaveShortcutFileInfoToSettingsStore(string collectionPrefix, ShortcutFileInfo shortcutFileInfo)
         {
             // Store values in UserSettingsStore. Use the "Name" property as the Collection key
-            string collectionPath = $"{collectionPrefix}\\{userShortcutsDef.DisplayName}";
+            string collectionPath = $"{collectionPrefix}\\{shortcutFileInfo.DisplayName}";
             UserSettingsStore.CreateCollection(collectionPath);
-            UserSettingsStore.SetString(collectionPath, NAME, userShortcutsDef.DisplayName);
-            UserSettingsStore.SetString(collectionPath, FILEPATH, userShortcutsDef.Filepath);
-            UserSettingsStore.SetString(collectionPath, EXTENSION_NAME, userShortcutsDef.ExtensionName);
-            UserSettingsStore.SetString(collectionPath, LAST_WRITE_TIME, userShortcutsDef.LastWriteTime.ToString(DATETIME_FORMAT));
-            UserSettingsStore.SetInt32(collectionPath, FLAGS, userShortcutsDef.NotifyFlag);
+            UserSettingsStore.SetString(collectionPath, NAME, shortcutFileInfo.DisplayName);
+            UserSettingsStore.SetString(collectionPath, FILEPATH, shortcutFileInfo.Filepath);
+            UserSettingsStore.SetString(collectionPath, EXTENSION_NAME, shortcutFileInfo.ExtensionName);
+            UserSettingsStore.SetString(collectionPath, LAST_WRITE_TIME, shortcutFileInfo.LastWriteTime.ToString(ShortcutFileInfo.DATETIME_FORMAT));
+            UserSettingsStore.SetInt32(collectionPath, FLAGS, shortcutFileInfo.NotifyFlag);
+        }
+
+        //-------- User shortcut definitions -------
+
+        public List<ShortcutFileInfo> GetUserShortcutsRegistry()
+        {
+            if (UserShortcutsRegistry == null)
+            {
+                UserShortcutsRegistry = FetchShortcutFileInfo(USER_SHORTCUTS_DEFS);
+            }
+            return UserShortcutsRegistry;
+        }
+
+        internal void AddUserShortcutsDef(ShortcutFileInfo shortcutFileInfo)
+        {
+            UserShortcutsRegistry.Add(shortcutFileInfo);
+            UpdateShortcutsDefInSettingsStore(shortcutFileInfo);
+        }
+
+        public void UpdateShortcutsDefInSettingsStore(ShortcutFileInfo userShortcutsDef)
+        {
+            SaveShortcutFileInfoToSettingsStore(USER_SHORTCUTS_DEFS, userShortcutsDef);
+        }
+
+        public void ResetUserShortcutsRegistry()
+        {
+            UserShortcutsRegistry.Clear();
+            UserSettingsStore.DeleteCollection(USER_SHORTCUTS_DEFS);
         }
 
         public void DeleteUserShortcutsDef(string shortcutDef)
@@ -98,26 +123,27 @@ namespace VSShortcutsManager
             UserSettingsStore.DeleteCollection(collectionPath);
         }
 
-        public void ResetUserShortcutsRegistry()
-        {
-            UserSettingsStore.DeleteCollection(USER_SHORTCUTS_DEFS);
-        }
-
-        public static bool DateTimesAreEqual(DateTime dateTime1, DateTime dateTime2)
-        {
-            return dateTime1.ToString(DATETIME_FORMAT).Equals(dateTime2.ToString(DATETIME_FORMAT));
-        }
-
         //-------- VskImports --------
 
-        public List<ShortcutFileInfo> FetchVskImportsRegistry()
+        public List<ShortcutFileInfo> GetVskImportsRegistry()
         {
-            return FetchShortcutFileInfo(IMPORTED_MAPPING_SCHEMES);
+            if (VskImportsRegistry == null)
+            {
+                // Load from SettingsStore
+                VskImportsRegistry = FetchShortcutFileInfo(IMPORTED_MAPPING_SCHEMES);
+            }
+            return VskImportsRegistry;
+        }
+
+        internal void AddVskImportFile(ShortcutFileInfo shortcutFileInfo)
+        {
+            GetVskImportsRegistry().Add(shortcutFileInfo);
+            UpdateVskImportInfoInSettingsStore(shortcutFileInfo);
         }
 
         public void UpdateVskImportInfoInSettingsStore(ShortcutFileInfo shortcutFileInfo)
         {
-            SaveUserShortcutsDefToSettingsStore(IMPORTED_MAPPING_SCHEMES, shortcutFileInfo);
+            SaveShortcutFileInfoToSettingsStore(IMPORTED_MAPPING_SCHEMES, shortcutFileInfo);
         }
 
     }

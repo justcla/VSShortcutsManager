@@ -61,53 +61,8 @@ namespace VSShortcutsManager
 
         private ShellSettingsManager ShellSettingsManager;
         private UserShortcutsManager userShortcutsManager;
-        private List<ShortcutFileInfo> VskImportsRegistry;
-        private List<ShortcutFileInfo> UserShortcutsRegistry;
-
-
-        #region
-        private string _AllUsersExtensionsPath;
-        private string AllUsersExtensionsPath
-        {
-            get
-            {
-                if (_AllUsersExtensionsPath == null)
-                {
-                    _AllUsersExtensionsPath = GetAllUsersExtensionsPath();
-                }
-                return _AllUsersExtensionsPath;
-            }
-        }
-
-        private string _LocalUserExtensionsPath;
-
-        private string LocalUserExtensionsPath
-        {
-            get
-            {
-                if (_LocalUserExtensionsPath == null)
-                {
-                    // TODO: Replace with SettingsManager.GetLocalApplicationData
-                    _LocalUserExtensionsPath = GetExtensionsPath(Environment.SpecialFolder.LocalApplicationData);
-                }
-                return _LocalUserExtensionsPath;
-            }
-        }
-
-        public string _RoamingAppDataVSPath;
-
-        private string RoamingAppDataVSPath
-        {
-            get
-            {
-                if (_RoamingAppDataVSPath == null)
-                {
-                    _RoamingAppDataVSPath = GetExtensionsPath(Environment.SpecialFolder.ApplicationData);
-                }
-                return _RoamingAppDataVSPath;
-            }
-        }
-        #endregion
+        //private List<ShortcutFileInfo> VskImportsRegistry;
+        //private List<ShortcutFileInfo> UserShortcutsRegistry;
 
         /// <summary>
         /// Gets the service provider from the owner package.
@@ -150,22 +105,22 @@ namespace VSShortcutsManager
             // Register all the command handlers with the Global Command Service
             RegisterCommandHandlers();
 
-            ShellSettingsManager = new ShellSettingsManager(package);
-            userShortcutsManager = new UserShortcutsManager(ShellSettingsManager);
+            //ShellSettingsManager = new ShellSettingsManager(package);
+            userShortcutsManager = UserShortcutsManager.Instance;
 
-            // Initialise path for AppDataRoaming and AppDataLocal (Optional - alternative method)
-            _RoamingAppDataVSPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.ApplicationExtensions), "Extensions");
-            _LocalUserExtensionsPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.LocalSettings), "Extensions");
+            //// Initialise path for AppDataRoaming and AppDataLocal (Optional - alternative method)
+            //_RoamingAppDataVSPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.ApplicationExtensions), "Extensions");
+            //_LocalUserExtensionsPath = Path.Combine(ShellSettingsManager.GetApplicationDataFolder(ApplicationDataFolder.LocalSettings), "Extensions");
 
             // Load user shortcut registries
             //userShortcutsManager.DeleteUserShortcutsDef("WindowHideShortcuts");
-            UserShortcutsRegistry = userShortcutsManager.FetchUserShortcutsRegistry();
+            //UserShortcutsRegistry = userShortcutsManager.GetUserShortcutsRegistry();
             // Load imported VSKs registry
-            VskImportsRegistry = userShortcutsManager.FetchVskImportsRegistry();
+            //VskImportsRegistry = userShortcutsManager.GetVskImportsRegistry();
 
-            if (RequiresNewScanOfExtensionsDir())
+            if (ShortcutsScanner.Instance.ExtensionsNeedRescan())
             {
-                ScanForAllExtensionShortcuts();
+                ShortcutsScanner.Instance.ScanForAllExtensionShortcuts();
             }
 
         }
@@ -242,7 +197,7 @@ namespace VSShortcutsManager
 
         private void ScanUserShortcuts(object sender, EventArgs e)
         {
-            bool foundShortcuts = ScanForAllExtensionShortcuts();
+            bool foundShortcuts = ShortcutsScanner.Instance.ScanForAllExtensionShortcuts();
             if (!foundShortcuts)
             {
                 MessageBox.Show("Scan complete.\n\nNo new shortcut definitions were found in the extensions directories.");
@@ -252,14 +207,13 @@ namespace VSShortcutsManager
         private void OnBeforeQueryStatusClearUserShortcuts(object sender, EventArgs e)
         {
             OleMenuCommand command = (OleMenuCommand)sender;
-            bool hasShortcutDefs = UserShortcutsRegistry.Count > 0;
+            bool hasShortcutDefs = userShortcutsManager.GetUserShortcutsRegistry().Count > 0;
             command.Visible = hasShortcutDefs;
             command.Enabled = hasShortcutDefs;
         }
 
         private void ClearUserShortcuts(object sender, EventArgs e)
         {
-            UserShortcutsRegistry.Clear();
             userShortcutsManager.ResetUserShortcutsRegistry();
             MessageBox.Show("User shortcuts list has been reset.");
         }
@@ -390,7 +344,7 @@ namespace VSShortcutsManager
             AddUserShortcutsFileToRegistry(importFilePath);
         }
 
-        public void LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
+        public static void LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
         {
             if (!File.Exists(importFilePath))
             {
@@ -406,7 +360,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private IVsProfileSettingsTree GetShortcutsSettingsTreeForImport(string importFilePath)
+        private static IVsProfileSettingsTree GetShortcutsSettingsTreeForImport(string importFilePath)
         {
             IVsProfileSettingsFileInfo profileSettingsFileInfo = GetProfileSettingsFileInfo(importFilePath);
             profileSettingsFileInfo.GetSettingsForImport(out IVsProfileSettingsTree profileSettingsTree);
@@ -415,18 +369,18 @@ namespace VSShortcutsManager
             return profileSettingsTree;
         }
 
-        private IVsProfileSettingsFileInfo GetProfileSettingsFileInfo(string importFilePath)
+        private static IVsProfileSettingsFileInfo GetProfileSettingsFileInfo(string importFilePath)
         {
-            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)Package.GetGlobalService(typeof(SVsProfileDataManager));
             vsProfileDataManager.GetSettingsFiles(uint.MaxValue, out IVsProfileSettingsFileCollection vsProfileSettingsFileCollection);
             vsProfileSettingsFileCollection.AddBrowseFile(importFilePath, out IVsProfileSettingsFileInfo profileSettingsFileInfo);
             return profileSettingsFileInfo;
         }
 
-        private bool ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
+        private static bool ImportSettingsFromSettingsTree(IVsProfileSettingsTree profileSettingsTree)
         {
             //EnableKeyboardOnlyInProfileSettingsTree(profileSettingsTree);
-            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)Package.GetGlobalService(typeof(SVsProfileDataManager));
             int result = vsProfileDataManager.ImportSettings(profileSettingsTree, out IVsSettingsErrorInformation errorInfo);
             if (ErrorHandler.Failed(result))
             {
@@ -440,10 +394,7 @@ namespace VSShortcutsManager
         private void AddUserShortcutsFileToRegistry(string importFilePath)
         {
             ShortcutFileInfo userShortcutsDef = new ShortcutFileInfo(importFilePath);
-            // Update the VSSettingsRegsitry
-            UserShortcutsRegistry.Add(userShortcutsDef);
-            // Update the SettingsStore
-            userShortcutsManager.UpdateShortcutsDefInSettingsStore(userShortcutsDef);
+            userShortcutsManager.AddUserShortcutsDef(userShortcutsDef);
         }
 
         //---------- User Shortcuts ----------------
@@ -452,12 +403,14 @@ namespace VSShortcutsManager
         {
             //It is a valid match if the command id is less than the total number of items the user has requested appear on our menu.
             int itemRange = (commandId - DynamicUserShortcutsStartCmdId);
-            return itemRange >= 0 && itemRange < UserShortcutsRegistry.Count;
+            return itemRange >= 0 && itemRange < userShortcutsManager.GetUserShortcutsRegistry().Count;
         }
 
         private void OnBeforeQueryStatusUserShortcutsDynamicItem(object sender, EventArgs args)
         {
-            bool userShortcutsExist = UserShortcutsRegistry.Count > 0;
+            List<ShortcutFileInfo> userShortcutsRegistry = userShortcutsManager.GetUserShortcutsRegistry();
+
+            bool userShortcutsExist = userShortcutsRegistry.Count > 0;
 
             DynamicItemMenuCommand matchedCommand = (DynamicItemMenuCommand)sender;
             matchedCommand.Enabled = userShortcutsExist;
@@ -472,7 +425,7 @@ namespace VSShortcutsManager
                 int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
 
                 // Add an & to the front of the menu text so that the first letter becomes the accellerator key.
-                matchedCommand.Text = GetMenuTextWithAccelerator(UserShortcutsRegistry[menuItemIndex].DisplayName);
+                matchedCommand.Text = GetMenuTextWithAccelerator(userShortcutsRegistry[menuItemIndex].DisplayName);
             }
 
             //Clear this out here as we are done with it for this item.
@@ -481,15 +434,17 @@ namespace VSShortcutsManager
 
         private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
         {
+
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
             string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from of the menu text
-            ShortcutFileInfo userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
+            List<ShortcutFileInfo> userShortcutsRegistry = userShortcutsManager.GetUserShortcutsRegistry();
+            ShortcutFileInfo userShortcutsDef = userShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
             string importFilePath = userShortcutsDef.Filepath;
             if (!File.Exists(importFilePath))
             {
                 if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    UserShortcutsRegistry.Remove(userShortcutsDef);
+                    userShortcutsRegistry.Remove(userShortcutsDef);
                     userShortcutsManager.DeleteUserShortcutsDef(shortcutDefName);
                 }
                 return;
@@ -526,31 +481,7 @@ namespace VSShortcutsManager
         private List<string> FetchListOfMappingSchemes()
         {
             // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
-            return Directory.EnumerateFiles(GetVsInstallPath(), "*.vsk").Select(fn => Path.GetFileNameWithoutExtension(fn)).ToList();
-        }
-
-        internal string VSInstallationPath
-        {
-            get { return GetVsInstallPath(); }
-        }
-
-        string GetVsInstallPath()
-        {
-            string root = GetRegistryRoot();
-
-            using (var key = Registry.LocalMachine.OpenSubKey(root))
-            {
-                var installDir = key.GetValue("InstallDir") as string;
-
-                return Path.GetDirectoryName(installDir);
-            }
-        }
-
-        private string GetRegistryRoot()
-        {
-            var reg = ServiceProvider.GetService(typeof(SLocalRegistry)) as ILocalRegistry2;
-            reg.GetLocalRegistryRoot(out string root);
-            return root;
+            return Directory.EnumerateFiles(VSPathUtils.GetVsInstallPath(), "*.vsk").Select(fn => Path.GetFileNameWithoutExtension(fn)).ToList();
         }
 
         private string GetMappingSchemeName(int itemIndex)
@@ -580,7 +511,7 @@ namespace VSShortcutsManager
 
         private bool IsSelected(string mappingSchemeName)
         {
-            using (var vsKey = Registry.CurrentUser.OpenSubKey(GetRegistryRoot()))
+            using (var vsKey = Registry.CurrentUser.OpenSubKey(VSPathUtils.GetRegistryRoot()))
             {
                 if (vsKey != null)
                 {
@@ -655,243 +586,6 @@ namespace VSShortcutsManager
         {
             VSShortcutsManagerPackage.SettingsManager.TryGetValue(BACKUP_FILE_PATH, out string backupFilePath);
             return backupFilePath;
-        }
-
-        //----------- Scanning ----------------------
-
-        private bool RequiresNewScanOfExtensionsDir()
-        {
-            // TODO: Work out if there's been an update to anything in the user extensions dir or in the All-users extension dir
-            // TODO: Include check for User setting to Scan/NotScan at startup.
-            return true;
-        }
-
-        public bool ScanForAllExtensionShortcuts()
-        {
-            // Tip: Best to scan for VSK files first, because then they are available if a VSSetting file wants it.
-
-            // Scan for new VSK files
-            bool foundShortcuts = ScanForMappingSchemes();
-
-            // Scan for new VSSettings files
-            foundShortcuts |= ScanForNewShortcutsDefs();
-
-            return foundShortcuts;
-        }
-
-        public bool ScanForNewShortcutsDefs()
-        {
-            // Process VSSettings files
-            // Scan All-Users and local-user extension directories for VSSettings files
-            List<string> vsSettingsFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vssettings");
-            vsSettingsFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vssettings"));
-            // For each VSSettings found, check VSSettings registry
-            List<string> newVsSettings = new List<string>();
-            List<string> updatedVsSettings = new List<string>();
-            foreach (string vsSettingsFile in vsSettingsFilesInExtDirs)
-            {
-                var thisEntry = UserShortcutsRegistry.Find(x => x.Filepath.Equals(vsSettingsFile));
-                if (thisEntry == null)
-                {
-                    // - New VSSettings file
-                    // Add to VSSettings registry (update: prompt)
-                    thisEntry = new ShortcutFileInfo(vsSettingsFile);
-                    // Add to NewVSSettingsList (to alert users)
-                    newVsSettings.Add(vsSettingsFile);
-                    // Update the VSSettingsRegsitry
-                    UserShortcutsRegistry.Add(thisEntry);
-                    // Update the SettingsStore
-                    userShortcutsManager.UpdateShortcutsDefInSettingsStore(thisEntry);
-                }
-                else
-                {
-                    // We already know
-                    if (thisEntry.NotifyFlag == UPDATE_NEVER) continue;
-
-                    FileInfo vsSettingsFileInfo = new FileInfo(vsSettingsFile);
-                    if (thisEntry.LastWriteTimeEquals(vsSettingsFileInfo.LastWriteTime)) continue;
-                    // This entry has been updated since it was added to the registry. Update the entry.
-                    thisEntry.LastWriteTime = vsSettingsFileInfo.LastWriteTime;
-                    // Add to UpdatedVSSettingsList (to alert users)
-                    updatedVsSettings.Add(vsSettingsFile);
-                    // Update the SettingsStore
-                    userShortcutsManager.UpdateShortcutsDefInSettingsStore(thisEntry);
-                }
-            }
-
-            // Alert user of new and updated shortcut defs
-            // If NewVSSettings.Count == 1
-            if (newVsSettings.Count == 1)
-            {
-                // Prompt to load the new VSSettings
-                // If confirmed: Load(newSettings)
-                if (MessageBox.Show($"One new user shortcut definition was found.\n\n{PrintList(newVsSettings)}\n\nWould you like to load these shortcuts now?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
-                {
-                    // Load the settings
-                    LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
-                }
-            }
-            else if (newVsSettings.Count > 1)
-            {
-                MessageBox.Show($"There were {newVsSettings.Count} new user shortcut files found.\n\n{PrintList(newVsSettings)}");
-            }
-            // Updated settings files
-            if (updatedVsSettings.Count > 0)
-            {
-                MessageBox.Show($"There were {updatedVsSettings.Count} updated user shortcut files found.\n\n{PrintList(updatedVsSettings)}\n\nYou might want to reapply these shortcuts.\nTool->Keyboard Shortcuts");
-            }
-
-            return newVsSettings.Count > 0 || updatedVsSettings.Count > 0;
-        }
-
-        public bool ScanForMappingSchemes()
-        {
-            List<ShortcutFileInfo> vskCopyList = new List<ShortcutFileInfo>();
-            // Scan All-Users and local-user extension directories for VSK files
-            List<string> vskFilesInExtDirs = GetFilesFromFolder(AllUsersExtensionsPath, "*.vsk");
-            vskFilesInExtDirs.AddRange(GetFilesFromFolder(LocalUserExtensionsPath, "*.vsk"));
-            // Check each VSK against VSK registry to see if it's new or updated.
-            foreach (string vskFilePath in vskFilesInExtDirs)
-            {
-                FileInfo fileInfo = new FileInfo(vskFilePath);
-
-                // Check existing VSK registry
-                //if (VskImportsRegistry.Exists(x => x.Filepath.Equals(vskFilePath)))
-                ShortcutFileInfo vskMappingInfo = VskImportsRegistry.FirstOrDefault(x => x.Filepath.Equals(vskFilePath));
-                if (vskMappingInfo != null) 
-                {
-                    // Compare date/time to existing datetime of VSK. If dates same, skip.
-                    if (vskMappingInfo.LastWriteTimeEquals(fileInfo.LastWriteTime))
-                    {
-                        // This entry is already registered and has not changed.
-                        continue;
-                    }
-                    else
-                    {
-                        // This entry has been updated.
-                        // Update the LastWriteTime
-                        vskMappingInfo.LastWriteTime = fileInfo.LastWriteTime;
-                        // Update the Settings Store Resistry
-                        userShortcutsManager.UpdateVskImportInfoInSettingsStore(vskMappingInfo);
-                    }
-                }
-                else
-                {
-                    // Create new VskImports entry
-                    vskMappingInfo = new ShortcutFileInfo(vskFilePath);
-                    // Add it to the registry
-                    VskImportsRegistry.Add(vskMappingInfo);
-                }
-                // Add to VSK copy list (consider name)
-                vskCopyList.Add(vskMappingInfo);
-                // Update the Settings Store Resistry
-                userShortcutsManager.UpdateVskImportInfoInSettingsStore(vskMappingInfo);
-            }
-
-            // Copy VSK files if VSKCopyList is not empty
-            if (vskCopyList.Count > 0)
-            {
-                MessageBox.Show($"There are {vskCopyList.Count} new VSKs to copy.");
-                ConfirmAndCopyVSKs(vskCopyList);
-            }
-
-            return vskCopyList.Count > 0;
-        }
-
-        private object PrintList(List<string> items)
-        {
-            StringBuilder sb = new StringBuilder();
-            foreach (string item in items)
-            {
-                if (sb.Length > 0) sb.Append("\n");
-                sb.Append(item);
-            }
-            return sb.ToString();
-        }
-
-        private void ConfirmAndCopyVSKs(List<ShortcutFileInfo> vskCopyList)
-        {
-            foreach (ShortcutFileInfo vskMappingInfo in vskCopyList)
-            {
-                // Confirm and Copy single VSK
-                if (MessageBox.Show($"Import mapping scheme file?\n{vskMappingInfo.Filepath}", MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OKCancel) != DialogResult.OK)
-                {
-                    continue;
-                }
-                string name = vskMappingInfo.DisplayName;  // TODO: Prompt user for name
-                CopyVSKToIDEDir(vskMappingInfo.Filepath, name);
-            }
-        }
-
-        private void CopyVSKToIDEDir(string filepath, string name)
-        {
-            CopyVskUsingXCopy(filepath);
-        }
-
-        private void CopyVskUsingXCopy(string installPath)
-        {
-            var process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = @"xcopy.exe";
-            process.StartInfo.Arguments = string.Format(@"""{0}"" ""{1}""", installPath, GetVsInstallPath());
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major > 5)
-            {
-                process.StartInfo.Verb = "runas";
-            }
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            process.Start();
-        }
-
-        private List<string> GetFilesFromFolder(string folder, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
-        {
-            // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
-            List<string> allFiles = new List<string>();
-
-            DirectoryInfo[] directories = new DirectoryInfo(folder).GetDirectories();
-            foreach (DirectoryInfo extensionDir in directories)
-            {
-                //const SearchOption topDirectoryOnly = SearchOption.TopDirectoryOnly;
-                List<string> matchingFiles = Directory.EnumerateFiles(extensionDir.FullName, searchPattern, searchOption).ToList();
-                allFiles.AddRange(matchingFiles);
-            }
-
-            return allFiles;
-        }
-
-        private string GetAllUsersExtensionsPath()
-        {
-            return Path.Combine(GetVsInstallPath(), "Extensions");
-        }
-
-        private object GetVirtualRegistryRoot()
-        {
-            // Note: A different way of getting the registry root
-            IVsShell shell = (IVsShell)Package.GetGlobalService(typeof(SVsShell));
-            shell.GetProperty((int)__VSSPROPID.VSSPROPID_VirtualRegistryRoot, out object root);
-            return root;
-        }
-
-        private string GetVSInstanceId()
-        {
-            return Path.GetFileName(GetVirtualRegistryRoot().ToString());
-        }
-
-        private void InitializePathVariables()
-        {
-            // Gets the version number with the /rootsuffix. Example: "15.0_6bb4f128Exp"
-            string vsInstanceId = GetVSInstanceId();
-
-            _LocalUserExtensionsPath = GetVisualStudioVersionPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), vsInstanceId);
-            _RoamingAppDataVSPath = GetVisualStudioVersionPath(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), vsInstanceId);
-        }
-
-        private static string GetVisualStudioVersionPath(string appData, string version)
-        {
-            return Path.Combine(appData, "Microsoft\\VisualStudio", version);
-        }
-
-        private string GetExtensionsPath(Environment.SpecialFolder folder)
-        {
-            return Path.Combine(GetVisualStudioVersionPath(Environment.GetFolderPath(folder), GetVSInstanceId()), "Extensions");
         }
 
     }
