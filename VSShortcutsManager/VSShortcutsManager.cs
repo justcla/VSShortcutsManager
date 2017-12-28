@@ -40,7 +40,7 @@ namespace VSShortcutsManager
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
-        private const string MSG_CAPTION_BACKUP = "Save Keyboard Shortcuts";
+        private const string MSG_CAPTION_SAVE_SHORTCUTS = "Save Keyboard Shortcuts";
         private const string MSG_CAPTION_RESET = "Reset Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT_VSK = "Import Keyboard Mapping Scheme";
         private const string DEFAULT_MAPPING_SCHEME_NAME = "(Default)";
@@ -278,25 +278,65 @@ namespace VSShortcutsManager
 
             IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
 
-            // Get the filename where the vssettings file will be saved
-            // TODO: Prompt for user to name the settings file. (+including Browse for folder)
-            string backupFilePath = GetExportFilePath(vsProfileDataManager);
+            // Generate default path for saving shortcuts
+            // e.g. c:\users\justcla\appdata\local\microsoft\visualstudio\15.0_cf83efb8exp\Settings\Exp\CurrentSettings-2017-12-27-1.vssettings
+            string uniqueExportPath = GetExportFilePath(vsProfileDataManager);
+            string userExportPath = Path.GetDirectoryName(uniqueExportPath);
+            string uniqueFilename = Path.GetFileNameWithoutExtension(uniqueExportPath);
+            string fileExtension = Path.GetExtension(uniqueExportPath);
+
+            // Open UI to let user name the file
+            string shortcutsName = uniqueFilename;
+            if (!SaveShortcuts.GetShortcutsName(ref shortcutsName))
+            {
+                // Cancel or ESC pressed
+                return;
+            }
+
+            // Construct the filename where the vssettings file will be saved
+            string saveFilePath = Path.Combine(userExportPath, $"{shortcutsName}{fileExtension}");
+
+            // Check if file already exists
+            if (File.Exists(saveFilePath))
+            {
+                // Prompt to overwrite
+                if (MessageBox.Show($"The settings file already exists {saveFilePath}\n\nDo you want to replace this file?", MSG_CAPTION_SAVE_SHORTCUTS, MessageBoxButtons.YesNo) != DialogResult.Yes)
+                {
+                    // Duplicate file. User does not want to overwrite. Exit out.
+                    // TODO: Consider returning the user to the file name dialog.
+                    return;
+                }
+            }
+
+            // Check if name already used
+            if (userShortcutsManager.HasUserShortcuts(shortcutsName))
+            {
+                // Prompt to overwrite
+                if (MessageBox.Show($"Settings already exist with the name: {saveFilePath}\n\nDo you want to replace these settings?", MSG_CAPTION_SAVE_SHORTCUTS, MessageBoxButtons.YesNo) != DialogResult.Yes)
+                {
+                    // Duplicate file. User does not want to overwrite. Exit out.
+                    // TODO: Consider returning the user to the file name dialog.
+                    return;
+                }
+            }
 
             // Do the export
             IVsProfileSettingsTree keyboardOnlyExportSettings = GetShortcutsSettingsTreeForExport(vsProfileDataManager);
-            int result = vsProfileDataManager.ExportSettings(backupFilePath, keyboardOnlyExportSettings, out IVsSettingsErrorInformation errorInfo);
+            int result = vsProfileDataManager.ExportSettings(saveFilePath, keyboardOnlyExportSettings, out IVsSettingsErrorInformation errorInfo);
             if (result != VSConstants.S_OK)
             {
                 // Something went wrong. TODO: Handle error.
+                MessageBox.Show($"Oops.... Something went wrong trying to export settings to the following file:\n\n{saveFilePath}", MSG_CAPTION_SAVE_SHORTCUTS);
+                return;
             }
 
             // Save Backup file path to SettingsManager and to UserShortcutsRegistry
-            SaveBackupFilePath(backupFilePath);
-            AddUserShortcutsFileToRegistry(backupFilePath);
+            SaveBackupFilePath(saveFilePath);
+            AddUserShortcutsFileToRegistry(saveFilePath);
 
             // Report success
-            string Text = $"Your keyboard shortcuts have been saved to the following file:\n\n{backupFilePath}";
-            MessageBox.Show(Text, MSG_CAPTION_BACKUP, MessageBoxButtons.OK);
+            string Text = $"Your keyboard shortcuts have been saved to the following file:\n\n{saveFilePath}";
+            MessageBox.Show(Text, MSG_CAPTION_SAVE_SHORTCUTS, MessageBoxButtons.OK);
         }
 
         private static string GetExportFilePath(IVsProfileDataManager vsProfileDataManager)
@@ -434,17 +474,14 @@ namespace VSShortcutsManager
 
         private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
         {
-
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
             string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from of the menu text
-            List<ShortcutFileInfo> userShortcutsRegistry = userShortcutsManager.GetUserShortcutsRegistry();
-            ShortcutFileInfo userShortcutsDef = userShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
+            ShortcutFileInfo userShortcutsDef = userShortcutsManager.GetUserShortcutsInfo(shortcutDefName);
             string importFilePath = userShortcutsDef.Filepath;
             if (!File.Exists(importFilePath))
             {
                 if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    userShortcutsRegistry.Remove(userShortcutsDef);
                     userShortcutsManager.DeleteUserShortcutsDef(shortcutDefName);
                 }
                 return;

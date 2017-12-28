@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
@@ -60,6 +61,18 @@ namespace VSShortcutsManager
         public static bool DateTimesAreEqual(DateTime dateTime1, DateTime dateTime2)
         {
             return dateTime1.ToString(DATETIME_FORMAT).Equals(dateTime2.ToString(DATETIME_FORMAT));
+        }
+
+        public override bool Equals(object obj)
+        {
+            var info = obj as ShortcutFileInfo;
+            return info != null &&
+                   DisplayName == info.DisplayName;
+        }
+
+        public override int GetHashCode()
+        {
+            return 1862586150 + EqualityComparer<string>.Default.GetHashCode(DisplayName);
         }
     }
 

@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Settings;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace VSShortcutsManager
 {
@@ -102,6 +103,11 @@ namespace VSShortcutsManager
 
         internal void AddUserShortcutsDef(ShortcutFileInfo shortcutFileInfo)
         {
+            // Remove any item with the same display name
+            if (HasUserShortcuts(shortcutFileInfo.DisplayName))
+            {
+                DeleteUserShortcutsDef(shortcutFileInfo.DisplayName);
+            }
             UserShortcutsRegistry.Add(shortcutFileInfo);
             UpdateShortcutsDefInSettingsStore(shortcutFileInfo);
         }
@@ -119,8 +125,25 @@ namespace VSShortcutsManager
 
         public void DeleteUserShortcutsDef(string shortcutDef)
         {
+            // Remove the shortcuts definition from the in-memory registry
+            if (HasUserShortcuts(shortcutDef))
+            {
+                UserShortcutsRegistry.Remove(GetUserShortcutsInfo(shortcutDef));
+            }
+            // Update the settings store
             string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDef}";
             UserSettingsStore.DeleteCollection(collectionPath);
+        }
+
+        public bool HasUserShortcuts(string shortcutsName)
+        {
+            return UserShortcutsRegistry.Exists(x => x.DisplayName == shortcutsName);
+        }
+
+        public ShortcutFileInfo GetUserShortcutsInfo(string shortcutDefName)
+        {
+            ShortcutFileInfo userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
+            return userShortcutsDef;
         }
 
         //-------- VskImports --------
