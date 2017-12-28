@@ -82,9 +82,83 @@ namespace VSShortcutsManager
 
         public bool ExtensionsNeedRescan()
         {
+            if (ForceScan()) return true;
+
+            // Get lastScannedDate (or 0L if never scanned)
+            long lastScannedTimestamp = GetLastScannedTimestamp();
+
+            // Get date of last change for LocalUser extensions
+            long lastChangedLocalExtensions = GetLastChangedLocalUserExtensions();
+            // If lastChangedDate is newer than lastScannedDate
+            if (lastScannedTimestamp < lastChangedLocalExtensions)
+            {
+                // Local user extensions have changed since last scan
+                return true;
+            }
+
+            // Get date of last change for AllUsers extensions
+            long lastChangedAllUsersExtensions = GetLastChangedAllUsersExtesions();
+            if (lastScannedTimestamp < lastChangedAllUsersExtensions)
+            {
+                // AllUsers extensions have changed since last scan
+                return true;
+            }
+
+
             // TODO: Work out if there's been an update to anything in the user extensions dir or in the All-users extension dir
             // TODO: Include check for User setting to Scan/NotScan at startup.
+            string userCompatibilityListPath = string.Empty;
+            userCompatibilityListPath = Path.Combine(LocalUserExtensionsPath, "CompatibilityList.xml");
+            // Get the filestamp of the compatibility list under local appdata
+            long oldTimestamp = 0L;
+            long userCompatibilityListTimestamp = 0L;
+            if (File.Exists(userCompatibilityListPath))
+            {
+                FileInfo fi = new FileInfo(userCompatibilityListPath);
+                userCompatibilityListTimestamp = fi.LastWriteTime.ToFileTimeUtc();
+            }
+
+            try
+            {
+                oldTimestamp = GetLastCompatibilityListCheck();
+            }
+            catch (Exception ex)
+            {
+                //LogExtensionMessage(ex, string.Format("IncompatibilityList - Error reading {0} key from registry", ExtensionManagerConstants.LastCompatibilityListCheckKey));
+            }
+
+            // Update the last compatibility list check timestamp
+            //Settings.LastCompatibilityListCheck = DateTime.UtcNow.ToFileTimeUtc();
+
             return true;
+        }
+
+        private long GetLastChangedAllUsersExtesions()
+        {
+            // TODO: Return last changed All Users extension timestampe
+            return DateTime.Now.ToFileTime();
+        }
+
+        private long GetLastChangedLocalUserExtensions()
+        {
+            return DateTime.Now.ToFileTime();
+        }
+
+        private long GetLastScannedTimestamp()
+        {
+            // TODO: Get LastScannedTimestamp from settings
+            return 0L;
+        }
+
+        private bool ForceScan()
+        {
+            // TODO: Check settings for ForceScan setting
+            return false;
+        }
+
+        private long GetLastCompatibilityListCheck()
+        {
+            throw new NotImplementedException();
         }
 
         public bool ScanForAllExtensionShortcuts()
