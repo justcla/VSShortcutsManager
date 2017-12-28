@@ -81,7 +81,10 @@
     <Content Include="DefaultShortcuts.vssettings">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="ReleaseNotes.txt" />
+    <Content Include="ReleaseNotes.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\VSSettingsManagerPackage.ico" />
     <VSCTCompile Include="VSShortcutsManager.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>

@@ -1,9 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="1.0.2" Language="en-US" Publisher="Justin Clareburt" />
+        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="1.0.3" Language="en-US" Publisher="Justin Clareburt" />
         <DisplayName>VS Shortcuts Manager</DisplayName>
-        <Description xml:space="preserve">Tools to help import and export keyboard shortcuts. Backup, Restore, Reset keyboard shortcuts.</Description>
+        <Description xml:space="preserve">Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts.</Description>
+        <MoreInfo>https://marketplace.visualstudio.com/items?itemName=JustinClareburtMSFT.VSShortcutsManager</MoreInfo>
+        <ReleaseNotes>ReleaseNotes.txt</ReleaseNotes>
     </Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0,16.0)" />
