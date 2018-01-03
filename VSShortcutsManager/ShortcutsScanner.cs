@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System.Windows.Forms;
 using System.Diagnostics;
+using Microsoft.VisualStudio.Settings;
+using Microsoft.VisualStudio.Shell.Settings;
 
 namespace VSShortcutsManager
 {
@@ -15,6 +17,11 @@ namespace VSShortcutsManager
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
         private const string MSG_CAPTION_IMPORT_VSK = "Import Keyboard Mapping Scheme";
         private readonly int UPDATE_NEVER = 0;
+
+        private const string ExtensionsConfigurationChanged = "extensions.configurationchanged";
+        private const string ExtensionsChangedKey = "ExtensionsChanged";
+        private const string ConfigurationChangedKey = "ConfigurationChanged";
+        private const string SettingsStoreRoot = "ExtensionManager";
 
         private UserShortcutsManager userShortcutsManager;
 
@@ -86,68 +93,85 @@ namespace VSShortcutsManager
 
             // Get lastScannedDate (or 0L if never scanned)
             long lastScannedTimestamp = GetLastScannedTimestamp();
-
-            // Get date of last change for LocalUser extensions
-            long lastChangedLocalExtensions = GetLastChangedLocalUserExtensions();
-            // If lastChangedDate is newer than lastScannedDate
-            if (lastScannedTimestamp < lastChangedLocalExtensions)
-            {
-                // Local user extensions have changed since last scan
-                return true;
-            }
-
-            // Get date of last change for AllUsers extensions
-            long lastChangedAllUsersExtensions = GetLastChangedAllUsersExtesions();
-            if (lastScannedTimestamp < lastChangedAllUsersExtensions)
-            {
-                // AllUsers extensions have changed since last scan
-                return true;
-            }
-
-
-            // TODO: Work out if there's been an update to anything in the user extensions dir or in the All-users extension dir
-            // TODO: Include check for User setting to Scan/NotScan at startup.
-            string userCompatibilityListPath = string.Empty;
-            userCompatibilityListPath = Path.Combine(LocalUserExtensionsPath, "CompatibilityList.xml");
-            // Get the filestamp of the compatibility list under local appdata
-            long oldTimestamp = 0L;
-            long userCompatibilityListTimestamp = 0L;
-            if (File.Exists(userCompatibilityListPath))
-            {
-                FileInfo fi = new FileInfo(userCompatibilityListPath);
-                userCompatibilityListTimestamp = fi.LastWriteTime.ToFileTimeUtc();
-            }
-
-            try
-            {
-                oldTimestamp = GetLastCompatibilityListCheck();
-            }
-            catch (Exception ex)
-            {
-                //LogExtensionMessage(ex, string.Format("IncompatibilityList - Error reading {0} key from registry", ExtensionManagerConstants.LastCompatibilityListCheckKey));
-            }
-
-            // Update the last compatibility list check timestamp
-            //Settings.LastCompatibilityListCheck = DateTime.UtcNow.ToFileTimeUtc();
-
-            return true;
+            // Get date of last change for extensions
+            long extensionsLastChangedTimestamp = GetLastExtensionChangedTimestampInternal();
+            // If lastChangedDate is newer(greater) than lastScannedDate, extensions need rescanning
+            return extensionsLastChangedTimestamp > lastScannedTimestamp;
         }
 
-        private long GetLastChangedAllUsersExtesions()
+        /// <summary>
+        /// This method was copied (and slightly modified) from Microsoft.VisualStudio.ExtensionManager.ExtensionEngineImpl
+        /// Internal method subject to change. Last pulled: 02-Jan-2018
+        /// </summary>
+        /// <returns></returns>
+        internal static long GetLastExtensionChangedTimestampInternal()
         {
-            // TODO: Return last changed All Users extension timestampe
-            return DateTime.Now.ToFileTime();
-        }
+            ShellSettingsManager manager = new ShellSettingsManager(ServiceProvider.GlobalProvider);
 
-        private long GetLastChangedLocalUserExtensions()
-        {
-            return DateTime.Now.ToFileTime();
+            string perMachineExtensionInstallRoot = manager.GetApplicationDataFolder(ApplicationDataFolder.ApplicationExtensions);
+
+            long lastConfigChange = 0;
+            List<string> changeIndicatorFiles = new List<string>();
+
+            SettingsStore configurationSettingsStore = manager.GetReadOnlySettingsStore(SettingsScope.Configuration);
+            using (configurationSettingsStore as IDisposable)
+            {
+
+                // Check machine level user configuration timestamp
+                changeIndicatorFiles.Add(Path.Combine(perMachineExtensionInstallRoot, ExtensionsConfigurationChanged));
+
+                // Check product level timestamp (detect changes global to all SKUs).
+                //changeIndicatorFiles.Add(Path.Combine(engineHost.ShellFolder, ExtensionsConfigurationChanged));
+
+                foreach (var changeIndicatorFilePath in changeIndicatorFiles)
+                {
+                    FileInfo fi = new FileInfo(changeIndicatorFilePath);
+                    if (fi.Exists)
+                    {
+                        long fileWriteTime = fi.LastWriteTimeUtc.ToFileTimeUtc();
+                        if (fileWriteTime > lastConfigChange)
+                        {
+                            lastConfigChange = fileWriteTime;
+                            //reason = EngineConstants.ReasonFileWriteTime;
+                        }
+                    }
+                }
+
+                // Check configuration settings timestamp
+                long configSettingsTime = configurationSettingsStore.GetInt64(string.Empty, ConfigurationChangedKey, 0L);
+                if (configSettingsTime > lastConfigChange)
+                {
+                    lastConfigChange = configSettingsTime;
+                    //reason = EngineConstants.ReasonConfigSettingsTime;
+                }
+            }
+
+            SettingsStore userSettings = manager.GetReadOnlySettingsStore(SettingsScope.UserSettings);
+            using (userSettings as IDisposable)
+            {
+                // Check user settings timestamp
+                long userSettingsTime = userSettings.GetInt64(string.Empty, ConfigurationChangedKey, 0L);
+                if (userSettingsTime > lastConfigChange)
+                {
+                    lastConfigChange = userSettingsTime;
+                    //reason = EngineConstants.ReasonUserSettingsTime;
+                }
+
+                // Check extensions changed timestamp (this will pick up all changes made through extension manager service)
+                long extensionsChangedTime = userSettings.GetInt64(SettingsStoreRoot, ExtensionsChangedKey, 0L);
+                if (extensionsChangedTime > lastConfigChange)
+                {
+                    lastConfigChange = extensionsChangedTime;
+                    //reason = EngineConstants.ReasonExtensionsChangedTime;
+                }
+            }
+
+            return lastConfigChange;
         }
 
         private long GetLastScannedTimestamp()
         {
-            // TODO: Get LastScannedTimestamp from settings
-            return 0L;
+            return userShortcutsManager.GetLastExtensionScanTime();
         }
 
         private bool ForceScan()
@@ -170,6 +194,9 @@ namespace VSShortcutsManager
 
             // Scan for new VSSettings files
             foundShortcuts |= ScanForNewShortcutsDefs();
+
+            // Always update the last scanned time
+            userShortcutsManager.SetLastExtensionScanTime(DateTime.UtcNow.ToFileTimeUtc());
 
             return foundShortcuts;
         }

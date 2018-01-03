@@ -118,10 +118,10 @@ namespace VSShortcutsManager
             // Load imported VSKs registry
             //VskImportsRegistry = userShortcutsManager.GetVskImportsRegistry();
 
-            //if (ShortcutsScanner.Instance.ExtensionsNeedRescan())
-            //{
-            //    ShortcutsScanner.Instance.ScanForAllExtensionShortcuts();
-            //}
+            if (ShortcutsScanner.Instance.ExtensionsNeedRescan())
+            {
+                ShortcutsScanner.Instance.ScanForAllExtensionShortcuts();
+            }
 
         }
 

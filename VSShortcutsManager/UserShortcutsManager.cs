@@ -15,6 +15,7 @@ namespace VSShortcutsManager
         private List<ShortcutFileInfo> VskImportsRegistry;
 
         // UserSettingsStore keys
+        private static readonly string GENERAL_SETTINGS = "GeneralSettings";
         private static readonly string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
         private static readonly string IMPORTED_MAPPING_SCHEMES = "ImportedMappingSchemes";
         private static readonly string NAME = "Name";
@@ -22,6 +23,7 @@ namespace VSShortcutsManager
         private static readonly string EXTENSION_NAME = "ExtensionName";
         private static readonly string LAST_WRITE_TIME = "LastWriteTime";
         private static readonly string FLAGS = "Flags";
+        private static readonly string LAST_EXTENSION_SCAN_TIME = "LastExtensionScanTime";
 
         private static UserShortcutsManager instance;
 
@@ -167,6 +169,19 @@ namespace VSShortcutsManager
         public void UpdateVskImportInfoInSettingsStore(ShortcutFileInfo shortcutFileInfo)
         {
             SaveShortcutFileInfoToSettingsStore(IMPORTED_MAPPING_SCHEMES, shortcutFileInfo);
+        }
+
+        //------ Last Extension Scan Time ------
+
+        public long GetLastExtensionScanTime()
+        {
+            return UserSettingsStore.GetInt64(GENERAL_SETTINGS, LAST_EXTENSION_SCAN_TIME, 0L);
+        }
+        public void SetLastExtensionScanTime(long updateTimestamp)
+        {
+            string collectionPath = GENERAL_SETTINGS;
+            UserSettingsStore.CreateCollection(collectionPath);
+            UserSettingsStore.SetInt64(collectionPath, LAST_EXTENSION_SCAN_TIME, updateTimestamp);
         }
 
     }
