@@ -1,5 +1,6 @@
 ﻿VS Shortcuts Manager
 
+02-Jan-2018: v1.0.4 - Detects new/updated extensions on startup and kicks off scan.
 27-Dec-2017: v1.0.3 - Includes extension scanning (on demmand). Provides UI for naming saved shortcuts.
 14-Dec-2017: v1.0.2 - Implemented Reset operation. Provides file picker for Restore.
 20-Nov-2017: v1.0.1 - Includes mapping scheme selector
