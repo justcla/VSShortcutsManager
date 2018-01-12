@@ -247,7 +247,7 @@ namespace VSShortcutsManager
         {
             const string DEFAULT_SHORTCUTS_FILENAME = "DefaultShortcuts.vssettings";
             string extensionDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string resetFilePath = Path.Combine(extensionDir, DEFAULT_SHORTCUTS_FILENAME);
+            string resetFilePath = Path.Combine(extensionDir, "Resources", DEFAULT_SHORTCUTS_FILENAME);
             return GetProfileSettingsFileInfo(resetFilePath);
         }
 

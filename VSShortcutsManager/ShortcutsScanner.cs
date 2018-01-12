@@ -255,7 +255,7 @@ namespace VSShortcutsManager
             }
             else if (newVsSettings.Count > 1)
             {
-                MessageBox.Show($"There were {newVsSettings.Count} new user shortcut files found.\n\n{PrintList(newVsSettings)}");
+                MessageBox.Show($"There were {newVsSettings.Count} new user shortcut files found.\n\n{PrintList(newVsSettings)}\n\nYou can load these shortcuts from Tools->Keyboard Shortcuts->Load Shortcuts");
             }
             // Updated settings files
             if (updatedVsSettings.Count > 0)

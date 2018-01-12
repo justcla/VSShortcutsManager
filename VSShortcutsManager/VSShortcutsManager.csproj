@@ -78,7 +78,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="DefaultShortcuts.vssettings">
+    <Content Include="Resources\DefaultShortcuts.vssettings">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="ReleaseNotes.txt">
