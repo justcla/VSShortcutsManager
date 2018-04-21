@@ -52,7 +52,7 @@ namespace VSShortcutsManager
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
             const string fileFilter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";
-            string chosenFile = FileUtil.BrowseForFile(fileFilter, viewModel.ImportPath);
+            string chosenFile = FileUtils.BrowseForFile(fileFilter, viewModel.ImportPath);
             this.viewModel.ImportPath = chosenFile;
         }
 

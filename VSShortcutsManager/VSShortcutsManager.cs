@@ -191,32 +191,7 @@ namespace VSShortcutsManager
 
         private void ImportMappingScheme(object sender, EventArgs e)
         {
-            //const string Text = "Feature not implemented yet.";
-            //MessageBox.Show(Text, MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OK);
-
-            BrowseAndImportMappingScheme();
-        }
-
-        private static void BrowseAndImportMappingScheme()
-        {
-            // Open Browse dialog - search for VSK files.
-            const string vskFileFilter = "VS keyboard files (*.vsk)|*.vsk|All files (*.*)|*.*";
-            string fileToImport = FileUtil.BrowseForFile(vskFileFilter, VSPathUtils.GetVsInstallPath());
-            if (!File.Exists(fileToImport))
-            {
-                // No file to copy. Abort operation.
-                return;
-            }
-
-            // Check that it's a VSK file.
-            if (!Path.GetExtension(fileToImport).Equals(".vsk", StringComparison.InvariantCultureIgnoreCase))
-            {
-                MessageBox.Show($"The chosen file is not a valid Visual Studio keyboard mapping scheme. Please chose a VSK file.", "Import Keyboard Shortcuts");
-                return;
-            }
-
-            // Copy VSK file to IDE directory
-            FileUtil.CopyVSKToIDEDir(fileToImport);
+            ExecuteImportMappingScheme();
         }
 
         private void ScanUserShortcuts(object sender, EventArgs e)
@@ -395,17 +370,30 @@ namespace VSShortcutsManager
 
         public void ExecuteImportShortcuts()
         {
-            // Open UI to let user browse for a file to import
-            string importFilePath = GetSavedBackupFilePath();
-            if (!ShortcutsImport.ImportShortcuts(ref importFilePath))
+            // Let user browse for a .vssettings file to import. Default to the last file saved.
+            string chosenFile = BrowseForVsSettingsFile();
+            if (chosenFile == null || !File.Exists(chosenFile))
             {
-                // Cancel or ESC pressed
+                // No file chosen. Possibly Cancel or ESC pressed.
+                return;
+            }
+            if (!(Path.GetExtension(chosenFile).Equals(".vssettings", StringComparison.InvariantCultureIgnoreCase) ||
+                  Path.GetExtension(chosenFile).Equals(".xml", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                MessageBox.Show($"The chosen file is not a valid Visual Studio settings file.\n\nPlease chose a 'vssettings' file or 'xml' file.", MSG_CAPTION_IMPORT);
                 return;
             }
 
-            LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
+            LoadKeyboardShortcutsFromVSSettingsFile(chosenFile);
 
-            AddUserShortcutsFileToRegistry(importFilePath);
+            AddUserShortcutsFileToRegistry(chosenFile);
+        }
+
+        private string BrowseForVsSettingsFile()
+        {
+            const string vsSettingsFilter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";
+            string lastSavedFile = GetSavedBackupFilePath();
+            return FileUtils.BrowseForFile(vsSettingsFilter, initialFileOrFolder: lastSavedFile);
         }
 
         public static void LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
@@ -514,6 +502,28 @@ namespace VSShortcutsManager
         }
 
         //---------- Mapping Schemes ----------------
+
+        private static void ExecuteImportMappingScheme()
+        {
+            // Open Browse dialog - search for VSK files.
+            const string vskFileFilter = "VS keyboard files (*.vsk)|*.vsk|All files (*.*)|*.*";
+            string fileToImport = FileUtils.BrowseForFile(vskFileFilter, VSPathUtils.GetVsInstallPath());
+            if (!File.Exists(fileToImport))
+            {
+                // No file to copy. Abort operation.
+                return;
+            }
+
+            // Check that it's a VSK file.
+            if (!Path.GetExtension(fileToImport).Equals(".vsk", StringComparison.InvariantCultureIgnoreCase))
+            {
+                MessageBox.Show($"The chosen file is not a valid Visual Studio keyboard mapping scheme. Please chose a VSK file.", MSG_CAPTION_IMPORT_VSK);
+                return;
+            }
+
+            // Copy VSK file to IDE directory
+            FileUtils.CopyVSKToIDEDir(fileToImport);
+        }
 
         private bool IsValidMappingSchemeItem(int commandId)
         {

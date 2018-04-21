@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26711.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSShortcutsManager", "VSShortcutsManager\VSShortcutsManager.csproj", "{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardShortcutsManager", "VSShortcutsManager\KeyboardShortcutsManager.csproj", "{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

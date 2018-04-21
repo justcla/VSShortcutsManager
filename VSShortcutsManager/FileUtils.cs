@@ -5,7 +5,7 @@ using System.Windows;
 
 namespace VSShortcutsManager
 {
-    public class FileUtil
+    public class FileUtils
     {
         public static string BrowseForFile(string fileFilter, string initialFileOrFolder)
         {

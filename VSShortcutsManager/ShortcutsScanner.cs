@@ -341,7 +341,7 @@ namespace VSShortcutsManager
                     continue;
                 }
                 //string name = vskMappingInfo.DisplayName;  // TODO: Prompt user for name
-                FileUtil.CopyVSKToIDEDir(vskMappingInfo.Filepath);
+                FileUtils.CopyVSKToIDEDir(vskMappingInfo.Filepath);
             }
         }
 
