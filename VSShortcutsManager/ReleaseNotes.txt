@@ -1,5 +1,6 @@
 ﻿Keyboard Shortcuts Manager
 
+21-Apr-2018: v1.0.9 - Fixed extension icon packaging.
 21-Apr-2018: v1.0.8 - Removed intermediate UI for Import shortcuts feature.
 20-Apr-2018: v1.0.7 - Implemented Import VSK feature.
 12-Jan-2018: v1.0.6 - Moved DefaultShortcuts vssettings out of top level so it's not discovered by the scanner.
