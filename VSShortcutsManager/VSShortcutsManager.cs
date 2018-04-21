@@ -191,8 +191,32 @@ namespace VSShortcutsManager
 
         private void ImportMappingScheme(object sender, EventArgs e)
         {
-            const string Text = "Feature not implemented yet.";
-            MessageBox.Show(Text, MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OK);
+            //const string Text = "Feature not implemented yet.";
+            //MessageBox.Show(Text, MSG_CAPTION_IMPORT_VSK, MessageBoxButtons.OK);
+
+            BrowseAndImportMappingScheme();
+        }
+
+        private static void BrowseAndImportMappingScheme()
+        {
+            // Open Browse dialog - search for VSK files.
+            const string vskFileFilter = "VS keyboard files (*.vsk)|*.vsk|All files (*.*)|*.*";
+            string fileToImport = FileUtil.BrowseForFile(vskFileFilter, VSPathUtils.GetVsInstallPath());
+            if (!File.Exists(fileToImport))
+            {
+                // No file to copy. Abort operation.
+                return;
+            }
+
+            // Check that it's a VSK file.
+            if (!Path.GetExtension(fileToImport).Equals(".vsk", StringComparison.InvariantCultureIgnoreCase))
+            {
+                MessageBox.Show($"The chosen file is not a valid Visual Studio keyboard mapping scheme. Please chose a VSK file.", "Import Keyboard Shortcuts");
+                return;
+            }
+
+            // Copy VSK file to IDE directory
+            FileUtil.CopyVSKToIDEDir(fileToImport);
         }
 
         private void ScanUserShortcuts(object sender, EventArgs e)

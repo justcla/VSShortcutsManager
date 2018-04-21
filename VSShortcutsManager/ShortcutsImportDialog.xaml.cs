@@ -51,15 +51,9 @@ namespace VSShortcutsManager
 
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.OpenFileDialog fileDialog = new System.Windows.Forms.OpenFileDialog();
-            fileDialog.Filter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";
-            if (File.Exists(viewModel.ImportPath)) {
-                fileDialog.InitialDirectory = Path.GetDirectoryName(viewModel.ImportPath);
-            }
-            if (fileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                this.viewModel.ImportPath = fileDialog.FileName;
-            }
+            const string fileFilter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";
+            string chosenFile = FileUtil.BrowseForFile(fileFilter, viewModel.ImportPath);
+            this.viewModel.ImportPath = chosenFile;
         }
 
         void OnOk(object sender, RoutedEventArgs e)

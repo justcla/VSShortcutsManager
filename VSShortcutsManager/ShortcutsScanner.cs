@@ -340,27 +340,9 @@ namespace VSShortcutsManager
                 {
                     continue;
                 }
-                string name = vskMappingInfo.DisplayName;  // TODO: Prompt user for name
-                CopyVSKToIDEDir(vskMappingInfo.Filepath, name);
+                //string name = vskMappingInfo.DisplayName;  // TODO: Prompt user for name
+                FileUtil.CopyVSKToIDEDir(vskMappingInfo.Filepath);
             }
-        }
-
-        private void CopyVSKToIDEDir(string filepath, string name)
-        {
-            CopyVskUsingXCopy(filepath);
-        }
-
-        private void CopyVskUsingXCopy(string installPath)
-        {
-            var process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = @"xcopy.exe";
-            process.StartInfo.Arguments = string.Format(@"""{0}"" ""{1}""", installPath, VSPathUtils.GetVsInstallPath());
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major > 5)
-            {
-                process.StartInfo.Verb = "runas";
-            }
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            process.Start();
         }
 
         private List<string> GetFilesFromFolder(string folder, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
