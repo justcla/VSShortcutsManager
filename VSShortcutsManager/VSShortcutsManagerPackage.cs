@@ -13,6 +13,7 @@ namespace VSShortcutsManager
     [Guid(VSShortcutsManagerPackage.PackageGuidString)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.ShellInitialized_string)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
+    [ProvideToolWindow(typeof(CommandShortcuts))]
     public sealed class VSShortcutsManagerPackage : Package
     {
         /// <summary>
