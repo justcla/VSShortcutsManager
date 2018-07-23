@@ -37,6 +37,7 @@ namespace VSShortcutsManager
         public const int DynamicUserShortcutsStartCmdId = 0x3A00;
         public const int ClearUserShortcutsCmdId = 0x1210;
         public const int ScanExtensionsCmdId = 0x1300;
+        public const int CommandShortcutsToolWinCmdId = 0x1610;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
@@ -156,6 +157,9 @@ namespace VSShortcutsManager
                     IsValidMappingSchemeItem,
                     ExecuteMappingSchemeCommand,
                     OnBeforeQueryStatusMappingSchemeDynamicItem));
+
+                // Command Shortcuts Tool Window
+                commandService.AddCommand(CreateMenuItem(CommandShortcutsToolWinCmdId, this.OpenCommandShortcutsToolWin));
 
             }
         }
@@ -657,6 +661,31 @@ namespace VSShortcutsManager
         {
             VSShortcutsManagerPackage.SettingsManager.TryGetValue(BACKUP_FILE_PATH, out string backupFilePath);
             return backupFilePath;
+        }
+
+        // --------- Tool Windows --------
+
+        /// <summary>
+        /// Command Shortcuts Tool Window
+        /// Shows the tool window when the menu item is clicked.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event args.</param>
+        private void OpenCommandShortcutsToolWin(object sender, EventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Get the instance number 0 of this tool window. This window is single instance so this instance
+            // is actually the only one.
+            // The last flag is set to true so that if the tool window does not exists it will be created.
+            ToolWindowPane window = this.package.FindToolWindow(typeof(CommandShortcuts), 0, true);
+            if ((null == window) || (null == window.Frame))
+            {
+                throw new NotSupportedException("Cannot create tool window");
+            }
+
+            IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
+            ErrorHandler.ThrowOnFailure(windowFrame.Show());
         }
 
     }

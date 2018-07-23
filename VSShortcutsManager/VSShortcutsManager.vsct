@@ -87,6 +87,13 @@
           <MenuText>Scan &amp;Extensions</MenuText>
         </Strings>
       </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinCmdId" priority="0x0600" type="Button">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
+        <Strings>
+          <ButtonText>Show All Shortcuts</ButtonText>
+          <MenuText>Show &amp;All Shortcuts</MenuText>
+        </Strings>
+      </Button>
 
       <!-- Buttons on the User Shortcuts menu -->
       <Button guid="guidVSShortcutsManagerCmdSet" id="ImportUserShortcutsCmdId" priority="0x0100">
@@ -171,6 +178,7 @@
       <IDSymbol name="ManageUserShortcutsCmdId" value="0x1140"/>
       <IDSymbol name="ClearUserShortcutsCmdId" value="0x1210"/>
       <IDSymbol name="ScanExtensionsCmdId" value="0x1300"/>
+      <IDSymbol name="CommandShortcutsToolWinCmdId" value="0x1610" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
