@@ -37,6 +37,8 @@ namespace VSShortcutsManager
         public const int DynamicUserShortcutsStartCmdId = 0x3A00;
         public const int ClearUserShortcutsCmdId = 0x1210;
         public const int ScanExtensionsCmdId = 0x1300;
+        public const int AddNewShortcutCmdId = 0x1410;
+        public const int LiveShortcutsViewCmdId = 0x1420;
         public const int CommandShortcutsToolWinCmdId = 0x1610;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
@@ -160,6 +162,11 @@ namespace VSShortcutsManager
 
                 // Command Shortcuts Tool Window
                 commandService.AddCommand(CreateMenuItem(CommandShortcutsToolWinCmdId, this.OpenCommandShortcutsToolWin));
+
+                // Add New Keyboard Shortcut
+                commandService.AddCommand(CreateMenuItem(AddNewShortcutCmdId, this.OpenAddKeyboardShortcutDialog));
+                // Open Live Shortcuts View
+                commandService.AddCommand(CreateMenuItem(LiveShortcutsViewCmdId, this.OpenLiveShortcutsView));
 
             }
         }
@@ -663,7 +670,7 @@ namespace VSShortcutsManager
             return backupFilePath;
         }
 
-        // --------- Tool Windows --------
+        // --------- Windows --------
 
         /// <summary>
         /// Command Shortcuts Tool Window
@@ -686,6 +693,17 @@ namespace VSShortcutsManager
 
             IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
             ErrorHandler.ThrowOnFailure(windowFrame.Show());
+        }
+
+        private void OpenLiveShortcutsView(object sender, EventArgs e)
+        {
+            
+            MessageBox.Show("Press a modifier key (Ctrl, Alt, Shift) to see all bound shortcuts.", "Live Shortcuts View");
+        }
+
+        private void OpenAddKeyboardShortcutDialog(object sender, EventArgs e)
+        {
+            MessageBox.Show("Command: Edit.DuplicateCode\n\nScope: Text Editor\n\nShortcut: Ctrl+E, Ctrl+V", "Add Keyboard Shortcut", MessageBoxButtons.OKCancel);
         }
 
     }
