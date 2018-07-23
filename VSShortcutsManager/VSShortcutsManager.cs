@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell.Settings;
+using System.Xml.Linq;
 
 namespace VSShortcutsManager
 {
@@ -395,9 +396,25 @@ namespace VSShortcutsManager
                 return;
             }
 
+            ParseVSSettingsFile(chosenFile);
+
             LoadKeyboardShortcutsFromVSSettingsFile(chosenFile);
 
             AddUserShortcutsFileToRegistry(chosenFile);
+        }
+
+        private static void ParseVSSettingsFile(string chosenFile)
+        {
+            XDocument xDoc = XDocument.Load(chosenFile);
+            var userShortcuts = xDoc.Descendants("UserShortcuts");
+            var shortcutList = new List<VSShortcut>();
+            foreach (var userShortcut in userShortcuts)
+            {
+                foreach (var shortcut in userShortcut.Descendants("Shortcut"))
+                {
+                    shortcutList.Add(new VSShortcut(shortcut.Attribute("Command").Value, shortcut.Attribute("Scope").Value, shortcut.Value));
+                }
+            }
         }
 
         private string BrowseForVsSettingsFile()
@@ -708,4 +725,17 @@ namespace VSShortcutsManager
 
     }
 
+    class VSShortcut
+    {
+        public string command { get; set; }
+        public string scope { get; set; }
+        public string key { get; set; }
+
+        public VSShortcut(string command, string scope, string key)
+        {
+            this.command = command;
+            this.scope = scope;
+            this.key = key;
+        }
+    }
 }
