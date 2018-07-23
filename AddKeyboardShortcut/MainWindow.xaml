@@ -21,8 +21,61 @@
                 <StackPanel Name="resultStack"></StackPanel>
             </ScrollViewer>
         </Border>
-        <Label x:Name="lblScope" Content="Scope:" HorizontalAlignment="Left" Margin="43,95,0,0" VerticalAlignment="Top" Height="26" Width="42"/>
-        <TextBox x:Name="txtScope" Text="{Binding Path=Scope, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,95,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="190" TextChanged="txtScope_TextChanged"/>
+        <Label x:Name="lblScope" Content="Scope:" HorizontalAlignment="Left" Margin="43,95,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
+        <ComboBox Name="cmbScopeList" Width="265"  HorizontalAlignment="left" Margin="198,94,0,298" SelectedValuePath="Content" >
+            <ComboBoxItem Content="Team Explorer" HorizontalAlignment="Left" Selector.IsSelected="True"/>
+            <ComboBoxItem Content="VC Dialog Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Find All References Tool Window" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Live Property Explorer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="XML (Text) Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Text Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Microsoft SQL Server Data Tools, T-SQL PDW Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Work Item Results View" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="ADO.NET Entity Data Model Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Solution Explorer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Query Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="CSharp Editor with Encoding" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="WebBrowser" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="CSS Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="DataSet Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="XAML Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="DEE22B65-9761-4A26-8FB2-759B971D6DFC" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="View Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="XAML Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Microsoft SQL Server Data Tools, Table Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Microsoft Visual Basic Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Global" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="HTML Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Live Visual Tree" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Work Item Query View" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="DOM Explorer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Team Foundation Build Detail Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Database Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Work Item Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="JSON Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="CSharp Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="VC String Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Interactive Window" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Merge Editor Window" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Microsoft Visual Basic Code Page Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Settings Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Windows Forms Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Markdown Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="VC Accelerator Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Managed Resources Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="FSharpEditorFactory" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="JavaScript Console" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Difference Viewer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Microsoft SQL Server Data Tools, Schema Compare" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Table Designer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="HTML Editor Design View" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="HTML Editor Source View" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="VC Image Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Microsoft SQL Server Data Tools, T-SQL Editor" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Query Results" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="Test Explorer" HorizontalAlignment="Left" />
+            <ComboBoxItem Content="XML Schema Designer" HorizontalAlignment="Left" />
+        </ComboBox>
         <Label x:Name="lblShortcut" Content="Shortcut:" HorizontalAlignment="Left" Margin="43,145,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
         <TextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="190" TextChanged="txtShortcut_TextChanged"/>
         <Label x:Name="lblConflicts" Content="Potential Conflicts:" HorizontalAlignment="Left" Margin="43,195,0,0" VerticalAlignment="Top" Height="26" Width="105"/>

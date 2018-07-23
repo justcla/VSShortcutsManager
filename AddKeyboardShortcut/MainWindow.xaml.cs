@@ -30,7 +30,7 @@ namespace AddKeyboardShortcut
         private void btnAddShortcut_Click(object sender, RoutedEventArgs e)
         {
             string command = txtCommand.Text;
-            string scope = txtScope.Text;
+            string scope = cmbScopeList.SelectedValue.ToString();
             string shortcut = txtShortcut.Text;
 
             const string succcessMess = "Keyboard shortcut added successfully";
@@ -39,14 +39,13 @@ namespace AddKeyboardShortcut
 
         private void txtCommand_TextChanged(object sender, TextChangedEventArgs e) => reloadConflicts();
 
-        private void txtScope_TextChanged(object sender, TextChangedEventArgs e) => reloadConflicts();
-
+        
         private void txtShortcut_TextChanged(object sender, TextChangedEventArgs e) => reloadConflicts();
         private void reloadConflicts()
         {
             //Temporary.. ToDo - Replace with actual functionality
             string command = txtCommand.Text;
-            string scope = txtScope.Text;
+            string scope = cmbScopeList.SelectedValue.ToString();
             string shortcut = txtShortcut.Text;
 
             string conflict = "";
@@ -153,6 +152,8 @@ namespace AddKeyboardShortcut
             var border = (resultStack.Parent as ScrollViewer).Parent as Border;
             border.Visibility = System.Windows.Visibility.Hidden;
         }
+
+        
     }
 
     class IntellisenseModel
