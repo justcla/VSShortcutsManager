@@ -396,14 +396,16 @@ namespace VSShortcutsManager
                 return;
             }
 
-            ParseVSSettingsFile(chosenFile);
+            var shortcutList = ParseVSSettingsFile(chosenFile);
+            var window = new ImportShortcuts(shortcutList);
+            window.ShowModal();
 
             LoadKeyboardShortcutsFromVSSettingsFile(chosenFile);
 
             AddUserShortcutsFileToRegistry(chosenFile);
         }
 
-        private static void ParseVSSettingsFile(string chosenFile)
+        private static List<VSShortcut> ParseVSSettingsFile(string chosenFile)
         {
             XDocument xDoc = XDocument.Load(chosenFile);
             var userShortcuts = xDoc.Descendants("UserShortcuts");
@@ -415,8 +417,9 @@ namespace VSShortcutsManager
                     shortcutList.Add(new VSShortcut(shortcut.Attribute("Command").Value, shortcut.Attribute("Scope").Value, shortcut.Value));
                 }
             }
+            return shortcutList;
         }
-
+       
         private string BrowseForVsSettingsFile()
         {
             const string vsSettingsFilter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";
@@ -725,17 +728,19 @@ namespace VSShortcutsManager
 
     }
 
-    class VSShortcut
+    public class VSShortcut
     {
-        public string command { get; set; }
-        public string scope { get; set; }
-        public string key { get; set; }
+        public string Command { get; set; }
+        public string Scope { get; set; }
+        public string Shortcut { get; set; }
+        public string Conflict { get; set; }
 
-        public VSShortcut(string command, string scope, string key)
+        public VSShortcut(string command, string scope, string shortcut)
         {
-            this.command = command;
-            this.scope = scope;
-            this.key = key;
+            this.Command = command;
+            this.Scope = scope;
+            this.Shortcut = shortcut;
+            this.Conflict = "None";
         }
     }
 }
