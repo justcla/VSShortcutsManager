@@ -415,7 +415,7 @@ namespace VSShortcutsManager
             {
                 foreach (var shortcut in userShortcut.Descendants("Shortcut"))
                 {
-                    shortcutList.Add(new VSShortcut(shortcut.Attribute("Command").Value, shortcut.Attribute("Scope").Value, shortcut.Value));
+                    shortcutList.Add(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value, Conflict="None" });
                 }
             }
             return shortcutList;
@@ -735,13 +735,5 @@ namespace VSShortcutsManager
         public string Scope { get; set; }
         public string Shortcut { get; set; }
         public string Conflict { get; set; }
-
-        public VSShortcut(string command, string scope, string shortcut)
-        {
-            this.Command = command;
-            this.Scope = scope;
-            this.Shortcut = shortcut;
-            this.Conflict = "None";
-        }
     }
 }

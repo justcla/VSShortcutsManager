@@ -38,11 +38,4 @@ namespace VSShortcutsManager
             grid.ItemsSource = items;
         }
     }
-
-    class VSShortcut
-    {
-        public string Command { get; set; }
-        public string Shortcut { get; set; }
-        public string Scope { get; set; }
-    }
 }
