@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26711.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardShortcutsManager", "VSShortcutsManager\KeyboardShortcutsManager.csproj", "{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardShortcutsManager", "VSShortcutsManager\KeyboardShortcutsManager.csproj", "{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShortcutsLiveView", "ShortcutsLiveView\ShortcutsLiveView.csproj", "{6D5030B5-28EF-41CF-97A9-DEF294E140A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddKeyboardShortcut", "AddKeyboardShortcut\AddKeyboardShortcut.csproj", "{ED37890C-8E42-4102-8E90-481C8D30AAA4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0E5EB321-BB7B-4896-A83F-2D32FC2D228D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D5030B5-28EF-41CF-97A9-DEF294E140A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D5030B5-28EF-41CF-97A9-DEF294E140A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D5030B5-28EF-41CF-97A9-DEF294E140A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D5030B5-28EF-41CF-97A9-DEF294E140A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED37890C-8E42-4102-8E90-481C8D30AAA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED37890C-8E42-4102-8E90-481C8D30AAA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED37890C-8E42-4102-8E90-481C8D30AAA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED37890C-8E42-4102-8E90-481C8D30AAA4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
