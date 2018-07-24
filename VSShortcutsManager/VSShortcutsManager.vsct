@@ -15,19 +15,25 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="VSShortcutsManagerGroup" priority="0x0650">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
       </Group>
-      <!-- Two main items on the Keyboard shortcuts menu: Actions, Schemes -->
-      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" priority="0x0100">
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu"/>
+      <!-- Three main items on the Keyboard shortcuts menu: Global Tools/Windows, User Shortcuts Actions, Mapping Schemes -->
+      <Group guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" priority="0x0100">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="MainKeyboardShortcutsMenu"/>
+      </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" priority="0x0150">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="MainKeyboardShortcutsMenu"/>
       </Group>
       <Group guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesGroup" priority="0x200" >
-        <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu" />
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="MainKeyboardShortcutsMenu" />
       </Group>
+      <!-- Minor groups -->
+      <!-- User shortcuts minor groups -->
       <Group guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsGroup" priority="0x0100" >
         <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsMenu" />
       </Group>
       <Group guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup" priority="0x0200" >
         <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsMenu" />
       </Group>
+      <!-- Mapping scheme minor groups -->
       <Group guid="guidVSShortcutsManagerCmdSet" id="MappingSchemeActionsGroup" priority="0x0100" >
         <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" />
       </Group>
@@ -37,7 +43,7 @@
     </Groups>
     
     <Menus>
-      <Menu guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionsMenu" priority="0x0000" type="Menu">
+      <Menu guid="guidVSShortcutsManagerCmdSet" id="MainKeyboardShortcutsMenu" priority="0x0000" type="Menu">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="VSShortcutsManagerGroup" />
         <Strings>
           <ButtonText>&amp;Keyboard Shortcuts</ButtonText>
@@ -65,6 +71,29 @@
     </Menus>
 
     <Buttons>
+      <!-- Global Tools/Windows/Actions group -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinCmdId" priority="0x0100" type="Button">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" />
+        <Strings>
+          <ButtonText>Show All Shortcuts</ButtonText>
+          <MenuText>Show &amp;All Shortcuts</MenuText>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0200" type="Button">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" />
+        <Strings>
+          <ButtonText>Add New Shortcut</ButtonText>
+          <MenuText>Add &amp;New Shortcut</MenuText>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="LiveShortcutsViewCmdId" priority="0x0300" type="Button">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" />
+        <Strings>
+          <ButtonText>Live Shortcuts View</ButtonText>
+          <MenuText>Live Shortcuts &amp;View</MenuText>
+        </Strings>
+      </Button>
+
       <!-- Buttons on main shortcuts action group -->
       <Button guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
@@ -153,7 +182,7 @@
       <!-- Menus and Groups -->
       <IDSymbol name="VSShortcutsManagerGroup" value="0x0010" />
       <IDSymbol name="ShortcutsActionGroup" value="0x1020" />
-      <IDSymbol name="ShortcutsActionsMenu" value="0x1030" />
+      <IDSymbol name="MainKeyboardShortcutsMenu" value="0x1030" />
       <IDSymbol name="MappingSchemesGroup" value="0x1040" />
       <IDSymbol name="MappingSchemesMenu" value="0x1050" />
       <IDSymbol name="ShortcutSchemesGroup" value="0x2001" />
@@ -162,6 +191,7 @@
       <IDSymbol name="UserShortcutsMenu" value="0x1080"/>
       <IDSymbol name="UserShortcutsActionsGroup" value="0x1090"/>
       <IDSymbol name="UserShortcutsGroup" value="0x1100"/>
+      <IDSymbol name="GlobalToolsGroups" value="0x2003"/>
 
       <!--Commands-->
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
@@ -171,6 +201,9 @@
       <IDSymbol name="ManageUserShortcutsCmdId" value="0x1140"/>
       <IDSymbol name="ClearUserShortcutsCmdId" value="0x1210"/>
       <IDSymbol name="ScanExtensionsCmdId" value="0x1300"/>
+      <IDSymbol name="AddNewShortcutCmdId" value="0x1410"/>
+      <IDSymbol name="LiveShortcutsViewCmdId" value="0x1420"/>
+      <IDSymbol name="CommandShortcutsToolWinCmdId" value="0x1610" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  

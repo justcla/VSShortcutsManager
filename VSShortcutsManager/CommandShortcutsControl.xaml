@@ -1,0 +1,24 @@
+﻿<UserControl x:Class="VSShortcutsManager.CommandShortcutsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:VSShortcutsManager"
+             mc:Ignorable="d" 
+             d:DesignHeight="200" d:DesignWidth="300">
+    <DockPanel LastChildFill="True">
+        <Label DockPanel.Dock="Top"
+            Content="Double-click a command to add a shortcut" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <DataGrid
+            AlternatingRowBackground="Gainsboro" AlternationCount="2"
+            AutoGenerateColumns="False"
+            IsReadOnly="True"
+            Loaded="DataGrid_Loaded">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Command" Binding="{Binding Command}" Width="3*" />
+                <DataGridTextColumn Header="Shortcut" Binding="{Binding Shortcut}" Width="1*" />
+                <DataGridTextColumn Header="Scope" Binding="{Binding Scope}" Width="1*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>
