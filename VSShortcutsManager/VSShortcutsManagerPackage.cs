@@ -34,12 +34,13 @@ namespace VSShortcutsManager
         /// </summary>
         protected override void Initialize()
         {
+            base.Initialize();
+
             // Initialize settings manager (TODO: could be done lazily on get)
-            SettingsManager = (ISettingsManager)GetGlobalService(typeof(SVsSettingsPersistenceManager));
+            SettingsManager = (ISettingsManager)this.GetService(typeof(SVsSettingsPersistenceManager));
 
             // Adds commands handlers for the VS Shortcuts operations (Apply, Backup, Restore, Reset)
             VSShortcutsManager.Initialize(this);
-            base.Initialize();
         }
 
         // A horrible hack but SVsSettingsPersistenceManager isn't public and we need something with the right GUID to get the service.

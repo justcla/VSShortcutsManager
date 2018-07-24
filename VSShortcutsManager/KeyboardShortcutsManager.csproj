@@ -56,12 +56,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BindingSequence.cs" />
+    <Compile Include="Command.cs" />
+    <Compile Include="CommandBinding.cs" />
+    <Compile Include="CommandId.cs" />
     <Compile Include="CommandShortcuts.cs" />
     <Compile Include="CommandShortcutsControl.xaml.cs">
       <DependentUpon>CommandShortcutsControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="DynamicItemMenuCommand.cs" />
     <Compile Include="FileUtils.cs" />
+    <Compile Include="KeyBindingScope.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SaveShortcutsDialog.xaml.cs">
       <DependentUpon>SaveShortcutsDialog.xaml</DependentUpon>
@@ -73,6 +78,7 @@
     <Compile Include="ShortcutsScanner.cs" />
     <Compile Include="UserShortcutsManager.cs" />
     <Compile Include="VSPathUtils.cs" />
+    <Compile Include="VSShortcutQueryEngine.cs" />
     <Compile Include="VSShortcutsManager.cs" />
     <Compile Include="VSShortcutsManagerPackage.cs" />
   </ItemGroup>
