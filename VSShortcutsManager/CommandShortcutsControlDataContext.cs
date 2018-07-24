@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace VSShortcutsManager
@@ -20,16 +19,16 @@ namespace VSShortcutsManager
             this.Commands = this.allCommands.Clone();
         }
 
-        public uint SearchCommands(string search)
+        public uint SearchCommands(string searchCriteria, bool matchCase = true)
         {
-            if (string.IsNullOrWhiteSpace(search))
+            if (string.IsNullOrWhiteSpace(searchCriteria))
             {
                 return 0;
             }
 
-            var result = this.allCommands
-                .Where(command => command.Command.Contains(search));
-            this.Commands = new VSCommandShortcuts(result);
+            var commandsFilter = new CommandsFilterFactory().GetCommandsFilter(searchCriteria, matchCase);
+
+            this.Commands = commandsFilter.Filter(this.allCommands);
 
             return (uint)this.Commands.Count;
         }

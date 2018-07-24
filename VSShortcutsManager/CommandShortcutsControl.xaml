@@ -15,9 +15,9 @@
             IsReadOnly="True"
             ItemsSource="{Binding Commands}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Command" Binding="{Binding Command}" Width="3*" />
-                <DataGridTextColumn Header="Shortcut" Binding="{Binding Shortcut}" Width="1*" />
-                <DataGridTextColumn Header="Scope" Binding="{Binding Scope}" Width="1*" />
+                <DataGridTextColumn Header="Command" Binding="{Binding Command, Mode=OneTime}" Width="3*" />
+                <DataGridTextColumn Header="Shortcut" Binding="{Binding Shortcut, Mode=OneTime}" Width="1*" />
+                <DataGridTextColumn Header="Scope" Binding="{Binding Scope, Mode=OneTime}" Width="1*" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

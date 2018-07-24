@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -52,6 +54,38 @@ namespace VSShortcutsManager
             var control = (CommandShortcutsControl)this.Content;
             var controlDataContext = (CommandShortcutsControlDataContext)control.DataContext;
             controlDataContext.ClearSearch();
+        }
+
+        private IVsEnumWindowSearchOptions m_optionsEnum;
+        public override IVsEnumWindowSearchOptions SearchOptionsEnum
+        {
+            get
+            {
+                if (m_optionsEnum == null)
+                {
+                    List<IVsWindowSearchOption> list = new List<IVsWindowSearchOption>();
+
+                    list.Add(this.MatchCaseOption);
+
+                    m_optionsEnum = new WindowSearchOptionEnumerator(list) as IVsEnumWindowSearchOptions;
+                }
+
+                return m_optionsEnum;
+            }
+        }
+
+        private WindowSearchBooleanOption m_matchCaseOption;
+        public WindowSearchBooleanOption MatchCaseOption
+        {
+            get
+            {
+                if (m_matchCaseOption == null)
+                {
+                    m_matchCaseOption = new WindowSearchBooleanOption("Match case", "Match case", false);
+                }
+
+                return m_matchCaseOption;
+            }
         }
 
         public override bool SearchEnabled => true;
