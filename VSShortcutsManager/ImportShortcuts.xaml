@@ -10,8 +10,10 @@
         <Label DockPanel.Dock="Top"
             Content="Check the shortcuts you want to import" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
         <DataGrid
+            Height="400"
+            DockPanel.Dock="Top"
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
-            AutoGenerateColumns="False"
+            AutoGenerateColumns="False" Margin="0,10,0,10"
             ItemsSource="{Binding}">
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="Include" IsReadOnly="False" Binding="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
@@ -21,5 +23,6 @@
                 <DataGridTextColumn Header="Conflict" IsReadOnly="True" Binding="{Binding Conflict}" Width="1*" />
             </DataGrid.Columns>
         </DataGrid>
+        <Button DockPanel.Dock="Bottom" Content="OK" Height="50" VerticalAlignment="Bottom" Width="100" Name="OkButton" Click="OkButton_Click" ClickMode="Release" />
     </DockPanel>
 </ui:DialogWindow>

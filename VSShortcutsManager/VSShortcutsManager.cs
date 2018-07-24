@@ -399,6 +399,7 @@ namespace VSShortcutsManager
             var shortcutList = ParseVSSettingsFile(chosenFile);
             var window = new ImportShortcuts(shortcutList);
             window.ShowModal();
+            var newShortcutList = window.GetCheckedShortcuts();
 
             LoadKeyboardShortcutsFromVSSettingsFile(chosenFile);
 

@@ -23,18 +23,18 @@ namespace VSShortcutsManager
 
         public class VSShortcutUI : INotifyPropertyChanged
         {
-            private bool included { set; get; }
-            private VSShortcut shortcut;
+            public bool isIncluded { private set; get; }
+            public VSShortcut vsShortcut { get; }
 
             public bool Included
             {
                 get
                 {
-                    return this.included;
+                    return this.isIncluded;
                 }
                 set
                 {
-                    this.included = value;
+                    this.isIncluded = value;
                     OnPropertyChanged();
                 }
             }
@@ -43,7 +43,7 @@ namespace VSShortcutsManager
             {
                 get
                 {
-                    return this.shortcut.Command;
+                    return this.vsShortcut.Command;
                 }
             }
 
@@ -51,7 +51,7 @@ namespace VSShortcutsManager
             {
                 get
                 {
-                    return this.shortcut.Scope;
+                    return this.vsShortcut.Scope;
                 }
             }
 
@@ -59,7 +59,7 @@ namespace VSShortcutsManager
             {
                 get
                 {
-                    return this.shortcut.Shortcut;
+                    return this.vsShortcut.Shortcut;
                 }
             }
 
@@ -67,14 +67,14 @@ namespace VSShortcutsManager
             {
                 get
                 {
-                    return this.shortcut.Conflict;
+                    return this.vsShortcut.Conflict;
                 }
             }
 
             public VSShortcutUI(bool included, VSShortcut shortcut)
             {
-                this.included = included;
-                this.shortcut = shortcut;
+                this.isIncluded = included;
+                this.vsShortcut = shortcut;
             }
 
             private void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -82,6 +82,24 @@ namespace VSShortcutsManager
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
             public event PropertyChangedEventHandler PropertyChanged;
+        }
+
+        private void OkButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        public List<VSShortcut> GetCheckedShortcuts()
+        {
+            var shortcuts = new List<VSShortcut>();
+            foreach (var shortcut in (List<VSShortcutUI>) (this.DataContext))
+            {
+                if (shortcut.isIncluded)
+                {
+                    shortcuts.Add(shortcut.vsShortcut);
+                }
+            }
+            return shortcuts;
         }
     }
 }
