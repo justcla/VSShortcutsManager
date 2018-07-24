@@ -13,7 +13,7 @@
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
             AutoGenerateColumns="False"
             IsReadOnly="True"
-            Loaded="DataGrid_Loaded">
+            ItemsSource="{Binding Commands}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Command" Binding="{Binding Command}" Width="3*" />
                 <DataGridTextColumn Header="Shortcut" Binding="{Binding Shortcut}" Width="1*" />

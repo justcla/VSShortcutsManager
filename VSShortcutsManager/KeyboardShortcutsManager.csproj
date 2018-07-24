@@ -60,6 +60,8 @@
     <Compile Include="CommandShortcutsControl.xaml.cs">
       <DependentUpon>CommandShortcutsControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CommandShortcutsControlDataContext.cs" />
+    <Compile Include="CommandShortcutsSearchTask.cs" />
     <Compile Include="DynamicItemMenuCommand.cs" />
     <Compile Include="FileUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
