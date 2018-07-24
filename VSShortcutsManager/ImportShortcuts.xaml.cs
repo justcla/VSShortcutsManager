@@ -10,6 +10,8 @@ namespace VSShortcutsManager
     /// </summary>
     public partial class ImportShortcuts : DialogWindow
     {
+        public bool isCancelled { get; private set; }
+
         public ImportShortcuts(List<VSShortcut> shortcuts)
         {
             var shortcutsUI = new List<VSShortcutUI>();
@@ -86,15 +88,22 @@ namespace VSShortcutsManager
 
         private void OkButton_Click(object sender, System.Windows.RoutedEventArgs e)
         {
+            this.isCancelled = false;
             Close();
         }
 
-        public List<VSShortcut> GetCheckedShortcuts()
+        private void CancelButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            this.isCancelled = true;
+            Close();
+        }
+
+        public List<VSShortcut> GetUncheckedShortcuts()
         {
             var shortcuts = new List<VSShortcut>();
             foreach (var shortcut in (List<VSShortcutUI>) (this.DataContext))
             {
-                if (shortcut.isIncluded)
+                if (!shortcut.isIncluded)
                 {
                     shortcuts.Add(shortcut.vsShortcut);
                 }

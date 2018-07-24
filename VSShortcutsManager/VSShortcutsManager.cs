@@ -396,20 +396,68 @@ namespace VSShortcutsManager
                 return;
             }
 
-            var shortcutList = ParseVSSettingsFile(chosenFile);
+            XDocument vsSettingsFile = XDocument.Load(chosenFile);
+            var shortcutList = ParseVSSettingsFile(vsSettingsFile);
             var window = new ImportShortcuts(shortcutList);
             window.ShowModal();
-            var newShortcutList = window.GetCheckedShortcuts();
+            if (!window.isCancelled)
+            {
+                var removeList = window.GetUncheckedShortcuts();
+                var newFile = UpdateAndSaveNewSettingsFile(vsSettingsFile, removeList);
+                LoadKeyboardShortcutsFromVSSettingsFile(newFile);
+                try
+                {
+                    File.Delete(newFile);
+                }
+                catch (Exception e)
+                {
+                    System.Diagnostics.Debug.WriteLine("Unable to delete temporary settings file: {0}", e.ToString());
+                }
 
-            LoadKeyboardShortcutsFromVSSettingsFile(chosenFile);
-
-            AddUserShortcutsFileToRegistry(chosenFile);
+                AddUserShortcutsFileToRegistry(chosenFile);
+            }
         }
 
-        private static List<VSShortcut> ParseVSSettingsFile(string chosenFile)
+        private string UpdateAndSaveNewSettingsFile(XDocument vsSettingsFile, List<VSShortcut> removeList)
         {
-            XDocument xDoc = XDocument.Load(chosenFile);
-            var userShortcuts = xDoc.Descendants("UserShortcuts");
+            // Gather shortcuts to be removed
+            var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
+            var shortcutsToDelete = new List<XElement>();
+            foreach (var userShortcut in userShortcuts)
+            {
+                foreach (var shortcut in userShortcut.Descendants("Shortcut"))
+                {
+                    if (removeList.Contains(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value }))
+                    {
+                        shortcutsToDelete.Add(shortcut);
+                    }
+                }
+            }
+
+            // remove shortcuts
+            foreach (var shortcut in shortcutsToDelete)
+            {
+                shortcut.Remove();
+            }
+
+            // save vs settings
+            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+
+            // Generate default path for saving shortcuts
+            // e.g. c:\users\justcla\appdata\local\microsoft\visualstudio\15.0_cf83efb8exp\Settings\Exp\CurrentSettings-2017-12-27-1.vssettings
+            string uniqueExportPath = GetExportFilePath(vsProfileDataManager);
+            string userExportPath = Path.GetDirectoryName(uniqueExportPath);
+            string uniqueFilename = Path.GetFileNameWithoutExtension(uniqueExportPath);
+            string fileExtension = Path.GetExtension(uniqueExportPath);
+            string saveFilePath = Path.Combine(userExportPath, $"{uniqueFilename}{fileExtension}");
+
+            vsSettingsFile.Save(saveFilePath);
+            return saveFilePath;
+        }
+
+        private List<VSShortcut> ParseVSSettingsFile(XDocument vsSettingsFile)
+        {
+            var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
             var shortcutList = new List<VSShortcut>();
             foreach (var userShortcut in userShortcuts)
             {
@@ -440,7 +488,7 @@ namespace VSShortcutsManager
             bool success = ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
             if (success)
             {
-                MessageBox.Show($"Keyboard shortcuts successfully imported: {Path.GetFileName(importFilePath)}", MSG_CAPTION_IMPORT);
+                MessageBox.Show($"Keyboard shortcuts successfully imported!", MSG_CAPTION_IMPORT);
             }
         }
 
@@ -735,5 +783,22 @@ namespace VSShortcutsManager
         public string Scope { get; set; }
         public string Shortcut { get; set; }
         public string Conflict { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var item = obj as VSShortcut;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            return Command.Equals(item.Command) && Scope.Equals(item.Scope) && Shortcut.Equals(item.Shortcut);
+        }
+
+        public override int GetHashCode()
+        {
+            return Command.GetHashCode() + Scope.GetHashCode() + Shortcut.GetHashCode();
+        }
     }
 }
