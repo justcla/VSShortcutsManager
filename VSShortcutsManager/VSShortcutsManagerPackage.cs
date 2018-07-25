@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Settings;
+using Microsoft.VisualStudio.Shell;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Settings;
 
 namespace VSShortcutsManager
 {
