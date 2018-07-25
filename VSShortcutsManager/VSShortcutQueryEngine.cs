@@ -514,9 +514,15 @@ namespace VSShortcutsManager
             }
         }
 
-        #endregion
+        private KeybindingScope CreateFakeBindingScope(string scopeName)
+        {
+            return CreateFakeBindingScope(scopeName, Guid.NewGuid());
+        }
 
-        #region Private Methods
+        private KeybindingScope CreateFakeBindingScope(string scopeName, Guid scopeGuid)
+        {
+            return new KeybindingScope(scopeName, scopeGuid, allowNavKeyBinding: false);
+        }
 
         Tuple<ModifierKeys, string> ParseSingleChordFromBindingString(string bindingString)
         {

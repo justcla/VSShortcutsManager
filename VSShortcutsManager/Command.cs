@@ -3,7 +3,6 @@ using System.Diagnostics;
 
 namespace VSShortcutsManager
 {
-    [DebuggerDisplay("{DisplayName} ({CanonicalName})")]
     public class Command
     {
         public Command(CommandId id, string displayName,  string canonicalName, IReadOnlyList<CommandBinding> bindings)
