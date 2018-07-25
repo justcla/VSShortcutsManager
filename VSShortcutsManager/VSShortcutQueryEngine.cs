@@ -1,14 +1,20 @@
+using CommandTable;
 using EnvDTE;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell.Settings;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
+
+using Task = System.Threading.Tasks.Task;
 
 namespace VSShortcutsManager
 {
@@ -36,14 +42,17 @@ namespace VSShortcutsManager
         /// </summary>
         private static readonly uint GlobalScopeResId = ID_Intl_Base + 18;
 
+        /// <summary>
+        /// Removes access keys from the command strings returned from the VSCT file
+        /// </summary>
+        private static readonly AccessKeyRemovingConverter AccessKeyRemovingConverter = new AccessKeyRemovingConverter();
+
         // Backing store for various lazily fetched shell services
         private DTE dte;
         private Commands commands;
         private IVsShell shell;
         private IVsUIShell5 uiShell;
         private IServiceProvider serviceProvider;
-
-        private List<Command> allCommands;
 
         /// <summary>
         /// Static map from Key identifier to resource identifier in VS.
@@ -138,12 +147,17 @@ namespace VSShortcutsManager
         /// <summary>
         /// Maps a scope GUID to information about that scope (such as its display name)
         /// </summary>
-        private Dictionary<Guid, KeybindingScope> scopeGuidToScopeInfoMap = new Dictionary<Guid, KeybindingScope>();
+        private readonly Dictionary<Guid, KeybindingScope> scopeGuidToScopeInfoMap = new Dictionary<Guid, KeybindingScope>();
 
         /// <summary>
         /// Maps a scope name to information about that scope (such as its GUID)
         /// </summary>
-        private Dictionary<string, KeybindingScope> scopeNameToScopeInfoMap = new Dictionary<string, KeybindingScope>();
+        private readonly Dictionary<string, KeybindingScope> scopeNameToScopeInfoMap = new Dictionary<string, KeybindingScope>();
+
+        /// <summary>
+        /// Map from CommandId to Command object from the CTM. Populated in PopulateCTMCommands
+        /// </summary>
+        private readonly Dictionary<CommandId, CommandTable.Command> commandIdToCTMCommandMap = new Dictionary<CommandId, CommandTable.Command>();
 
         #endregion
 
@@ -290,36 +304,109 @@ namespace VSShortcutsManager
 
         #endregion
 
-        #region Public Properties
+        #region Public Methods
 
-        public IEnumerable<Command> AllCommands
+        public async Task<IEnumerable<Command>> GetAllCommandsAsync()
         {
-            get
+            List<Command> result = new List<Command>();
+            if(this.commandIdToCTMCommandMap.Count == 0)
             {
-                if(this.allCommands == null)
+                await this.PopulateCTMCommandsAsync();
+            }
+
+            foreach (EnvDTE.Command c in this.DTECommands)
+            {
+                List<CommandBinding> bindings = new List<CommandBinding>();
+
+                if (c.Bindings != null && c.Bindings is object[] && ((object[])c.Bindings).Length > 0)
                 {
-                    this.allCommands = new List<Command>();
-
-                    foreach (EnvDTE.Command c in this.DTECommands)
+                    object[] bindingsObj = (object[])c.Bindings;
+                    foreach (string s in bindingsObj)
                     {
-                        List<CommandBinding> bindings = new List<CommandBinding>();
-
-                        if (c.Bindings != null && c.Bindings is object[] && ((object[])c.Bindings).Length > 0)
-                        {
-                            object[] bindingsObj = (object[])c.Bindings;
-                            foreach (string s in bindingsObj)
-                            {
-                                bindings.Add(ParseBindingFromString(new Guid(c.Guid), c.ID, s));
-                            }
-                        }
-
-                        this.allCommands.Add(new Command(new CommandId(Guid.Parse(c.Guid), c.ID), c.Name, bindings));
+                        bindings.Add(ParseBindingFromString(new Guid(c.Guid), c.ID, s));
                     }
                 }
 
-                return this.allCommands;
+                CommandId id = new CommandId(Guid.Parse(c.Guid), c.ID);
+                CommandTable.Command ctmCommand = this.commandIdToCTMCommandMap[id];
+                string name = GetDisplayTextFromCTMCommand(ctmCommand);
+                result.Add(new Command(id, name, c.Name, bindings));
             }
+
+            return result;
         }
+
+        public Task<IEnumerable<KeybindingScope>> GetAllBindingScopesAsync()
+        {
+            return Task.FromResult<IEnumerable<KeybindingScope>>(ScopeGuidToScopeInfoMap.Values);
+        }
+
+        public async Task<Command> GetCommandByCommandIdAsync(CommandId id)
+        {
+            IEnumerable<Command> commands = await GetAllCommandsAsync();
+            return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
+        }
+
+        public async Task<IDictionary<string, IEnumerable<CommandBinding>>> GetBindingsForModifiersAsync(Guid scope, bool includeGlobals, BindingSequence initialBindingSequence, ModifierKeys primaryModifiers)
+        {
+            IEnumerable<Command> commands = await GetAllCommandsAsync();
+            Dictionary<string, IEnumerable<CommandBinding>> bindingMap = new Dictionary<string, IEnumerable<CommandBinding>>();
+
+            foreach(Command c in commands)
+            {
+                foreach (CommandBinding binding in c.Bindings)
+                { 
+                    if(ScopeMatches(scope, binding.Scope.Guid) || (ScopeIsGlobal(binding.Scope.Guid) && includeGlobals))
+                    {
+                        BindingSequence firstBindingSequence = binding.Sequences[0];
+
+                        // Check if the user given 'starting' binding sequence matches this command's binding sequence. This means the modifiers match (exactly)
+                        // AND if the 'starting' binding sequence congtains a key then this command's binding also has to start with that key.
+                        if ((firstBindingSequence.Modifiers == initialBindingSequence.Modifiers)
+                            && (string.IsNullOrEmpty(initialBindingSequence.Key) || (firstBindingSequence.Key == initialBindingSequence.Key)))
+                        {
+                            // If the primaryModifiers is set to anything other than None then we want to further filter to only command bindings whose
+                            // SECOND sequence consists of those modifiers
+                            if(primaryModifiers != ModifierKeys.None)
+                            {
+                                if(binding.Sequences.Count !=2 || (binding.Sequences[1].Modifiers != primaryModifiers))
+                                {
+                                    continue;
+                                }
+                            }
+
+                            IEnumerable<CommandBinding> untypedBindings;
+                            if (!bindingMap.TryGetValue(firstBindingSequence.Key, out untypedBindings))
+                            {
+                                untypedBindings = new List<CommandBinding>();
+                                bindingMap[firstBindingSequence.Key] = untypedBindings;
+                            }
+
+                            List<CommandBinding> typedBindings = (List<CommandBinding>)untypedBindings;
+                            typedBindings.Add(binding);
+                        }
+                    }
+                }
+            }
+
+            return bindingMap;
+        }
+
+        private bool ScopeIsGlobal(Guid scope)
+        {
+            return scope == VSConstants.GUID_VSStandardCommandSet97;
+        }
+
+        private bool ScopeMatches(Guid comparisonBase, Guid toTest)
+        {
+            if(comparisonBase == Guid.Empty)
+            {
+                return true;
+            }
+
+            return comparisonBase == toTest;
+        }
+
         #endregion
 
         #region Private Methods
@@ -344,7 +431,7 @@ namespace VSShortcutsManager
             return new Tuple<ModifierKeys, string>(mods, bindingString.EndsWith("+") ? "+" : splitKeys[splitKeys.Length - 1]);
         }
 
-        CommandBinding ParseBindingFromString(Guid guid, int id, string bindingString)
+        private CommandBinding ParseBindingFromString(Guid guid, int id, string bindingString)
         {
             if (bindingString.Contains("::"))
             {
@@ -381,8 +468,8 @@ namespace VSShortcutsManager
                         chords = new string[] { part1, part2 };
                     }
 
-                    Tuple<ModifierKeys, string> sequence1 = ParseSingleChordFromBindingString(chords[0]);
-                    Tuple<ModifierKeys, string> sequence2 = ParseSingleChordFromBindingString(chords[1]);
+                    Tuple<ModifierKeys, string> sequence1 = ParseSingleChordFromBindingString(chords[0].Trim());
+                    Tuple<ModifierKeys, string> sequence2 = ParseSingleChordFromBindingString(chords[1].Trim());
 
                     return new CommandBinding(new CommandId(guid, id), 
                                               this.ScopeNameToScopeInfoMap[scopeName],
@@ -586,6 +673,31 @@ namespace VSShortcutsManager
             }
         }
 
+        private string GetDisplayTextFromCTMCommand(CommandTable.Command command)
+        {
+            string text = null;
+
+            if (command.ItemText.ButtonText != null)
+                text = command.ItemText.ButtonText;
+            else if (command.ItemText.CommandWellText != null)
+                text = command.ItemText.CommandWellText;
+
+            return (string)VSShortcutQueryEngine.AccessKeyRemovingConverter.Convert(text, typeof(string), null, CultureInfo.CurrentUICulture);
+        }
+
+        private async Task PopulateCTMCommandsAsync()
+        {
+            CommandTableFactory factory = new CommandTableFactory();
+            ICommandTable commandTable = factory.CreateCommandTableFromHost(serviceProvider, CommandTable.HostLoadType.FromCTM);
+
+            IEnumerable<CommandTable.Command> commands = await commandTable.GetCommands();
+            foreach (var command in commands)
+            {
+                commandIdToCTMCommandMap[new CommandId(command.ItemId.Guid, (int)command.ItemId.DWord)] = command;
+            }
+        }
+
         #endregion
+
     }
 }
