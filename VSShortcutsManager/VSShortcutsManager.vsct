@@ -40,6 +40,13 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup" priority="0x2000" >
         <Parent guid="guidVSShortcutsManagerCmdSet" id="MappingSchemesMenu" />
       </Group>
+      <!-- Group for Command Shortcuts Tool Window Toolbar -->
+      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarReferenceGroup" priority="0x0100">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
+      </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" priority="0x0200">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
+      </Group>
     </Groups>
     
     <Menus>
@@ -68,6 +75,13 @@
           <ButtonText>Shortcut schemes (Dynamic)</ButtonText>
         </Strings>
       </Menu>
+      <Menu guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" type="ToolWindowToolbar">
+        <CommandFlag>DefaultDocked</CommandFlag>
+        <Strings>
+          <ButtonText>Command Shortcuts Toolbar Button Text</ButtonText>
+          <CommandName>Command Shortcuts Toolbar Command</CommandName>
+        </Strings>
+      </Menu>
     </Menus>
 
     <Buttons>
@@ -82,15 +96,21 @@
       <Button guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" />
         <Strings>
-          <ButtonText>Add New Shortcut</ButtonText>
+          <ButtonText>&amp;Add</ButtonText>
           <MenuText>Add &amp;New Shortcut</MenuText>
+          <ToolTipText>Add new shortcut</ToolTipText>
+          <CanonicalName>AddNewShortcut</CanonicalName>
+          <LocCanonicalName>AddNewShortcut</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="LiveShortcutsViewCmdId" priority="0x0300" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" />
         <Strings>
-          <ButtonText>Live Shortcuts View</ButtonText>
+          <ButtonText>&amp;Live View</ButtonText>
           <MenuText>Live Shortcuts &amp;View</MenuText>
+          <ToolTipText>Open Live Shortcuts View</ToolTipText>
+          <CanonicalName>LiveShortcutsView</CanonicalName>
+          <LocCanonicalName>LiveShortcutsView</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -98,15 +118,21 @@
       <Button guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
-          <ButtonText>Save Current Shortcuts</ButtonText>
+          <ButtonText>&amp;Export</ButtonText>
           <MenuText>&amp;Save Current Shortcuts...</MenuText>
+          <ToolTipText>Save all user shortcuts to a VSSettings file</ToolTipText>
+          <CanonicalName>SaveCurrentShortcuts</CanonicalName>
+          <LocCanonicalName>SaveCurrentShortcuts</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="ResetShortcutsCmdId" priority="0x0400" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutsActionGroup" />
         <Strings>
-          <ButtonText>Reset Shortcuts</ButtonText>
+          <ButtonText>&amp;Reset</ButtonText>
           <MenuText>&amp;Reset Shortcuts...</MenuText>
+          <ToolTipText>Reset shortcuts to the Visual Studio defaults</ToolTipText>
+          <CanonicalName>ResetShortcuts</CanonicalName>
+          <LocCanonicalName>ResetShortcuts</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="ScanExtensionsCmdId" priority="0x0500" type="Button">
@@ -173,6 +199,22 @@
 
   </Commands>
 
+  <CommandPlacements>
+    <!-- Toolbar placement -->
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="LiveShortcutsViewCmdId" priority="0x0100">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarReferenceGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0200">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0300">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="ResetShortcutsCmdId" priority="0x0400">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
+  </CommandPlacements>
+
   <Symbols>
     <!-- This is the package guid. -->
     <GuidSymbol name="guidVSShortcutsManagerPackage" value="{2145fd5c-c814-4772-b19d-b840113afede}" />
@@ -192,6 +234,9 @@
       <IDSymbol name="UserShortcutsActionsGroup" value="0x1090"/>
       <IDSymbol name="UserShortcutsGroup" value="0x1100"/>
       <IDSymbol name="GlobalToolsGroups" value="0x2003"/>
+      <IDSymbol name="CommandShortcutsToolWinToolbar" value="0x2004"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarReferenceGroup" value="0x2005"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarActionsGroup" value="0x2006"/>
 
       <!--Commands-->
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
