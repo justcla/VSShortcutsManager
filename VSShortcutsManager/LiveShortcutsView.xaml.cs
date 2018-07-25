@@ -282,13 +282,19 @@ namespace VSShortcutsManager
 
     }
 
-    //public class KeyboardShortcutList
-    //{
-    //    public static void DispalyKeyboardShortcutList()
-    //    {
-    //        KeyboardShortcutListView dialog = new KeyboardShortcutListView(serviceProvider);
-    //        dialog.ShowDialog();
-    //    }
-    //}
 
+    public class KeyList
+    {
+        public KeyList()
+        {
+            Commands = new List<string>();
+        }
+
+        public string Name { get; set; }
+
+        public string Command { get; set; }
+
+        public List<string> Commands { get; set; }
+
+    }
 }
