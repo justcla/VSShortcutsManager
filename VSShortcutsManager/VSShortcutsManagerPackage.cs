@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Settings;
+using Microsoft.VisualStudio.Shell;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Settings;
 
 namespace VSShortcutsManager
 {
@@ -13,6 +13,7 @@ namespace VSShortcutsManager
     [Guid(VSShortcutsManagerPackage.PackageGuidString)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.ShellInitialized_string)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
+    [ProvideToolWindow(typeof(CommandShortcuts))]
     public sealed class VSShortcutsManagerPackage : Package
     {
         /// <summary>
@@ -33,12 +34,13 @@ namespace VSShortcutsManager
         /// </summary>
         protected override void Initialize()
         {
+            base.Initialize();
+
             // Initialize settings manager (TODO: could be done lazily on get)
-            SettingsManager = (ISettingsManager)GetGlobalService(typeof(SVsSettingsPersistenceManager));
+            SettingsManager = (ISettingsManager)this.GetService(typeof(SVsSettingsPersistenceManager));
 
             // Adds commands handlers for the VS Shortcuts operations (Apply, Backup, Restore, Reset)
             VSShortcutsManager.Initialize(this);
-            base.Initialize();
         }
 
         // A horrible hack but SVsSettingsPersistenceManager isn't public and we need something with the right GUID to get the service.
