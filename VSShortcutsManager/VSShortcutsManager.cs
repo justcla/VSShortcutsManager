@@ -703,7 +703,10 @@ namespace VSShortcutsManager
 
         private void OpenAddKeyboardShortcutDialog(object sender, EventArgs e)
         {
-            MessageBox.Show("Command: Edit.DuplicateCode\n\nScope: Text Editor\n\nShortcut: Ctrl+E, Ctrl+V", "Add Keyboard Shortcut", MessageBoxButtons.OKCancel);
+            AddNewShortcut.AddKeyboardShortcut addShortcutWindow = new AddNewShortcut.AddKeyboardShortcut(ServiceProvider);
+            addShortcutWindow.Width = 500;
+            addShortcutWindow.Height = 450;
+            addShortcutWindow.Show();
         }
 
     }
