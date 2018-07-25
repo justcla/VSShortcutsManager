@@ -3,7 +3,6 @@ using System.Windows.Input;
 
 namespace VSShortcutsManager
 {
-    [DebuggerDisplay("{Modifiers}+{Chord}")]
     public class BindingSequence
     {
         private BindingSequence() { }

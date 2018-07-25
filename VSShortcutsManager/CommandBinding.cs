@@ -13,8 +13,11 @@ namespace VSShortcutsManager
 
         public IReadOnlyList<BindingSequence> Sequences { get; private set; }
 
-        public CommandBinding(CommandId command, KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        public string OriginalDTEString { get; private set; }
+
+        public CommandBinding(string originalDTEString, CommandId command, KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
+            this.OriginalDTEString = originalDTEString;
             this.Command = command;
             this.Scope = scope;
 
