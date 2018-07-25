@@ -392,77 +392,126 @@ namespace VSShortcutsManager
             return bindingMap;
         }
 
-        public Task<IEnumerable<BindingConflict>> GetConflicts(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        public async Task<IEnumerable<BindingConflict>> GetConflictsAsync(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
-            List<BindingConflict> results = new List<BindingConflict>();
+            IEnumerable<Command> commands = await GetAllCommandsAsync();
+            Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>> conflictsMap = new Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>>();
 
-            CommandBinding binding = CreateFakeCommandBinding("Global");
-            Command command = CreateFakeBoundCommand(binding.Command, new [] {  binding });
-            results.Add(new BindingConflict(ConflictType.HiddenInSomeScopes, new [] {  new Tuple<CommandBinding, Command>(binding, command) }));
+            BindingSequence[] sequencesArr = sequences.ToArray();
+            bool isSingleChordBinding = sequencesArr.Length == 1;
 
-            binding = CreateFakeCommandBinding();
-            command = CreateFakeBoundCommand(binding.Command, new [] {  binding });
-            results.Add(new BindingConflict(ConflictType.HidesGlobalBindings, new [] { new Tuple<CommandBinding, Command>(binding, command) }));
+            foreach(Command c in commands)
+            {
+                foreach(CommandBinding b in c.Bindings)
+                {
+                    if(!SameBindingSequence(sequencesArr[0], b.Sequences[0]))
+                    {
+                        // This binding doesn't start with the same sequence as the one give by the caller, so ignore it
+                        continue;
+                    }
 
-            binding = CreateFakeCommandBinding("ReplacementScope");
-            command = CreateFakeBoundCommand(binding.Command, new[] { binding });
-            results.Add(new BindingConflict(ConflictType.ReplacesBindings, new[] { new Tuple<CommandBinding, Command>(binding, command) }));
+                    ConflictType conflictType;
+                    List<Tuple<CommandBinding, Command>> conflicts = null;
 
-            return Task.FromResult<IEnumerable<BindingConflict>>(results);
+                    // If the first (and possibly only) chord of the caller supplied sequence and the first (and possibly only) chord of this binding match, then there are
+                    // three possible conflicts we want to warn about (these are mututally exclusive, i.e. the given binding can only be ONE type of conflict in the list below).
+                    //
+                    // 1: If this binding is in a non-global scope, and the caller scope is global, applying the caller supplied binding will not be visible 
+                    // inside this scope (ConflictType.HiddenInSomeScopes)
+                    //
+                    // 2: If this binding is in the global scope, and the caller supplied binding is NOT in the global scope, applying the caller supplied binding 
+                    // will shadow it (make it inaccessible) (ConflictType.HidesGlobalBindings)
+                    //
+                    // 3: If this binding is in the same scope, applying the caller supplied binding will remove it (ConflictType.ReplacesBindings)
+                    if(!ScopeIsGlobal(b.Scope.Guid) && ScopeIsGlobal(scope.Guid))
+                    {
+                        conflictType = ConflictType.HiddenInSomeScopes;
+                    }
+                    else if(ScopeIsGlobal(b.Scope.Guid) && !ScopeIsGlobal(scope.Guid))
+                    {
+                        conflictType = ConflictType.HidesGlobalBindings;
+                    }
+                    else if(b.Scope.Guid == scope.Guid)
+                    {
+                        conflictType = ConflictType.ReplacesBindings;
+                    }
+                    else
+                    {
+                        // This is the case where we have a binding 'conflict' but in scopes that aren't related (or we don't know they are related) so we can ignore it
+                        continue;
+                    }
+
+                    if(!conflictsMap.TryGetValue(conflictType, out conflicts))
+                    {
+                        conflictsMap[conflictType] = conflicts = new List<Tuple<CommandBinding, Command>>();
+                    }
+
+                    conflicts.Add(new Tuple<CommandBinding, Command>(b,c));
+                }
+            }
+
+            List<BindingConflict> result = new List<BindingConflict>();
+            foreach(var kvp in conflictsMap)
+            {
+                result.Add(new BindingConflict(kvp.Key, kvp.Value));
+            }
+
+            return result;
         }
 
-        #endregion
-
-        #region Private Methods
-
-        private Command CreateFakeBoundCommand(CommandId id, IEnumerable<CommandBinding> bindings)
+        public KeybindingScope GetScopeByName(string scopeName)
         {
-            return CreateFakeBoundCommand(id, bindings, "FakeDisplayName");
+            KeybindingScope scope;
+
+            // If the name doesnt exist in the map we will simply return null, so ignore the success/failure aspect of TryGetValue as it will set the out param to null on failure
+            ScopeNameToScopeInfoMap.TryGetValue(scopeName, out scope);
+
+            return scope;
         }
 
-        private Command CreateFakeBoundCommand(CommandId id, IEnumerable<CommandBinding> bindings, string displayName)
+        public IEnumerable<BindingSequence> GetBindingSequencesFromBindingString(string bindingString)
         {
-            return CreateFakeBoundCommand(id, bindings, displayName, "Fake.CanonicalName");
-        }
+            bindingString = bindingString.Trim();
 
-        private Command CreateFakeBoundCommand(CommandId id, IEnumerable<CommandBinding> bindings, string displayName, string canonicalName)
-        {
-            return new Command(id, displayName, canonicalName,bindings);
-        }
+            // Commas are complex as they can appear both as a keybinding key AND as a separator in multi-chord bindings, so we need to understand
+            // which we are dealing with
+            int commaCount = bindingString.Count((c) => c == ',');
 
-        private CommandBinding CreateFakeCommandBinding()
-        {
-            return CreateFakeCommandBinding("FakeScope");
-        }
+            if (commaCount == 0 || (commaCount == 1 && bindingString.EndsWith(",")))
+            {
+                // Single chord binding
+                Tuple<ModifierKeys, string> sequence = ParseSingleChordFromBindingString(bindingString);
+                return new[] { new BindingSequence(sequence.Item1, sequence.Item2) };
+                //return new CommandBinding(new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], new[] { new BindingSequence(sequence.Item1, sequence.Item2) });
+            }
+            else
+            {
+                string[] chords;
 
-        private CommandBinding CreateFakeCommandBinding(BindingSequence sequence)
-        {
-            return CreateFakeCommandBinding("FakeScope", sequence);
-        }
+                // Multi chord binding
+                if (commaCount == 1) // easy case, we can just split on the comma as there are no commas as part of the binding
+                {
+                    chords = bindingString.Split(',');
+                }
+                else
+                {
+                    // okay, the binding itself has a comma, so, ugh :P
+                    int splitPoint = bindingString.IndexOf(',');
+                    string part1 = bindingString.Substring(0, splitPoint);
+                    string part2 = bindingString.Substring(splitPoint + 1);
 
-        private CommandBinding CreateFakeCommandBinding(string scopeName)
-        {
-            return CreateFakeCommandBinding(scopeName, new BindingSequence(ModifierKeys.Control, "C"));
-        }
+                    chords = new string[] { part1, part2 };
+                }
 
-        private CommandBinding CreateFakeCommandBinding(string scopeName, BindingSequence sequence)
-        {
-            return new CommandBinding(CreateFakeCommandId(), CreateFakeBindingScope(scopeName), sequence);
-        }
+                Tuple<ModifierKeys, string> sequence1 = ParseSingleChordFromBindingString(chords[0].Trim());
+                Tuple<ModifierKeys, string> sequence2 = ParseSingleChordFromBindingString(chords[1].Trim());
 
-        private CommandId CreateFakeCommandId()
-        {
-            return new CommandId(Guid.NewGuid(), 1);
-        }
+                return new[] {
+                                new BindingSequence(sequence1.Item1, sequence1.Item2),
+                                new BindingSequence(sequence2.Item1, sequence2.Item2)
+                             };
 
-        private KeybindingScope CreateFakeBindingScope(string scopeName)
-        {
-            return CreateFakeBindingScope(scopeName, Guid.NewGuid());
-        }
-
-        private KeybindingScope CreateFakeBindingScope(string scopeName, Guid scopeGuid)
-        {
-            return new KeybindingScope(scopeName, scopeGuid, allowNavKeyBinding: false);
+            }
         }
 
         Tuple<ModifierKeys, string> ParseSingleChordFromBindingString(string bindingString)
@@ -498,44 +547,7 @@ namespace VSShortcutsManager
 
                 string keyPortion = bindingString.Substring(bindingString.IndexOf("::") + 2);
 
-                // Commas are complex as they can appear both as a keybinding key AND as a separator in multi-chord bindings, so we need to understand
-                // which we are dealing with
-                int commaCount = keyPortion.Count((c) => c == ',');
-
-                if(commaCount == 0 || (commaCount == 1 && keyPortion.EndsWith(",")))
-                {
-                    // Single chord binding
-                    Tuple<ModifierKeys, string> sequence = ParseSingleChordFromBindingString(keyPortion);
-                    return new CommandBinding(new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], new BindingSequence(sequence.Item1, sequence.Item2));
-                }
-                else
-                {
-                    string[] chords;
-
-                    // Multi chord binding
-                    if (commaCount == 1) // easy case, we can just split on the comma as there are no commas as part of the binding
-                    {
-                        chords = keyPortion.Split(',');
-                    }
-                    else
-                    {
-                        // okay, the binding itself has a comma, so, ugh :P
-                        int splitPoint = keyPortion.IndexOf(',');
-                        string part1 = keyPortion.Substring(0, splitPoint);
-                        string part2 = keyPortion.Substring(splitPoint+1);
-
-                        chords = new string[] { part1, part2 };
-                    }
-
-                    Tuple<ModifierKeys, string> sequence1 = ParseSingleChordFromBindingString(chords[0].Trim());
-                    Tuple<ModifierKeys, string> sequence2 = ParseSingleChordFromBindingString(chords[1].Trim());
-
-                    return new CommandBinding(new CommandId(guid, id), 
-                                              this.ScopeNameToScopeInfoMap[scopeName],
-                                              new BindingSequence(sequence1.Item1, sequence1.Item2),
-                                              new BindingSequence(sequence2.Item1, sequence2.Item2));
-
-                }
+                return new CommandBinding(new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], GetBindingSequencesFromBindingString(keyPortion));
             }
 
             return null;
