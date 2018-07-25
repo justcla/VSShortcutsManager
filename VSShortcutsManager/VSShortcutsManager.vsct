@@ -44,7 +44,10 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarReferenceGroup" priority="0x0100">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
       </Group>
-      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" priority="0x0200">
+      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" priority="0x0200">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
+      </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" priority="0x0300">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
       </Group>
     </Groups>
@@ -195,16 +198,69 @@
         </Strings>
       </Button>
 
-    </Buttons>
+      <!-- Buttons on Command Shortcuts Tool Window Toolbar -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="FilterAllShortcutsCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;All</ButtonText>
+          <MenuText>&amp;No Filter</MenuText>
+          <ToolTipText>Show all shortcuts</ToolTipText>
+          <CanonicalName>CmdShortcuts.Filter.ShowAllShortcuts</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.Filter.ShowAllShortcuts</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="FilterPopularShortcutsCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;Popular</ButtonText>
+          <MenuText>&amp;Popular Shortcuts Filter</MenuText>
+          <ToolTipText>Show popular shortcuts</ToolTipText>
+          <CanonicalName>CmdShortcuts.Filter.PopularShortcuts</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.Filter.PopularShortcuts</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="FilterUserShortcutsCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;Mine</ButtonText>
+          <MenuText>&amp;My Shortcuts Filter</MenuText>
+          <ToolTipText>Show all user-defined shortcuts</ToolTipText>
+          <CanonicalName>CmdShortcuts.Filter.UserShortcuts</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.Filter.UserShortcuts</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="DeleteShortcutsCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;Delete</ButtonText>
+          <MenuText>&amp;Delete Shortcuts</MenuText>
+          <ToolTipText>Delete selected shortcuts</ToolTipText>
+          <CanonicalName>CmdShortcuts.DeleteShortcuts</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.Filter.UserShortcuts</LocCanonicalName>
+        </Strings>
+      </Button>
+
+</Buttons>
 
   </Commands>
 
   <CommandPlacements>
     <!-- Toolbar placement -->
+    <!-- Launch references group -->
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="LiveShortcutsViewCmdId" priority="0x0100">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarReferenceGroup" />
     </CommandPlacement>
-    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0200">
+    <!-- Filter group -->
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="FilterAllShortcutsCmdId" priority="0x0100">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="FilterPopularShortcutsCmdId" priority="0x0200">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="FilterUserShortcutsCmdId" priority="0x0300">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" />
+    </CommandPlacement>
+    <!-- Actions group -->
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0100">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="DeleteShortcutsCmdId" priority="0x0200">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0300">
@@ -236,7 +292,8 @@
       <IDSymbol name="GlobalToolsGroups" value="0x2003"/>
       <IDSymbol name="CommandShortcutsToolWinToolbar" value="0x2004"/>
       <IDSymbol name="CmdShortcutsToolWinToolbarReferenceGroup" value="0x2005"/>
-      <IDSymbol name="CmdShortcutsToolWinToolbarActionsGroup" value="0x2006"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarFilterGroup" value="0x2006"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarActionsGroup" value="0x2007"/>
 
       <!--Commands-->
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
@@ -249,6 +306,10 @@
       <IDSymbol name="AddNewShortcutCmdId" value="0x1410"/>
       <IDSymbol name="LiveShortcutsViewCmdId" value="0x1420"/>
       <IDSymbol name="CommandShortcutsToolWinCmdId" value="0x1610" />
+      <IDSymbol name="FilterAllShortcutsCmdId" value="0x1710" />
+      <IDSymbol name="FilterPopularShortcutsCmdId" value="0x1720" />
+      <IDSymbol name="FilterUserShortcutsCmdId" value="0x1730" />
+      <IDSymbol name="DeleteShortcutsCmdId" value="0x1740" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
