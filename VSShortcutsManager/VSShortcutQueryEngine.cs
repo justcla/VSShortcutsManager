@@ -323,7 +323,13 @@ namespace VSShortcutsManager
                     object[] bindingsObj = (object[])c.Bindings;
                     foreach (string s in bindingsObj)
                     {
-                        bindings.Add(ParseBindingFromString(new Guid(c.Guid), c.ID, s));
+                        CommandBinding commandBinding = ParseBindingFromString(new Guid(c.Guid), c.ID, s);
+                        if (commandBinding == null)
+                        {
+                            // Something went wrong with parsing (ie. Scope = "Unknown Editor") Skip this command.
+                            continue;
+                        }
+                        bindings.Add(commandBinding);
                     }
                 }
 
@@ -347,49 +353,56 @@ namespace VSShortcutsManager
             return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
         }
 
-        public async Task<IDictionary<string, IEnumerable<CommandBinding>>> GetBindingsForModifiersAsync(Guid scope, bool includeGlobals, BindingSequence initialBindingSequence, ModifierKeys primaryModifiers)
+        public async Task<IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>> GetBindingsForModifiersAsync(Guid scope, ModifierKeys modifiers,
+            BindingSequence chordStart, bool includeGlobals)
         {
             IEnumerable<Command> commands = await GetAllCommandsAsync();
-            Dictionary<string, IEnumerable<CommandBinding>> bindingMap = new Dictionary<string, IEnumerable<CommandBinding>>();
+            var bindingMap = new Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>();
 
-            foreach(Command c in commands)
+            foreach(Command command in commands)
             {
-                foreach (CommandBinding binding in c.Bindings)
-                { 
-                    if(ScopeMatches(scope, binding.Scope.Guid) || (ScopeIsGlobal(binding.Scope.Guid) && includeGlobals))
+                // Each command can have zero-many bindings. We'll look at each binding to see if it should be returned (matching scope and modifier)
+                foreach (CommandBinding binding in command.Bindings)
+                {
+                    // Ensure the binding is in the desired scope (or Global if includeGlobals is true)
+                    if (!ScopeMatches(scope, binding.Scope.Guid) && !(ScopeIsGlobal(binding.Scope.Guid) && includeGlobals))
                     {
-                        BindingSequence firstBindingSequence = binding.Sequences[0];
-
-                        // Check if the user given 'starting' binding sequence matches this command's binding sequence. This means the modifiers match (exactly)
-                        // AND if the 'starting' binding sequence congtains a key then this command's binding also has to start with that key.
-                        if ((firstBindingSequence.Modifiers == initialBindingSequence.Modifiers)
-                            && (string.IsNullOrEmpty(initialBindingSequence.Key) || (firstBindingSequence.Key == initialBindingSequence.Key)))
-                        {
-                            // If the primaryModifiers is set to anything other than None then we want to further filter to only command bindings whose
-                            // SECOND sequence consists of those modifiers
-                            if(primaryModifiers != ModifierKeys.None)
-                            {
-                                if(binding.Sequences.Count !=2 || (binding.Sequences[1].Modifiers != primaryModifiers))
-                                {
-                                    continue;
-                                }
-                            }
-
-                            IEnumerable<CommandBinding> untypedBindings;
-                            if (!bindingMap.TryGetValue(firstBindingSequence.Key, out untypedBindings))
-                            {
-                                untypedBindings = new List<CommandBinding>();
-                                bindingMap[firstBindingSequence.Key] = untypedBindings;
-                            }
-
-                            List<CommandBinding> typedBindings = (List<CommandBinding>)untypedBindings;
-                            typedBindings.Add(binding);
-                        }
+                        continue;
                     }
+
+                    // If the user passed in a starting chord (chordStart is not empty), only return this binding if it is a chord and starts with the chordStart
+                    if (chordStart != BindingSequence.Empty
+                        && (binding.Sequences.Count < 2 || !SameBindingSequence(binding.Sequences[0], chordStart)))
+                    {
+                        continue;
+                    }
+
+                    // Does the binding have the right modifiers? Two cases: chordStart is empty / chordStart is not empty
+                    BindingSequence sequenceOfInterest = (chordStart != BindingSequence.Empty) ? binding.Sequences[1] : binding.Sequences[0];
+                    if (sequenceOfInterest.Modifiers != modifiers)
+                    {
+                        continue;
+                    }
+
+                    // Found a command with matching modifiers for the given scope (with matching starting chord).
+                    // Add it to the relevant entry in the dictionary.
+                    AddCommandBindingToBindingMap(bindingMap, command, binding, sequenceOfInterest.Key);
                 }
             }
 
-            return bindingMap;
+                        this.allCommands.Add(new Command(new CommandId(Guid.Parse(c.Guid), c.ID), c.Name, bindings));
+                    }
+                }
+
+            ((List<Tuple<CommandBinding, Command>>)commandsForKey).Add(new Tuple<CommandBinding, Command>(binding, command));
+        }
+
+        private bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
+        {
+            if (bindingSeq1 == null) return bindingSeq2 == null;
+            if (bindingSeq2 == null) return false;
+            return bindingSeq1.Modifiers == bindingSeq2.Modifiers
+                && bindingSeq1.Key == bindingSeq2.Key;
         }
 
         private bool ScopeIsGlobal(Guid scope)
@@ -436,6 +449,11 @@ namespace VSShortcutsManager
             if (bindingString.Contains("::"))
             {
                 string scopeName = bindingString.Substring(0, bindingString.IndexOf("::"));
+                if (!this.ScopeNameToScopeInfoMap.ContainsKey(scopeName))
+                {
+                    System.Diagnostics.Debug.WriteLine("Unable to find ScopeInfo for scope name: " + scopeName);
+                    return null;
+                }
 
                 string keyPortion = bindingString.Substring(bindingString.IndexOf("::") + 2);
 
