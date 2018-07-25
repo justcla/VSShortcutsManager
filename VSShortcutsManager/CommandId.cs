@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace VSShortcutsManager
 {
-    internal sealed class CommandId
+    [DebuggerDisplay("({Guid},{Id}")]
+    internal struct CommandId
     {
         internal CommandId(Guid guid, int id)
         {
