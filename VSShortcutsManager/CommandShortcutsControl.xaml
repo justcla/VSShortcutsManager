@@ -7,17 +7,15 @@
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="300">
     <DockPanel LastChildFill="True">
-        <Label DockPanel.Dock="Top"
-            Content="Double-click a command to add a shortcut" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
         <DataGrid
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
             AutoGenerateColumns="False"
             IsReadOnly="True"
-            Loaded="DataGrid_Loaded">
+            ItemsSource="{Binding Commands}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Command" Binding="{Binding Command}" Width="3*" />
-                <DataGridTextColumn Header="Shortcut" Binding="{Binding Shortcut}" Width="1*" />
-                <DataGridTextColumn Header="Scope" Binding="{Binding Scope}" Width="1*" />
+                <DataGridTextColumn Header="Command" Binding="{Binding CommandText, Mode=OneTime}" Width="3*" />
+                <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneTime}" Width="1*" />
+                <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneTime}" Width="1*" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

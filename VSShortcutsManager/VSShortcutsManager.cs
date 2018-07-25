@@ -766,8 +766,8 @@ namespace VSShortcutsManager
 
         private void OpenLiveShortcutsView(object sender, EventArgs e)
         {
-            
-            MessageBox.Show("Press a modifier key (Ctrl, Alt, Shift) to see all bound shortcuts.", "Live Shortcuts View");
+            LiveShortcutsView dialog = new LiveShortcutsView(ServiceProvider);
+            dialog.Show();
         }
 
         private void OpenAddKeyboardShortcutDialog(object sender, EventArgs e)
