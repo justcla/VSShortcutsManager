@@ -14,9 +14,7 @@ namespace VSShortcutsManager
         {
             this.serviceProvider = serviceProvider;
 
-            this.allCommands = GenerateAllCommandsShortcuts();
-
-            this.Commands = this.allCommands.Clone();
+            this.PopulateCommands(serviceProvider);
         }
 
         #endregion // ctor
@@ -71,27 +69,22 @@ namespace VSShortcutsManager
 
         #region Private helpers
 
-        private VSCommandShortcuts GenerateAllCommandsShortcuts()
+        private void PopulateCommands(IServiceProvider serviceProvider)
         {
-            var queryEngine = new VSShortcutQueryEngine(this.serviceProvider);
+            var queryEngine = new VSShortcutQueryEngine(serviceProvider);
 
-            var allCommands = queryEngine
-                .AllCommands
-                .Where(command => !string.IsNullOrWhiteSpace(command?.Text))
-                .SelectMany(command => GenerateCommandsShortcuts(command));
+            queryEngine.GetAllCommandsAsync().ContinueWith((task) =>
+            {
+                var allCommands = task.Result;
 
-            //var commands = new VSCommandShortcuts
-            //{
-            //    new CommandShortcut(null, "Best Action", null, "Ctrl+A", "Global"),
-            //    new CommandShortcut(null, "Second Best Action", null, "Ctrl+A", "Some Scope"),
-            //    new CommandShortcut(null, "Another Best Action", null, "Ctrl+Z", "Global"),
-            //    new CommandShortcut(null, "Great Action", null, "Ctrl+Shift+A", "Global"),
-            //    new CommandShortcut(null, "Another Great Action", null, "Ctrl+Shift+Z", "Global")
-            //};
+                var allCommandShortcuts = allCommands
+                    .Where(command => !string.IsNullOrWhiteSpace(command?.CanonicalName))
+                    .SelectMany(command => GenerateCommandsShortcuts(command));
+                
+                this.allCommands = new VSCommandShortcuts(allCommandShortcuts);
+                this.Commands = this.allCommands.Clone();
+            });
 
-            var commands = new VSCommandShortcuts(allCommands);
-
-            return commands;
         }
 
         private static IEnumerable<CommandShortcut> GenerateCommandsShortcuts(Command command)
@@ -112,21 +105,21 @@ namespace VSShortcutsManager
             string shortcutText = null, scopeText = null;
             if (binding != null)
             {
-                shortcutText = GenerateShortcutText(binding.Chords);
+                shortcutText = GenerateShortcutText(binding.Sequences);
                 scopeText = GenerateScopeText(binding.Scope);
             }
 
-            return new CommandShortcut(command.Id, command.Text, binding, shortcutText, scopeText);
+            return new CommandShortcut(command.Id, command.CanonicalName, binding, shortcutText, scopeText);
         }
 
-        private static string GenerateShortcutText(IEnumerable<BindingSequence> chords)
+        private static string GenerateShortcutText(IEnumerable<BindingSequence> sequences)
         {
-            if (chords == null || !chords.Any())
+            if (sequences == null || !sequences.Any())
             {
                 return null;
             }
 
-            string s = chords
+            string s = sequences
                 .Where(chord => chord != null)
                 .Select(chord => GenerateBindingSequenceText(chord))
                 .Aggregate((current, next) => current + ", " + next);
@@ -138,7 +131,7 @@ namespace VSShortcutsManager
         {
             if (bindingSequence.Modifiers == System.Windows.Input.ModifierKeys.None)
             {
-                return bindingSequence.Chord;
+                return bindingSequence.Key;
             }
 
 
@@ -159,7 +152,7 @@ namespace VSShortcutsManager
             {
                 buffer.Append("Alt+");
             }
-            buffer.Append(bindingSequence.Chord);
+            buffer.Append(bindingSequence.Key);
 
             string s = buffer.ToString();
 
