@@ -21,8 +21,6 @@ namespace VSShortcutsManager
     public partial class LiveShortcutsView : Window
     {
 
-        private string scope;
-
         #region Properties
         public bool CtrlKeyPressed { get; set; }
         public bool AltKeyPressed { get; set; }
@@ -200,37 +198,83 @@ namespace VSShortcutsManager
             if (e.Key == Key.LeftShift || e.Key == Key.RightShift) switchShiftKey();
             var host = new Window();
         }
-
-        #endregion
-
-        private async void RefreskKeys()
+        private ModifierKeys GetSelectedModifierKey()
         {
+            ModifierKeys modifierkeys;
+
+            if (CtrlKeyPressed && AltKeyPressed && ShiftKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift;
+            }
+            else if (CtrlKeyPressed && AltKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Control | ModifierKeys.Alt;
+            }
+            else if (CtrlKeyPressed && ShiftKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Control | ModifierKeys.Shift;
+            }
+            else if (AltKeyPressed && ShiftKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Alt | ModifierKeys.Shift;
+            }
+            else if (CtrlKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Control;
+            }
+            else if (AltKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Alt;
+            }
+            else if (ShiftKeyPressed)
+            {
+                modifierkeys = ModifierKeys.Shift;
+            }
+            else
+            {
+                modifierkeys = ModifierKeys.None;
+            }
+            return modifierkeys;
+        }
+
+        private async void RefreshShortcuts()
+        {
+            var modifierKey = GetSelectedModifierKey();
             VSShortcutQueryEngine engine = new VSShortcutQueryEngine(serviceProvider);
             Guid scopeGuid = Guid.Parse("8B382828-6202-11D1-8870-0000F87579D2");     // Get Guid Scope
             BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
             const bool includeGlobals = true;
 
-            IDictionary<string, IEnumerable<CommandBinding>> commands = await engine.GetBindingsForModifiersAsync(scopeGuid, includeGlobals, bindingSequence, ModifierKeys.Control);
+            IDictionary<string, IEnumerable<CommandBinding>> commands = await engine.GetBindingsForModifiersAsync(scopeGuid, includeGlobals, bindingSequence, modifierKey);
 
-            foreach(var command in commands)
+            foreach (var command in commands)
             {
 
             }
         }
 
+
+        #endregion
+
+
+
         #region Events
         private void btnControl_Click(object sender, RoutedEventArgs e)
         {
             SwitchCtrlKey();
-            RefreskKeys();
+            RefreshShortcuts();
         }
         private void btnShift_Click(object sender, RoutedEventArgs e)
         {
             switchShiftKey();
+            RefreshShortcuts();
+
         }
         private void btnAlt_Click(object sender, RoutedEventArgs e)
         {
             SwitchAltKey();
+            RefreshShortcuts();
+
         }
 
 
@@ -247,19 +291,4 @@ namespace VSShortcutsManager
     //    }
     //}
 
-    public class KeyList
-    {
-        public KeyList()
-        {
-            Commands = new List<string>();
-        }
-
-        public string Name { get; set; }
-
-        public string Command { get; set; }
-
-        public List<string> Commands { get; set; }
-
-        public int GroupeId { get; set; }
-    }
 }
