@@ -11,7 +11,7 @@ namespace VSShortcutsManager
 
         public KeybindingScope Scope { get; private set; }
 
-        public IEnumerable<BindingSequence> Sequences { get; private set; }
+        public IReadOnlyList<BindingSequence> Sequences { get; private set; }
 
         public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
         {

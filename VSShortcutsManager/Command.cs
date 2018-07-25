@@ -4,9 +4,9 @@ using System.Diagnostics;
 namespace VSShortcutsManager
 {
     [DebuggerDisplay("{DisplayName} ({CanonicalName})")]
-    internal class Command
+    public class Command
     {
-        internal Command(CommandId id, string displayName,  string canonicalName, IEnumerable<CommandBinding> bindings)
+        public Command(CommandId id, string displayName,  string canonicalName, IEnumerable<CommandBinding> bindings)
         {
             this.Id = id;
             this.DisplayName = displayName;
@@ -14,12 +14,12 @@ namespace VSShortcutsManager
             this.Bindings = bindings;
         }
 
-        internal CommandId Id { get; private set; }
+        public CommandId Id { get; private set; }
 
-        internal string DisplayName { get; private set; }
+        public string DisplayName { get; private set; }
 
-        internal string CanonicalName { get; private set;}
+        public string CanonicalName { get; private set;}
 
-        internal IEnumerable<CommandBinding> Bindings { get; private set; }
+        public IEnumerable<CommandBinding> Bindings { get; private set; }
     }
 }

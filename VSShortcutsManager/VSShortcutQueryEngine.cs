@@ -353,8 +353,7 @@ namespace VSShortcutsManager
             return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
         }
 
-        public async Task<IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>> GetBindingsForModifiersAsync(Guid scope, ModifierKeys modifiers,
-            BindingSequence chordStart, bool includeGlobals)
+        public async Task<IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>> GetBindingsForModifiersAsync(Guid scope, ModifierKeys modifiers, BindingSequence chordStart, bool includeGlobals)
         {
             IEnumerable<Command> commands = await GetAllCommandsAsync();
             var bindingMap = new Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>();
@@ -390,39 +389,81 @@ namespace VSShortcutsManager
                 }
             }
 
-                        this.allCommands.Add(new Command(new CommandId(Guid.Parse(c.Guid), c.ID), c.Name, bindings));
-                    }
-                }
-
-            ((List<Tuple<CommandBinding, Command>>)commandsForKey).Add(new Tuple<CommandBinding, Command>(binding, command));
+            return bindingMap;
         }
 
-        private bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
+        public Task<IEnumerable<BindingConflict>> GetConflicts(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
-            if (bindingSeq1 == null) return bindingSeq2 == null;
-            if (bindingSeq2 == null) return false;
-            return bindingSeq1.Modifiers == bindingSeq2.Modifiers
-                && bindingSeq1.Key == bindingSeq2.Key;
-        }
+            List<BindingConflict> results = new List<BindingConflict>();
 
-        private bool ScopeIsGlobal(Guid scope)
-        {
-            return scope == VSConstants.GUID_VSStandardCommandSet97;
-        }
+            CommandBinding binding = CreateFakeCommandBinding("Global");
+            Command command = CreateFakeBoundCommand(binding.Command, new [] {  binding });
+            results.Add(new BindingConflict(ConflictType.HiddenInSomeScopes, new [] {  new Tuple<CommandBinding, Command>(binding, command) }));
 
-        private bool ScopeMatches(Guid comparisonBase, Guid toTest)
-        {
-            if(comparisonBase == Guid.Empty)
-            {
-                return true;
-            }
+            binding = CreateFakeCommandBinding();
+            command = CreateFakeBoundCommand(binding.Command, new [] {  binding });
+            results.Add(new BindingConflict(ConflictType.HidesGlobalBindings, new [] { new Tuple<CommandBinding, Command>(binding, command) }));
 
-            return comparisonBase == toTest;
+            binding = CreateFakeCommandBinding("ReplacementScope");
+            command = CreateFakeBoundCommand(binding.Command, new[] { binding });
+            results.Add(new BindingConflict(ConflictType.ReplacesBindings, new[] { new Tuple<CommandBinding, Command>(binding, command) }));
+
+            return Task.FromResult<IEnumerable<BindingConflict>>(results);
         }
 
         #endregion
 
         #region Private Methods
+
+        private Command CreateFakeBoundCommand(CommandId id, IEnumerable<CommandBinding> bindings)
+        {
+            return CreateFakeBoundCommand(id, bindings, "FakeDisplayName");
+        }
+
+        private Command CreateFakeBoundCommand(CommandId id, IEnumerable<CommandBinding> bindings, string displayName)
+        {
+            return CreateFakeBoundCommand(id, bindings, displayName, "Fake.CanonicalName");
+        }
+
+        private Command CreateFakeBoundCommand(CommandId id, IEnumerable<CommandBinding> bindings, string displayName, string canonicalName)
+        {
+            return new Command(id, displayName, canonicalName,bindings);
+        }
+
+        private CommandBinding CreateFakeCommandBinding()
+        {
+            return CreateFakeCommandBinding("FakeScope");
+        }
+
+        private CommandBinding CreateFakeCommandBinding(BindingSequence sequence)
+        {
+            return CreateFakeCommandBinding("FakeScope", sequence);
+        }
+
+        private CommandBinding CreateFakeCommandBinding(string scopeName)
+        {
+            return CreateFakeCommandBinding(scopeName, new BindingSequence(ModifierKeys.Control, "C"));
+        }
+
+        private CommandBinding CreateFakeCommandBinding(string scopeName, BindingSequence sequence)
+        {
+            return new CommandBinding(CreateFakeCommandId(), CreateFakeBindingScope(scopeName), sequence);
+        }
+
+        private CommandId CreateFakeCommandId()
+        {
+            return new CommandId(Guid.NewGuid(), 1);
+        }
+
+        private KeybindingScope CreateFakeBindingScope(string scopeName)
+        {
+            return CreateFakeBindingScope(scopeName, Guid.NewGuid());
+        }
+
+        private KeybindingScope CreateFakeBindingScope(string scopeName, Guid scopeGuid)
+        {
+            return new KeybindingScope(scopeName, scopeGuid, allowNavKeyBinding: false);
+        }
 
         Tuple<ModifierKeys, string> ParseSingleChordFromBindingString(string bindingString)
         {
@@ -713,6 +754,43 @@ namespace VSShortcutsManager
             {
                 commandIdToCTMCommandMap[new CommandId(command.ItemId.Guid, (int)command.ItemId.DWord)] = command;
             }
+        }
+
+        private static void AddCommandBindingToBindingMap(Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> bindingMap, Command command, CommandBinding binding, string key)
+        {
+            // Add the command/binding tuple to the relevant key in the binding map.
+            IEnumerable<Tuple<CommandBinding, Command>> commandsForKey;
+            if (!bindingMap.TryGetValue(key, out commandsForKey))
+            {
+                // Create new entry for the key if none exists.
+                commandsForKey = new List<Tuple<CommandBinding, Command>>();
+                bindingMap[key] = commandsForKey;
+            }
+
+           ((List<Tuple<CommandBinding, Command>>)commandsForKey).Add(new Tuple<CommandBinding, Command>(binding, command));
+        }
+
+        private bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
+        {
+            if (bindingSeq1 == null) return bindingSeq2 == null;
+            if (bindingSeq2 == null) return false;
+            return bindingSeq1.Modifiers == bindingSeq2.Modifiers
+                && bindingSeq1.Key == bindingSeq2.Key;
+        }
+
+        private bool ScopeIsGlobal(Guid scope)
+        {
+            return scope == VSConstants.GUID_VSStandardCommandSet97;
+        }
+
+        private bool ScopeMatches(Guid comparisonBase, Guid toTest)
+        {
+            if (comparisonBase == Guid.Empty)
+            {
+                return true;
+            }
+
+            return comparisonBase == toTest;
         }
 
         #endregion
