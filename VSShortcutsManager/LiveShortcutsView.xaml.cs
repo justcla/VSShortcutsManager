@@ -210,16 +210,11 @@ namespace VSShortcutsManager
             BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
             const bool includeGlobals = true;
 
-            IDictionary<string, IEnumerable<CommandBinding>> commands = await engine.GetBindingsForModifiersAsync(scopeGuid, includeGlobals, bindingSequence, ModifierKeys.Control);
-
-            foreach(var command in commands)
-            {
-
-            }
+            IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> bindingsMap = await engine.GetBindingsForModifiersAsync(scopeGuid, ModifierKeys.None, bindingSequence, includeGlobals);
         }
 
         #region Events
-        private void btnControl_Click(object sender, RoutedEventArgs e)
+            private void btnControl_Click(object sender, RoutedEventArgs e)
         {
             SwitchCtrlKey();
             RefreskKeys();
