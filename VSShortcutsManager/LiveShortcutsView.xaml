@@ -68,7 +68,15 @@
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Grid.ColumnSpan="4" Height="30" Background="SkyBlue">
             <Border BorderThickness="1,1,1,1" BorderBrush="SkyBlue"></Border>
-                <ComboBox Name="cmbScopeList" Width="200" Height="28" HorizontalAlignment="Right" Margin="5" >
+            <TextBlock Name="txtChords" Text="{Binding Chords}" >
+                <TextBlock.Style>
+                    <Style>
+                        <Setter Property="TextBlock.FontSize" Value="16"></Setter>
+                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <ComboBox Name="cmbScopeList" Width="200" Height="28" HorizontalAlignment="Right" Margin="5" >
                 <ComboBoxItem Content="Team Explorer" HorizontalAlignment="Left" Selector.IsSelected="True"/>
                 <ComboBoxItem Content="VC Dialog Editor" HorizontalAlignment="Left" />
                 <ComboBoxItem Content="Find All References Tool Window" HorizontalAlignment="Left" />
@@ -126,7 +134,7 @@
         <DockPanel Grid.Row="1" Grid.Column="0">
             <Border BorderBrush="SkyBlue" BorderThickness="1,1,1,1"></Border>
             <StackPanel>
-                <ListView Margin="0" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Name="lvAlphaKeys" BorderThickness="0">
+                <ListView Margin="0" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Name="lvAlphaKeys" BorderThickness="0" ItemsSource="{Binding AlphaKeys}" MouseDoubleClick="lvAlphaKeys_MouseDoubleClick" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -141,7 +149,7 @@
         <DockPanel Grid.Row="1" Grid.Column="1">
             <Border BorderBrush="SkyBlue" BorderThickness="1,1,1,1"></Border>
             <StackPanel>
-                <ListView Margin="0" Name="lvFunctionKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0">
+                <ListView Margin="0" Name="lvFunctionKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding FunctionKeys}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -151,7 +159,7 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <ListView Margin="0,20,0,0" Name="lvSystemKeys1" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" >
+                <ListView Margin="0,20,0,0" Name="lvSystemKeys1" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemKeys1}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -161,7 +169,7 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <ListView Margin="0,20,0,0" Name="lvSystemKeys2" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" >
+                <ListView Margin="0,20,0,0" Name="lvSystemKeys2" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemKeys2}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -176,7 +184,7 @@
         <DockPanel Grid.Row="1" Grid.Column="2">
             <Border BorderBrush="SkyBlue" BorderThickness="1,1,1,1"></Border>
             <StackPanel>
-                <ListView Margin="0" Name="lvnumKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" >
+                <ListView Margin="0" Name="lvnumKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding NumericKeys}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -186,7 +194,7 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <ListView Margin="0,20,0,0" Name="lvSpecialKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0">
+                <ListView Margin="0,20,0,0" Name="lvSpecialKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SpecialKeys}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -201,7 +209,7 @@
         <DockPanel Grid.Row="1" Grid.Column="3">
             <Border BorderBrush="SkyBlue" BorderThickness="1"></Border>
             <StackPanel>
-                <ListView Margin="0,0,0,0" Name="lvNumpadKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden"  BorderThickness="0" >
+                <ListView Margin="0,0,0,0" Name="lvNumpadKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden"  BorderThickness="0" ItemsSource="{Binding NumpadKeys}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -211,7 +219,7 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <ListView Margin="0,20,0,0" Name="lvNumpadSymbolKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" >
+                <ListView Margin="0,20,0,0" Name="lvNumpadSymbolKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding NumpadsymbolKeys}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -221,7 +229,7 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <ListView Margin="0,20,0,0" Name="lvSystemandStateKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" >
+                <ListView Margin="0,20,0,0" Name="lvSystemandStateKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemandStateKeys}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
@@ -231,7 +239,7 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <ListView Margin="0,20,0,0" Name="lvCursorandEditKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" >
+                <ListView Margin="0,20,0,0" Name="lvCursorandEditKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding CursorandEditKeys}" >
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
