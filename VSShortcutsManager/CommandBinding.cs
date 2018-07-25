@@ -13,17 +13,12 @@ namespace VSShortcutsManager
 
         public IReadOnlyList<BindingSequence> Sequences { get; private set; }
 
-        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
+        public CommandBinding(CommandId command, KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
             this.Command = command;
             this.Scope = scope;
 
-            this.Sequences = new List<BindingSequence>() { sequence };
-        }
-
-        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2) : this(command, scope, sequence1)
-        {
-            ((List<BindingSequence>)this.Sequences).Add(sequence2);
+            this.Sequences = new List<BindingSequence>(sequences);
         }
 
         public override string ToString()
