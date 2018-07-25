@@ -4,6 +4,7 @@ using System.Text;
 
 namespace VSShortcutsManager
 {
+    [DebuggerDisplay("Scope = {Scope.Name}")]
     public class CommandBinding
     {
         public CommandId Command { get; private set;}
