@@ -134,7 +134,6 @@ namespace VSShortcutsManager
                 return bindingSequence.Key;
             }
 
-
             var buffer = new System.Text.StringBuilder();
             if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Windows))
             {
@@ -142,15 +141,15 @@ namespace VSShortcutsManager
             }
             if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control))
             {
-                buffer.Append("Control+");
-            }
-            if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Shift))
-            {
-                buffer.Append("Shift+");
+                buffer.Append("Ctrl+");
             }
             if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Alt))
             {
                 buffer.Append("Alt+");
+            }
+            if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Shift))
+            {
+                buffer.Append("Shift+");
             }
             buffer.Append(bindingSequence.Key);
 
