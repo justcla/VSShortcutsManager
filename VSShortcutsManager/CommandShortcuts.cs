@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
@@ -21,6 +22,9 @@ namespace VSShortcutsManager
     [Guid("124118e3-7c75-490e-8ace-742c96f001da")]
     public class CommandShortcuts : ToolWindowPane
     {
+        public const string guidVSShortcutsManagerCmdSet = "cca0811b-addf-4d7b-9dd6-fdb412c44d8a";
+        public const int CommandShortcutsToolWinToolbar = 0x2004;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandShortcuts"/> class.
         /// </summary>
@@ -37,6 +41,8 @@ namespace VSShortcutsManager
         protected override void Initialize()
         {
             base.Initialize();
+
+            this.ToolBar = new CommandID(new Guid(guidVSShortcutsManagerCmdSet), CommandShortcutsToolWinToolbar);
 
             ((CommandShortcutsControl)this.Content).DataContext = new CommandShortcutsControlDataContext(this);
         }
