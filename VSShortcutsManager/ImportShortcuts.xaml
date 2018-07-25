@@ -13,7 +13,7 @@
             Height="400"
             DockPanel.Dock="Top"
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
-            AutoGenerateColumns="False" Margin="0,10,0,10"
+            AutoGenerateColumns="False" Margin="0,10,0,5"
             ItemsSource="{Binding}">
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="Include" IsReadOnly="False" Binding="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
@@ -23,9 +23,9 @@
                 <DataGridTextColumn Header="Conflict" IsReadOnly="True" Binding="{Binding Conflict}" Width="1*" />
             </DataGrid.Columns>
         </DataGrid>
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10, 0, 10">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 5, 0, 10">
             <Button Content="OK" Height="25" VerticalAlignment="Bottom" Width="100" Name="OkButton" Click="OkButton_Click" ClickMode="Release" />
-            <Button Content="Cancel" Height="25" VerticalAlignment="Bottom" Width="100" Name="CancelButton" Click="CancelButton_Click" ClickMode="Release"/>
+            <Button Content="Cancel" Height="25" Margin="5, 0, 0, 0" VerticalAlignment="Bottom" Width="100" Name="CancelButton" Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
         </StackPanel>
     </DockPanel>
 </ui:DialogWindow>
