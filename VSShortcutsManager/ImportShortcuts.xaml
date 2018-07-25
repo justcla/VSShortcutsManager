@@ -1,0 +1,31 @@
+﻿<ui:DialogWindow x:Class="VSShortcutsManager.ImportShortcuts"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:VSShortcutsManager"
+             xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0">
+
+    <DockPanel LastChildFill="True">
+        <Label DockPanel.Dock="Top"
+            Content="Check the shortcuts you want to import" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <DataGrid
+            Height="400"
+            DockPanel.Dock="Top"
+            AlternatingRowBackground="Gainsboro" AlternationCount="2"
+            AutoGenerateColumns="False" Margin="0,10,0,5"
+            ItemsSource="{Binding}">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="Include" IsReadOnly="False" Binding="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
+                <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" Width="3*" />
+                <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" Width="1*" />
+                <DataGridTextColumn Header="Scope" IsReadOnly="True" Binding="{Binding Scope}" Width="1*" />
+                <DataGridTextColumn Header="Conflict" IsReadOnly="True" Binding="{Binding Conflict}" Width="1*" />
+            </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 5, 0, 10">
+            <Button Content="OK" Height="25" VerticalAlignment="Bottom" Width="100" Name="OkButton" Click="OkButton_Click" ClickMode="Release" />
+            <Button Content="Cancel" Height="25" Margin="5, 0, 0, 0" VerticalAlignment="Bottom" Width="100" Name="CancelButton" Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
+        </StackPanel>
+    </DockPanel>
+</ui:DialogWindow>
