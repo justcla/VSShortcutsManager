@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Add Keyboard Shortcut" Height="450" Width="518.293"
         ShowInTaskbar="False"
-        ShowActivated="True" MouseDown="Window_MouseDown">
+        ShowActivated="True">
 
     <Grid Margin="0,0,2,0">
         <Grid.ColumnDefinitions>
@@ -15,12 +15,10 @@
             <ColumnDefinition Width="0*"/>
         </Grid.ColumnDefinitions>
         <Label x:Name="lblCommand" Content="CommandL" HorizontalAlignment="Left" Margin="43,45,0,0" VerticalAlignment="Top" Height="26" Width="65"/>
-        <TextBox x:Name="txtCommand" Text="{Binding Path=Command, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,45,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="190" TextChanged="txtCommand_TextChanged" KeyUp="txtCommand_KeyUp" LostFocus="txtCommand_LostFocus"/>
-        <Border Panel.ZIndex="2" BorderBrush="Black" Background="White" BorderThickness="1" Margin="200,73,120,229" Visibility="Hidden">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="-1,1,-1,-1">
-                <StackPanel Name="resultStack"></StackPanel>
-            </ScrollViewer>
-        </Border>
+        <local:AutoFilteredComboBox x:Name="txtCommand" 
+            VerticalAlignment="Top"
+            ItemsSource="{Binding DataSource}"
+            DisplayMemberPath="Name" HorizontalAlignment="Left" Height="23" Margin="198,45,0,0" Width="265"/>
         <Label x:Name="lblScope" Content="Scope:" HorizontalAlignment="Left" Margin="43,95,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
         <ComboBox Name="cmbScopeList" Width="265"  HorizontalAlignment="left" Margin="198,94,0,298" SelectedValuePath="Content" >
             <ComboBoxItem Content="Team Explorer" HorizontalAlignment="Left" Selector.IsSelected="True"/>
@@ -77,7 +75,7 @@
             <ComboBoxItem Content="XML Schema Designer" HorizontalAlignment="Left" />
         </ComboBox>
         <Label x:Name="lblShortcut" Content="Shortcut:" HorizontalAlignment="Left" Margin="43,145,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
-        <TextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="190" TextChanged="txtShortcut_TextChanged"/>
+        <TextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="265" TextChanged="txtShortcut_TextChanged"/>
         <Label x:Name="lblConflicts" Content="Potential Conflicts:" HorizontalAlignment="Left" Margin="43,195,0,0" VerticalAlignment="Top" Height="26" Width="105"/>
         <TextBox x:Name="txtConflicts" HorizontalAlignment="Left" Height="75" Margin="198,195,0,0" AcceptsReturn="True" TextWrapping="Wrap" VerticalAlignment="Top" Width="265">
             <!--<TextBox.Text>
