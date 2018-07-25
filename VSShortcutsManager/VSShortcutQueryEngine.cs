@@ -547,7 +547,7 @@ namespace VSShortcutsManager
 
                 string keyPortion = bindingString.Substring(bindingString.IndexOf("::") + 2);
 
-                return new CommandBinding(new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], GetBindingSequencesFromBindingString(keyPortion));
+                return new CommandBinding(keyPortion, new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], GetBindingSequencesFromBindingString(keyPortion));
             }
 
             return null;
