@@ -4,7 +4,7 @@ using System.Windows.Input;
 namespace VSShortcutsManager
 {
     [DebuggerDisplay("{Modifiers}+{Chord}")]
-    internal class BindingSequence
+    public class BindingSequence
     {
         public BindingSequence(ModifierKeys modifierKeys, string chord)
         {

@@ -22,7 +22,7 @@ namespace VSShortcutsManager
         public VSCommandShortcuts Filter(VSCommandShortcuts commands)
         {
             var result = commands
-                .Where(command => command.Command.IndexOf(this.searchCriteria, this.stringComparison) >= 0);
+                .Where(command => command.CommandText.IndexOf(this.searchCriteria, this.stringComparison) >= 0);
 
             return new VSCommandShortcuts(result);
         }
@@ -41,7 +41,7 @@ namespace VSShortcutsManager
         public VSCommandShortcuts Filter(VSCommandShortcuts commands)
         {
             var result = commands
-                .Select(command => (command: command, match: patternMatcher.TryMatch(command.Command)))
+                .Select(command => (command: command, match: patternMatcher.TryMatch(command.CommandText)))
                 .Where(tuple => tuple.match != null)
                 .OrderBy(tuple => tuple.match)
                 .Select(tuple => tuple.command);

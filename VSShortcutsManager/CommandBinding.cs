@@ -5,15 +5,15 @@ using System.Diagnostics;
 namespace VSShortcutsManager
 {
     [DebuggerDisplay("Scope = {Scope.Name}")]
-    internal class CommandBinding
+    public class CommandBinding
     {
-        internal CommandId Command { get; private set;}
+        public CommandId Command { get; private set;}
 
-        internal KeybindingScope Scope { get; private set; }
+        public KeybindingScope Scope { get; private set; }
 
-        internal IEnumerable<BindingSequence> Chords { get; private set; }
+        public IEnumerable<BindingSequence> Chords { get; private set; }
 
-        internal CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
+        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
         {
             this.Command = command;
             this.Scope = scope;
@@ -21,7 +21,7 @@ namespace VSShortcutsManager
             this.Chords = new List<BindingSequence>() { sequence };
         }
 
-        internal CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2) : this(command, scope, sequence1)
+        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2) : this(command, scope, sequence1)
         {
             ((List<BindingSequence>)this.Chords).Add(sequence2);
         }
