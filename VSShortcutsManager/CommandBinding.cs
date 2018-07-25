@@ -4,15 +4,15 @@ using System.Text;
 
 namespace VSShortcutsManager
 {
-    internal class CommandBinding
+    public class CommandBinding
     {
-        internal CommandId Command { get; private set;}
+        public CommandId Command { get; private set;}
 
-        internal KeybindingScope Scope { get; private set; }
+        public KeybindingScope Scope { get; private set; }
 
-        internal IReadOnlyList<BindingSequence> Sequences { get; private set; }
+        public IReadOnlyList<BindingSequence> Sequences { get; private set; }
 
-        internal CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
+        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
         {
             this.Command = command;
             this.Scope = scope;
@@ -20,7 +20,7 @@ namespace VSShortcutsManager
             this.Sequences = new List<BindingSequence>() { sequence };
         }
 
-        internal CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2) : this(command, scope, sequence1)
+        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2) : this(command, scope, sequence1)
         {
             ((List<BindingSequence>)this.Sequences).Add(sequence2);
         }

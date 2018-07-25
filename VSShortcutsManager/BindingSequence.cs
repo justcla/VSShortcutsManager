@@ -3,7 +3,7 @@ using System.Windows.Input;
 
 namespace VSShortcutsManager
 {
-    internal class BindingSequence
+    public class BindingSequence
     {
         private BindingSequence() { }
 
