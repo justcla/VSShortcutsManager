@@ -24,16 +24,17 @@ namespace VSShortcutsManager.AddNewShortcut
                 var allCommands = await queryEngine.GetAllCommandsAsync();
                 foreach (var eachCommand in allCommands)
                 {
-                    data.Add(new CommandList() { DisplayName = eachCommand.DisplayName, CommandName = eachCommand.CanonicalName });
+                    if (!string.IsNullOrEmpty(eachCommand.CanonicalName))
+                    {
+                        CommandList item = new CommandList() { DisplayName = eachCommand.DisplayName, CommandName = eachCommand.CanonicalName };
+                        data.Add(item);
+                    }
                 }
             });
         }
 
 
-        public IEnumerable<CommandList> DataSource
-        {
-            get { return data; }
-        }
+        public IEnumerable<CommandList> DataSource => data.OrderBy(o => o.CommandName);
     }
 
     public class CommandList
