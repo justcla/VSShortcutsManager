@@ -3,10 +3,9 @@ using System.Diagnostics;
 
 namespace VSShortcutsManager
 {
-    [DebuggerDisplay("{DisplayName} ({CanonicalName})")]
     public class Command
     {
-        public Command(CommandId id, string displayName,  string canonicalName, IEnumerable<CommandBinding> bindings)
+        public Command(CommandId id, string displayName,  string canonicalName, IReadOnlyList<CommandBinding> bindings)
         {
             this.Id = id;
             this.DisplayName = displayName;
@@ -20,6 +19,11 @@ namespace VSShortcutsManager
 
         public string CanonicalName { get; private set;}
 
-        public IEnumerable<CommandBinding> Bindings { get; private set; }
+        public IReadOnlyList<CommandBinding> Bindings { get; private set; }
+
+        public override string ToString()
+        {
+            return DisplayName + ((!string.IsNullOrEmpty(CanonicalName)) ? " ("+ CanonicalName + ")" : string.Empty);
+        }
     }
 }

@@ -4,28 +4,51 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VSShortcutsManager"
-             xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0">
+             xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             Title="Import Shotcuts"
+             Height="550" >
+    <ui:DialogWindow.Resources>
+        <FrameworkElement x:Key="ProxyElement" DataContext="{Binding}" />
+    </ui:DialogWindow.Resources>
 
     <DockPanel LastChildFill="True">
         <Label DockPanel.Dock="Top"
-            Content="Check the shortcuts you want to import" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+            Content="Check the shortcuts you want to import" HorizontalAlignment="Left" Margin="5,10,0,5" VerticalAlignment="Top"/>
         <DataGrid
-            Height="400"
+            x:Name="dataGrid"
+            Height="420"
             DockPanel.Dock="Top"
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
-            AutoGenerateColumns="False" Margin="0,10,0,5"
-            ItemsSource="{Binding}">
+            AutoGenerateColumns="False" Margin="10,5,10,5"
+            ItemsSource="{Binding VSShortcutUIs}">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="Include" IsReadOnly="False" Binding="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
-                <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" Width="3*" />
-                <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" Width="1*" />
+                <DataGridTemplateColumn IsReadOnly="False" >
+                    <DataGridTemplateColumn.Header>
+                        <CheckBox IsChecked="{Binding DataContext.IsSelectAll, Source={StaticResource ProxyElement}, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}"></CheckBox>
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate >
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" Width="1*" />
                 <DataGridTextColumn Header="Scope" IsReadOnly="True" Binding="{Binding Scope}" Width="1*" />
-                <DataGridTextColumn Header="Conflict" IsReadOnly="True" Binding="{Binding Conflict}" Width="1*" />
+                <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" Width="2*" />
+                <DataGridTemplateColumn Header="Conflicts" IsReadOnly="True" Width="3.5*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ListView ItemsSource="{Binding Conflicts}">
+                                
+                            </ListView>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 5, 0, 10">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0, 5, 10, 10">
             <Button Content="OK" Height="25" VerticalAlignment="Bottom" Width="100" Name="OkButton" Click="OkButton_Click" ClickMode="Release" />
-            <Button Content="Cancel" Height="25" Margin="5, 0, 0, 0" VerticalAlignment="Bottom" Width="100" Name="CancelButton" Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
+            <Button Content="Cancel" Height="25" Margin="10, 0, 0, 0" VerticalAlignment="Bottom" Width="100" Name="CancelButton" Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
         </StackPanel>
     </DockPanel>
 </ui:DialogWindow>

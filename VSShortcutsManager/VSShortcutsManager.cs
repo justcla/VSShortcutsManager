@@ -423,6 +423,7 @@ namespace VSShortcutsManager
             // Gather shortcuts to be removed
             var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
             var shortcutsToDelete = new List<XElement>();
+
             foreach (var userShortcut in userShortcuts)
             {
                 foreach (var shortcut in userShortcut.Descendants("Shortcut"))
@@ -457,13 +458,30 @@ namespace VSShortcutsManager
 
         private List<VSShortcut> ParseVSSettingsFile(XDocument vsSettingsFile)
         {
+            VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
             var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
             var shortcutList = new List<VSShortcut>();
+
             foreach (var userShortcut in userShortcuts)
             {
                 foreach (var shortcut in userShortcut.Descendants("Shortcut"))
                 {
-                    shortcutList.Add(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value, Conflict="None" });
+                    var scope = engine.GetScopeByName(shortcut.Attribute("Scope").Value);
+                    var sequences = engine.GetBindingSequencesFromBindingString(shortcut.Value);
+                    var conflictTexts = new List<string>();
+                    ThreadHelper.JoinableTaskFactory.Run(async () =>
+                    {
+                        var conflicts = await engine.GetConflictsAsync(scope, sequences);
+                        foreach (var conflict in conflicts)
+                        {
+                            foreach (var binding in conflict.AffectedBindings)
+                            {
+                                conflictTexts.Add($"[{binding.Item1.Scope.Name}] {binding.Item2.CanonicalName} ({binding.Item1.OriginalDTEString})");
+                            }
+                        }
+                    });
+
+                    shortcutList.Add(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value, Conflicts=conflictTexts });
                 }
             }
             return shortcutList;
@@ -782,7 +800,7 @@ namespace VSShortcutsManager
         public string Command { get; set; }
         public string Scope { get; set; }
         public string Shortcut { get; set; }
-        public string Conflict { get; set; }
+        public IEnumerable<string> Conflicts { get; set; }
 
         public override bool Equals(object obj)
         {
