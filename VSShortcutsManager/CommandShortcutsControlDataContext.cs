@@ -59,12 +59,16 @@ namespace VSShortcutsManager
 
         public void DeleteShortcuts(IEnumerable<CommandShortcut> commandShortcuts)
         {
-            if (!commandShortcuts.Where(command => command.Binding != null).Any())
+            int count = commandShortcuts.Where(command => command.Binding != null).Count();
+            if (count < 1)
             {
                 return;
             }
 
-            if (System.Windows.MessageBoxResult.Yes != MessageBox.Show("Are you sure you want to delete the selected shortcuts", "Deleting shortcuts", System.Windows.MessageBoxButton.YesNo))
+            string msg = count == 1
+                ? "Are you sure you want to delete the selected shortcut?"
+                : "Are you sure you want to delete the selected shortcuts?";
+            if (System.Windows.MessageBoxResult.Yes != MessageBox.Show(msg, "Deleting shortcuts", System.Windows.MessageBoxButton.YesNo))
             {
                 return;
             }
@@ -198,7 +202,7 @@ namespace VSShortcutsManager
 
         private static void DeleteCommandBindings(EnvDTE.Command command, List<CommandBinding> deletedBindings)
         {
-            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => binding.DteBindingString));
+            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => binding.OriginalDTEString));
 
             var oldBindings = (object[])command.Bindings;
 
