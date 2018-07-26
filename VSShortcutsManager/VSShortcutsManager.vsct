@@ -50,6 +50,9 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" priority="0x0300">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
       </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarSettingsGroup" priority="0x0400">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
+      </Group>
     </Groups>
     
     <Menus>
@@ -150,8 +153,11 @@
       <Button guid="guidVSShortcutsManagerCmdSet" id="ImportUserShortcutsCmdId" priority="0x0100">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="UserShortcutsActionsGroup"/>
         <Strings>
-          <ButtonText>Import User Shortcuts</ButtonText>
+          <ButtonText>&amp;Import</ButtonText>
           <MenuText>&amp;From File...</MenuText>
+          <ToolTipText>Import user shortcuts from VSSettings file</ToolTipText>
+          <CanonicalName>ImportShortcutsFromFile</CanonicalName>
+          <LocCanonicalName>ImportShortcutsFromFile</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="ClearUserShortcutsCmdId" priority="0x0110">
@@ -235,6 +241,15 @@
           <LocCanonicalName>CmdShortcuts.Filter.UserShortcuts</LocCanonicalName>
         </Strings>
       </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="KeyboardOptionsCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;Options</ButtonText>
+          <MenuText>&amp;Keyboard Options</MenuText>
+          <ToolTipText>Open Keyboard settings in Tools->Options</ToolTipText>
+          <CanonicalName>CmdShortcuts.KeyboardOptions</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.KeyboardOptions</LocCanonicalName>
+        </Strings>
+      </Button>
 
 </Buttons>
 
@@ -263,11 +278,18 @@
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="DeleteShortcutsCmdId" priority="0x0200">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
     </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="ImportUserShortcutsCmdId" priority="0x0250">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="BackupShortcutsCmdId" priority="0x0300">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="ResetShortcutsCmdId" priority="0x0400">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
+    <!-- Settings Group -->
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="KeyboardOptionsCmdId" priority="0x0100">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarSettingsGroup" />
     </CommandPlacement>
   </CommandPlacements>
 
@@ -294,6 +316,7 @@
       <IDSymbol name="CmdShortcutsToolWinToolbarReferenceGroup" value="0x2005"/>
       <IDSymbol name="CmdShortcutsToolWinToolbarFilterGroup" value="0x2006"/>
       <IDSymbol name="CmdShortcutsToolWinToolbarActionsGroup" value="0x2007"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarSettingsGroup" value="0x2008"/>
 
       <!--Commands-->
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
@@ -310,6 +333,7 @@
       <IDSymbol name="FilterPopularShortcutsCmdId" value="0x1720" />
       <IDSymbol name="FilterUserShortcutsCmdId" value="0x1730" />
       <IDSymbol name="DeleteShortcutsCmdId" value="0x1740" />
+      <IDSymbol name="KeyboardOptionsCmdId" value="0x1750" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  

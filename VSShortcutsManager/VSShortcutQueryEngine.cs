@@ -397,14 +397,27 @@ namespace VSShortcutsManager
             IEnumerable<Command> commands = await GetAllCommandsAsync();
             Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>> conflictsMap = new Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>>();
 
-            BindingSequence[] sequencesArr = sequences.ToArray();
-            bool isSingleChordBinding = sequencesArr.Length == 1;
+            BindingSequence[] callerChord = sequences.ToArray();
+            bool callerIsTwoChordBinding = callerChord.Length == 2;
 
+            // Populate the conflictsMap with all conflicting commands - grouped by conflict type (shadow, mask, replace)
             foreach(Command c in commands)
             {
                 foreach(CommandBinding b in c.Bindings)
                 {
-                    if(!SameBindingSequence(sequencesArr[0], b.Sequences[0]))
+                    // Compare the both part of the chords - if both are 2-chord bindings
+                    if (callerIsTwoChordBinding && b.Sequences.Count == 2)
+                    {
+                        // Note: Only need to compare the second part of the chord here because the first part is always compared next.
+                        if (!SameBindingSequence(callerChord[1], b.Sequences[1]))
+                        {
+                            // This binding is a chord and the second part doesn't match the second part of the chord passed in, so ignore it
+                            continue;
+                        }
+                    }
+
+                    // Compare the first part of the chords
+                    if (!SameBindingSequence(callerChord[0], b.Sequences[0]))
                     {
                         // This binding doesn't start with the same sequence as the one give by the caller, so ignore it
                         continue;
@@ -441,7 +454,8 @@ namespace VSShortcutsManager
                         continue;
                     }
 
-                    if(!conflictsMap.TryGetValue(conflictType, out conflicts))
+                    // Add the conflict to the conflicts map, associated with the appropriate conflict type
+                    if (!conflictsMap.TryGetValue(conflictType, out conflicts))
                     {
                         conflictsMap[conflictType] = conflicts = new List<Tuple<CommandBinding, Command>>();
                     }
@@ -450,6 +464,7 @@ namespace VSShortcutsManager
                 }
             }
 
+            // Package the conflict data into BindingConflict objects (one for each conflict type)
             List<BindingConflict> result = new List<BindingConflict>();
             foreach(var kvp in conflictsMap)
             {
@@ -780,6 +795,41 @@ namespace VSShortcutsManager
             }
 
            ((List<Tuple<CommandBinding, Command>>)commandsForKey).Add(new Tuple<CommandBinding, Command>(binding, command));
+        }
+
+        private static object[] AppendKeyboardBinding(EnvDTE.Command command, string keyboardBindingDefn)
+        {
+            object[] oldBindings = (object[])command.Bindings;
+
+            // Check that keyboard binding is not already there
+            for (int i = 0; i < oldBindings.Length; i++)
+            {
+                if (keyboardBindingDefn.Equals(oldBindings[i]))
+                {
+                    // Exit early and return the existing bindings array if new keyboard binding is already there
+                    return oldBindings;
+                }
+            }
+
+            // Build new array with all the old bindings, plus the new one.
+            object[] newBindings = new object[oldBindings.Length + 1];
+            Array.Copy(oldBindings, newBindings, oldBindings.Length);
+            newBindings[newBindings.Length - 1] = keyboardBindingDefn;
+            return newBindings;
+        }
+        /// <summary>
+        /// Adds (appends) a binding for the given shortcut
+        /// </summary>
+        /// <param name="commandName"></param>
+        /// <param name="shortcutDef"></param>
+        public void BindShortcut(string commandName, string shortcutDef)
+        {
+            DTE dte = (DTE)serviceProvider.GetService(typeof(DTE));
+            EnvDTE.Commands cmds = dte.Commands;
+            //EnvDTE.Command shortCutCommand = DTECommands.Item(commandName);
+            EnvDTE.Command shortCutCommand = cmds.Item(commandName);
+            object[] newBindings = AppendKeyboardBinding(shortCutCommand, shortcutDef);
+            shortCutCommand.Bindings = newBindings;
         }
 
         private bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
