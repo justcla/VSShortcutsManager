@@ -12,15 +12,19 @@ namespace VSShortcutsManager
 
         public IReadOnlyList<BindingSequence> Sequences { get; private set; }
 
-        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence)
+        public string DteBindingString { get; private set; }
+
+        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence, string dteBindingString)
         {
             this.Command = command;
             this.Scope = scope;
 
             this.Sequences = new List<BindingSequence>() { sequence };
+
+            this.DteBindingString = dteBindingString;
         }
 
-        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2) : this(command, scope, sequence1)
+        public CommandBinding(CommandId command, KeybindingScope scope, BindingSequence sequence1, BindingSequence sequence2, string dteBindingString) : this(command, scope, sequence1, dteBindingString)
         {
             ((List<BindingSequence>)this.Sequences).Add(sequence2);
         }

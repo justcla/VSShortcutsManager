@@ -447,7 +447,7 @@ namespace VSShortcutsManager
                 {
                     // Single chord binding
                     Tuple<ModifierKeys, string> sequence = ParseSingleChordFromBindingString(keyPortion);
-                    return new CommandBinding(new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], new BindingSequence(sequence.Item1, sequence.Item2));
+                    return new CommandBinding(new CommandId(guid, id), this.ScopeNameToScopeInfoMap[scopeName], new BindingSequence(sequence.Item1, sequence.Item2), bindingString);
                 }
                 else
                 {
@@ -474,7 +474,8 @@ namespace VSShortcutsManager
                     return new CommandBinding(new CommandId(guid, id), 
                                               this.ScopeNameToScopeInfoMap[scopeName],
                                               new BindingSequence(sequence1.Item1, sequence1.Item2),
-                                              new BindingSequence(sequence2.Item1, sequence2.Item2));
+                                              new BindingSequence(sequence2.Item1, sequence2.Item2),
+                                              bindingString);
 
                 }
             }
