@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Linq;
 
 namespace VSShortcutsManager
 {
@@ -74,9 +75,9 @@ namespace VSShortcutsManager
         }
         private void lvAlphaKeys_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var item = (KeyList)lvAlphaKeys.SelectedItem;
-            viewModel.Chords = "Ctrl + Alt +" + item.Name;
-            CtrlKeyPressed = AltKeyPressed = ShiftKeyPressed = false;
+            //var item = (KeyList)lvAlphaKeys.SelectedItem;
+            //viewModel.Chords = "Ctrl + Alt +" + item.Name;
+            //CtrlKeyPressed = AltKeyPressed = ShiftKeyPressed = false;
         }
         private void btnControl_Click(object sender, RoutedEventArgs e)
         {
@@ -96,7 +97,7 @@ namespace VSShortcutsManager
         #endregion
 
         #region private Methods
-        private ModifierKeys GetSelectedModifierKey()
+        private ModifierKeys GetSelectedModifierKeys()
         {
             ModifierKeys modifierkeys;
 
@@ -134,39 +135,72 @@ namespace VSShortcutsManager
             }
             return modifierkeys;
         }
-
         private async void RefreshShortcuts()
         {
-            var modifierKey = GetSelectedModifierKey();
-            VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
-            var selectedscope = (Scope)cmbScopeList.SelectedItem;
-            Guid scopeGuid = Guid.Parse(selectedscope.ID);     // Get Guid Scope
-            BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
-            const bool includeGlobals = true;
-            IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> bindingsMap = await engine.GetBindingsForModifiersAsync(scopeGuid, ModifierKeys.None, bindingSequence, includeGlobals);
-            
+            try
+            {
+                var modifierKeys = GetSelectedModifierKeys();
+                VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
+                var selectedscope = (Scope)cmbScopeList.SelectedItem;
+                Guid scopeGuid = (selectedscope != null) ? Guid.Parse(selectedscope.ID) : Guid.Empty;
+                BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
+                const bool includeGlobals = true;
+                IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> matchingShortcuts = await engine.GetBindingsForModifiersAsync(scopeGuid, modifierKeys, bindingSequence, includeGlobals);
+                foreach (var matchingShortcut in matchingShortcuts)
+                {
+                    var key = matchingShortcut.Key;
+                    var commandBindings = matchingShortcut.Value;
+                    var commandString = String.Join(",", commandBindings.Select(commandBinding => commandBinding.Item2.DisplayName));
+                    UpdateShortcutValue(key, commandString);
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
         }
-
-        #endregion
-
-    }
-
-
-    public class KeyList
-    {
-        public KeyList()
+        private void UpdateShortcutValue(string key, string commandString)
         {
-            Commands = new List<string>();
+            if (viewModel.AlphaKeys?.ContainsKey(key) == true)
+            {
+                viewModel.AlphaKeys[key].DispalyName = commandString;
+            }
+            else if (viewModel.FunctionKeys.ContainsKey(key))
+            {
+                viewModel.FunctionKeys[key].DispalyName = commandString;
+            }
+            else if (viewModel.NumericKeys?.ContainsKey(key) == true)
+            {
+                viewModel.NumericKeys[key].DispalyName = commandString;
+            }
+            else if (viewModel.NumpadKeys?.ContainsKey(key) == true)
+            {
+                viewModel.NumpadKeys[key].DispalyName = commandString;
+            }
+            else if (viewModel.NumpadsymbolKeys?.ContainsKey(key) == true)
+            {
+                viewModel.NumpadsymbolKeys[key].DispalyName = commandString;
+            }
+            else if (viewModel.SystemKeys1?.ContainsKey(key) == true)
+            {
+                viewModel.SystemKeys1[key].DispalyName = commandString;
+            }
+            else if (viewModel.SystemKeys2?.ContainsKey(key) == true)
+            {
+                viewModel.SystemKeys2[key].DispalyName = commandString;
+            }
+            else if (viewModel.CursorandEditKeys?.ContainsKey(key) == true)
+            {
+                viewModel.CursorandEditKeys[key].DispalyName = commandString;
+            }
+            else if (viewModel.SystemandStateKeys?.ContainsKey(key) == true)
+            {
+                viewModel.SystemandStateKeys[key].DispalyName = commandString;
+            }
         }
-
-        public string Name { get; set; }
-
-        public string Command { get; set; }
-
-        public List<string> Commands { get; set; }
-
+        #endregion
     }
-
 
     public class LiveShortCutViewViewModel : INotifyPropertyChanged
     {
@@ -175,16 +209,16 @@ namespace VSShortcutsManager
         public event PropertyChangedEventHandler PropertyChanged;
 
         private string _Chords;
-        private List<KeyList> _AlphaKeys;
-        private List<KeyList> _FunctionKeys;
-        private List<KeyList> _NumericKeys;
-        private List<KeyList> _SpecialKeys;
-        private List<KeyList> _NumpadKeys;
-        private List<KeyList> _NumpadsymbolKeys;
-        private List<KeyList> _SystemKeys1;
-        private List<KeyList> _SystemKeys2;
-        private List<KeyList> _CursorandEditKeys;
-        private List<KeyList> _SystemandStateKeys;
+        private Dictionary<string, ShortcutKeyCommand> _AlphaKeys;
+        private Dictionary<string, ShortcutKeyCommand> _FunctionKeys;
+        private Dictionary<string, ShortcutKeyCommand> _NumericKeys;
+        private Dictionary<string, ShortcutKeyCommand> _SpecialKeys;
+        private Dictionary<string, ShortcutKeyCommand> _NumpadKeys;
+        private Dictionary<string, ShortcutKeyCommand> _NumpadsymbolKeys;
+        private Dictionary<string, ShortcutKeyCommand> _SystemKeys1;
+        private Dictionary<string, ShortcutKeyCommand> _SystemKeys2;
+        private Dictionary<string, ShortcutKeyCommand> _CursorandEditKeys;
+        private Dictionary<string, ShortcutKeyCommand> _SystemandStateKeys;
         private List<Scope> _ScopeLists;
 
         #endregion
@@ -206,7 +240,7 @@ namespace VSShortcutsManager
                 OnPropertyChanged(new PropertyChangedEventArgs("Chords"));
             }
         }
-        public List<KeyList> AlphaKeys
+        public Dictionary<string, ShortcutKeyCommand> AlphaKeys
         {
             get { return _AlphaKeys; }
             set
@@ -215,7 +249,7 @@ namespace VSShortcutsManager
                 OnPropertyChanged(new PropertyChangedEventArgs("AlphaKeys"));
             }
         }
-        public List<KeyList> FunctionKeys
+        public Dictionary<string, ShortcutKeyCommand> FunctionKeys
         {
             get { return _FunctionKeys; }
             set
@@ -224,7 +258,7 @@ namespace VSShortcutsManager
                 OnPropertyChanged(new PropertyChangedEventArgs("FunctionKeys"));
             }
         }
-        public List<KeyList> NumericKeys
+        public Dictionary<string, ShortcutKeyCommand> NumericKeys
         {
             get { return _NumericKeys; }
             set
@@ -233,7 +267,7 @@ namespace VSShortcutsManager
                 OnPropertyChanged(new PropertyChangedEventArgs("NumericKeys"));
             }
         }
-        public List<KeyList> SpecialKeys
+        public Dictionary<string, ShortcutKeyCommand> SpecialKeys
         {
             get { return _SpecialKeys; }
             set
@@ -242,7 +276,7 @@ namespace VSShortcutsManager
                 OnPropertyChanged(new PropertyChangedEventArgs("SpecialKeys"));
             }
         }
-        public List<KeyList> NumpadKeys
+        public Dictionary<string, ShortcutKeyCommand> NumpadKeys
         {
             get { return _NumpadKeys; }
             set
@@ -252,7 +286,7 @@ namespace VSShortcutsManager
 
             }
         }
-        public List<KeyList> NumpadsymbolKeys
+        public Dictionary<string, ShortcutKeyCommand> NumpadsymbolKeys
         {
             get { return _NumpadsymbolKeys; }
             set
@@ -262,7 +296,7 @@ namespace VSShortcutsManager
 
             }
         }
-        public List<KeyList> SystemKeys1
+        public Dictionary<string, ShortcutKeyCommand> SystemKeys1
         {
             get { return _SystemKeys1; }
             set
@@ -272,7 +306,7 @@ namespace VSShortcutsManager
 
             }
         }
-        public List<KeyList> SystemKeys2
+        public Dictionary<string, ShortcutKeyCommand> SystemKeys2
         {
             get { return _SystemKeys2; }
             set
@@ -282,7 +316,7 @@ namespace VSShortcutsManager
 
             }
         }
-        public List<KeyList> CursorandEditKeys
+        public Dictionary<string, ShortcutKeyCommand> CursorandEditKeys
         {
             get { return _CursorandEditKeys; }
             set
@@ -292,7 +326,7 @@ namespace VSShortcutsManager
 
             }
         }
-        public List<KeyList> SystemandStateKeys
+        public Dictionary<string, ShortcutKeyCommand> SystemandStateKeys
         {
             get { return _SystemandStateKeys; }
             set
@@ -318,118 +352,118 @@ namespace VSShortcutsManager
         #region private Methods
         private void LoadKeys()
         {
-            AlphaKeys = new List<KeyList>();
-            AlphaKeys.Add(new KeyList() { Name = "A", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "B", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "C", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "D", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "E", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "F", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "G", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "H", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "I", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "J", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "K", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "L", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "M", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "N", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "O", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "P", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "Q", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "R", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "S", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "T", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "U", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "V", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "W", Command = "Window.Move Navigation Bar" });
-            AlphaKeys.Add(new KeyList() { Name = "X", Command = "Edit.Find Next Selected" });
-            AlphaKeys.Add(new KeyList() { Name = "Y", Command = "Help.View Help" });
-            AlphaKeys.Add(new KeyList() { Name = "Z", Command = "Window.Move Navigation Bar" });
+            AlphaKeys = new Dictionary<string, ShortcutKeyCommand>();
+            AlphaKeys.Add("A", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("B", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("C", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("D", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("E", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("F", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("G", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("H", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("I", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("J", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("K", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("L", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("M", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("N", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("O", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("P", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("Q", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("R", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("S", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("T", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("U", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("V", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("W", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
+            AlphaKeys.Add("X", new ShortcutKeyCommand() { DispalyName = "Edit.Find Next Selected" });
+            AlphaKeys.Add("Y", new ShortcutKeyCommand() { DispalyName = "Help.View Help" });
+            AlphaKeys.Add("Z", new ShortcutKeyCommand() { DispalyName = "Window.Move Navigation Bar" });
 
 
-            FunctionKeys = new List<KeyList>();
-            FunctionKeys.Add(new KeyList() { Name = "F1", Command = "Window.Move Navigation Bar" });
-            FunctionKeys.Add(new KeyList() { Name = "F2", Command = "Help.View Help" });
-            FunctionKeys.Add(new KeyList() { Name = "F3", Command = "Edit.Find Next Selected" });
-            FunctionKeys.Add(new KeyList() { Name = "F4", Command = "Window.Move Navigation Bar" });
-            FunctionKeys.Add(new KeyList() { Name = "F5", Command = "Window.Move Navigation Bar" });
-            FunctionKeys.Add(new KeyList() { Name = "F6", Command = "Help.View Help" });
-            FunctionKeys.Add(new KeyList() { Name = "F7", Command = "Edit.Find Next Selected" });
-            FunctionKeys.Add(new KeyList() { Name = "F8", Command = "Window.Move Navigation Bar" });
-            FunctionKeys.Add(new KeyList() { Name = "F9", Command = "Window.Move Navigation Bar" });
-            FunctionKeys.Add(new KeyList() { Name = "F10", Command = "Help.View Help" });
-            FunctionKeys.Add(new KeyList() { Name = "F11", Command = "Edit.Find Next Selected" });
-            FunctionKeys.Add(new KeyList() { Name = "F12", Command = "Window.Move Navigation Bar" });
+            FunctionKeys = new Dictionary<string, ShortcutKeyCommand>();
+            FunctionKeys.Add("F1", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F2", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F3", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F4", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F5", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F6", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F7", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F8", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F9", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F10",new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F11",new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F12",new ShortcutKeyCommand() { DispalyName = "" });
 
-            NumericKeys = new List<KeyList>();
-            NumericKeys.Add(new KeyList() { Name = "1", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "2", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "3", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "4", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "5", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "6", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "7", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "8", Command = "Window.Move Navigation Bar" });
-            NumericKeys.Add(new KeyList() { Name = "9", Command = "Window.Move Navigation Bar" });
+            NumericKeys = new Dictionary<string, ShortcutKeyCommand>();
+            NumericKeys.Add("1", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("2", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("3", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("4", new ShortcutKeyCommand() { DispalyName = "" }); 
+            NumericKeys.Add("5", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("6", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("7", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("8", new ShortcutKeyCommand() { DispalyName = "" });
+            NumericKeys.Add("9", new ShortcutKeyCommand() { DispalyName = "" });
 
-            SpecialKeys = new List<KeyList>();
-            SpecialKeys.Add(new KeyList() { Name = "`~", Command = "OEM_3" });
-            SpecialKeys.Add(new KeyList() { Name = "-_", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = "=+", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = "[{", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = "]}", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = "\\|", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = ";:", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = "'\"", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = ",<", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = ".>", Command = "Window.Move Navigation Bar" });
-            SpecialKeys.Add(new KeyList() { Name = "/?", Command = "Window.Move Navigation Bar" });
+            SpecialKeys = new Dictionary<string, ShortcutKeyCommand>();
+            SpecialKeys.Add("`~", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("-_", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("=+", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("[{", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("]}", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add( "\\|", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add( ";:", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add( "'\"", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add( ",<", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add( ".>", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add( "/?", new ShortcutKeyCommand() { DispalyName = "" });
 
-            NumpadKeys = new List<KeyList>();
-            NumpadKeys.Add(new KeyList() { Name = "NumPad0", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad1", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad2", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad3", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad4", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad5", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad6", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad7", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad8", Command = "Window.Move Navigation Bar" });
-            NumpadKeys.Add(new KeyList() { Name = "NumPad9", Command = "Window.Move Navigation Bar" });
+            NumpadKeys = new Dictionary<string, ShortcutKeyCommand>();
+            NumpadKeys.Add("NumPad0", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad1", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad2", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad3", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad4", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad5", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad6", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad7", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad8", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("NumPad9", new ShortcutKeyCommand() { DispalyName = "" });
 
-            NumpadsymbolKeys = new List<KeyList>();
-            NumpadsymbolKeys.Add(new KeyList() { Name = "NumPad.", Command = "Window.Move Navigation Bar" });
-            NumpadsymbolKeys.Add(new KeyList() { Name = "NumPad/", Command = "Window.Move Navigation Bar" });
-            NumpadsymbolKeys.Add(new KeyList() { Name = "NumPad*", Command = "Window.Move Navigation Bar" });
-            NumpadsymbolKeys.Add(new KeyList() { Name = "NumPad-", Command = "Window.Move Navigation Bar" });
-            NumpadsymbolKeys.Add(new KeyList() { Name = "NumPad+", Command = "Window.Move Navigation Bar" });
+            NumpadsymbolKeys = new Dictionary<string, ShortcutKeyCommand>();
+            NumpadsymbolKeys.Add("NumPad.", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("NumPad/", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("NumPad*", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("NumPad-", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("NumPad+", new ShortcutKeyCommand() { DispalyName = "" });
 
 
-            SystemKeys1 = new List<KeyList>();
-            SystemKeys1.Add(new KeyList() { Name = "ESC", Command = "Window.Move Navigation Bar" });
-            SystemKeys1.Add(new KeyList() { Name = "TAB", Command = "Window.Move Navigation Bar" });
-            SystemKeys1.Add(new KeyList() { Name = "BackSpace", Command = "Window.Move Navigation Bar" });
-            SystemKeys1.Add(new KeyList() { Name = "ENTER", Command = "Window.Move Navigation Bar" });
-            SystemKeys1.Add(new KeyList() { Name = "SPACE", Command = "Window.Move Navigation Bar" });
+            SystemKeys1 = new Dictionary<string, ShortcutKeyCommand>();
+            SystemKeys1.Add("ESC", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("TAB", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("BackSpace", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("ENTER", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("SPACE", new ShortcutKeyCommand() { DispalyName = "" });
 
-            SystemKeys2 = new List<KeyList>();
-            SystemKeys2.Add(new KeyList() { Name = "INS", Command = "Window.Move Navigation Bar" });
-            SystemKeys2.Add(new KeyList() { Name = "DEL", Command = "Window.Move Navigation Bar" });
-            SystemKeys2.Add(new KeyList() { Name = "HOME", Command = "Window.Move Navigation Bar" });
-            SystemKeys2.Add(new KeyList() { Name = "END", Command = "Window.Move Navigation Bar" });
-            SystemKeys2.Add(new KeyList() { Name = "PgUp", Command = "Window.Move Navigation Bar" });
-            SystemKeys2.Add(new KeyList() { Name = "PgDn", Command = "Window.Move Navigation Bar" });
+            SystemKeys2 = new Dictionary<string, ShortcutKeyCommand>();
+            SystemKeys2.Add("INS", new ShortcutKeyCommand() { DispalyName = "" }); 
+            SystemKeys2.Add("DEL", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("HOME", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("END", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("PgUp", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("PgDn", new ShortcutKeyCommand() { DispalyName = "" });
 
-            CursorandEditKeys = new List<KeyList>();
-            CursorandEditKeys.Add(new KeyList() { Name = "Up", Command = "Window.Move Navigation Bar" });
-            CursorandEditKeys.Add(new KeyList() { Name = "Down", Command = "Window.Move Navigation Bar" });
-            CursorandEditKeys.Add(new KeyList() { Name = "Left", Command = "Window.Move Navigation Bar" });
-            CursorandEditKeys.Add(new KeyList() { Name = "Right", Command = "Window.Move Navigation Bar" });
+            CursorandEditKeys = new Dictionary<string, ShortcutKeyCommand>();
+            CursorandEditKeys.Add("Up", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Down", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Left", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Right", new ShortcutKeyCommand() { DispalyName = "" });
 
-            SystemandStateKeys = new List<KeyList>();
-            SystemandStateKeys.Add(new KeyList() { Name = "PrintScreen", Command = "Window.Move Navigation Bar" });
-            SystemandStateKeys.Add(new KeyList() { Name = "ScrollLock", Command = "Window.Move Navigation Bar" });
-            SystemandStateKeys.Add(new KeyList() { Name = "Pause/Break", Command = "Window.Move Navigation Bar" });
+            SystemandStateKeys = CursorandEditKeys = new Dictionary<string, ShortcutKeyCommand>();
+            SystemandStateKeys.Add("PrintScreen", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemandStateKeys.Add("ScrollLock", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemandStateKeys.Add("Pause/Break", new ShortcutKeyCommand() { DispalyName = "" });
 
             //Scope Lists
             ScopeLists = new List<Scope>();
@@ -506,6 +540,37 @@ namespace VSShortcutsManager
         public string Name { get; set; }
 
         public string ID { get; set; }
+    }
+    public class ShortcutKeyCommand : INotifyPropertyChanged
+    {
+        #region Private Fields
+        public event PropertyChangedEventHandler PropertyChanged;
+        private string _DispalyName;
+        #endregion
+
+        public string DispalyName
+        {
+            get { return _DispalyName; }
+            set
+            {
+                _DispalyName = value;
+                OnPropertyChanged(new PropertyChangedEventArgs("DispalyName"));
+            }
+        }
+        public string DisplaySymbol { get; set; }
+
+
+
+        #region Public Method
+        public void OnPropertyChanged(PropertyChangedEventArgs e)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, e);
+            }
+        }
+
+        #endregion
     }
 
 }

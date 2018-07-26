@@ -1,0 +1,42 @@
+﻿<Window x:Class="VSShortcutsManager.AddNewShortcut.AddKeyboardShortcut"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local ="clr-namespace:CustomControls"
+             mc:Ignorable="d" 
+             Title="Add Keyboard Shortcut" Height="450" Width="518.293"
+            ShowInTaskbar="False"
+        ShowActivated="True" ResizeMode="NoResize">
+    <Grid Margin="0,0,2,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="0*"/>
+        </Grid.ColumnDefinitions>
+        <Label x:Name="lblCommand" Content="Command:" HorizontalAlignment="Left" Margin="43,45,0,0" VerticalAlignment="Top" Height="26" Width="65"/>
+        <local:AutoFilteredComboBox VerticalAlignment="Top" x:Name="cmbCommandList"
+            ItemsSource="{Binding}" DisplayMemberPath="CommandName"  SelectedValuePath="CommandName"
+            HorizontalAlignment="Left" Height="23" Margin="198,45,0,0" Width="265" LostFocus="cmbCommandList_LostFocus">
+        </local:AutoFilteredComboBox>
+        <Label x:Name="lblScope" Content="Scope:" HorizontalAlignment="Left" Margin="43,95,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
+        <local:AutoFilteredComboBox VerticalAlignment="Top" x:Name="cmbScopeList"
+            ItemsSource="{Binding}" DisplayMemberPath="Name" SelectedValuePath="Name"
+            HorizontalAlignment="Left" Height="23" Margin="198,95,0,0" Width="265"  LostFocus="cmbCommandList_LostFocus">
+        </local:AutoFilteredComboBox>
+        <Label x:Name="lblShortcut" Content="Shortcut:" HorizontalAlignment="Left" Margin="43,145,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
+        <TextBlock Text="Press Tab to move focus out of the shorcut box" HorizontalAlignment="Left" Margin="198,170,0,0" VerticalAlignment="Top" Width="265" />
+        <local:KeyCapturingTextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="265" LostFocus="txtShortcut_LostFocus" />
+        <Label x:Name="lblConflicts" Content="Potential Conflicts:" HorizontalAlignment="Left" Margin="43,195,0,0" VerticalAlignment="Top" Height="26" Width="105"/>
+        <ListView x:Name="listConflicts" ItemsSource="{Binding}" Margin="198,205,19,67">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Scope" DisplayMemberBinding="{Binding Scope}"  Width="80" />
+                    <GridViewColumn Header="Command" DisplayMemberBinding="{Binding Command}" Width="100" />
+                    <GridViewColumn Header="Shortcut" DisplayMemberBinding="{Binding Shortcut}"  Width="80" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <Button x:Name="btnAddShortcut" Content="Add Shortcut" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="262,376,0,0" Height="20" Click="btnAddShortcut_Click" IsDefault="True" IsEnabled="False"/>
+        <Button x:Name="btnClose" Content="Close" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="368,376,0,0" Height="20" Click="btnClose_Click" IsCancel="True"/>
+    </Grid>
+</Window>
