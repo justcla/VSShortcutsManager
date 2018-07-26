@@ -797,6 +797,41 @@ namespace VSShortcutsManager
            ((List<Tuple<CommandBinding, Command>>)commandsForKey).Add(new Tuple<CommandBinding, Command>(binding, command));
         }
 
+        private static object[] AppendKeyboardBinding(EnvDTE.Command command, string keyboardBindingDefn)
+        {
+            object[] oldBindings = (object[])command.Bindings;
+
+            // Check that keyboard binding is not already there
+            for (int i = 0; i < oldBindings.Length; i++)
+            {
+                if (keyboardBindingDefn.Equals(oldBindings[i]))
+                {
+                    // Exit early and return the existing bindings array if new keyboard binding is already there
+                    return oldBindings;
+                }
+            }
+
+            // Build new array with all the old bindings, plus the new one.
+            object[] newBindings = new object[oldBindings.Length + 1];
+            Array.Copy(oldBindings, newBindings, oldBindings.Length);
+            newBindings[newBindings.Length - 1] = keyboardBindingDefn;
+            return newBindings;
+        }
+        /// <summary>
+        /// Adds (appends) a binding for the given shortcut
+        /// </summary>
+        /// <param name="commandName"></param>
+        /// <param name="shortcutDef"></param>
+        public void BindShortcut(string commandName, string shortcutDef)
+        {
+            DTE dte = (DTE)serviceProvider.GetService(typeof(DTE));
+            EnvDTE.Commands cmds = dte.Commands;
+            //EnvDTE.Command shortCutCommand = DTECommands.Item(commandName);
+            EnvDTE.Command shortCutCommand = cmds.Item(commandName);
+            object[] newBindings = AppendKeyboardBinding(shortCutCommand, shortcutDef);
+            shortCutCommand.Bindings = newBindings;
+        }
+
         private bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
         {
             if (bindingSeq1 == null) return bindingSeq2 == null;
