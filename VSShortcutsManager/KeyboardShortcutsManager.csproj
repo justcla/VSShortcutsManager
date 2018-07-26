@@ -56,6 +56,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AddNewShortcut\AddKeyboardShortcut.xaml.cs">
+      <DependentUpon>AddKeyboardShortcut.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
+    <Compile Include="AddNewShortcut\CommandListViewModel.cs" />
+    <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
+    <Compile Include="AddNewShortcut\ScopeListViewModel.cs" />
+    <Compile Include="BindingConflict.cs" />
     <Compile Include="BindingSequence.cs" />
     <Compile Include="Command.cs" />
     <Compile Include="CommandBinding.cs" />
@@ -67,9 +75,16 @@
     </Compile>
     <Compile Include="CommandShortcutsControlDataContext.cs" />
     <Compile Include="CommandShortcutsSearchTask.cs" />
+    <Compile Include="ConflictType.cs" />
     <Compile Include="DynamicItemMenuCommand.cs" />
     <Compile Include="FileUtils.cs" />
+    <Compile Include="ImportShortcuts.xaml.cs">
+      <DependentUpon>ImportShortcuts.xaml</DependentUpon>
+    </Compile>
     <Compile Include="KeyBindingScope.cs" />
+    <Compile Include="LiveShortcutsView.xaml.cs">
+      <DependentUpon>LiveShortcutsView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SaveShortcutsDialog.xaml.cs">
       <DependentUpon>SaveShortcutsDialog.xaml</DependentUpon>
@@ -236,6 +251,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -251,7 +267,19 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="AddNewShortcut\AddKeyboardShortcut.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="CommandShortcutsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LiveShortcutsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="ImportShortcuts.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
