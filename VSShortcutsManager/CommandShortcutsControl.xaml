@@ -11,11 +11,13 @@
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
             AutoGenerateColumns="False"
             IsReadOnly="True"
-            ItemsSource="{Binding Commands}">
+            ItemsSource="{Binding Commands}"
+            KeyUp="DataGrid_KeyUp"
+            >
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Command" Binding="{Binding CommandText, Mode=OneTime}" Width="3*" />
-                <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneTime}" Width="1*" />
-                <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneTime}" Width="1*" />
+                <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneWay}" Width="1*" />
+                <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneWay}" Width="1*" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>
