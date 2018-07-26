@@ -15,30 +15,31 @@ namespace VSShortcutsManager.AddNewShortcut
         private List<CommandList> data;
 
         //Done for Sample. to be replaced with acutal code with list of all commands
-        public CommandListViewModel()
+        public CommandListViewModel(IServiceProvider serviceProvider)
         {
-
-            
-
-        }
-
-        public IEnumerable<CommandList> DataSource(IServiceProvider serviceProvider)
-        {
-            data = new List<CommandList>();
-            VSShortcutQueryEngine queryEngine = new VSShortcutQueryEngine(serviceProvider);
-            var allCommands = queryEngine.GetAllCommandsAsync().Result;
-            foreach (var eachCommand in allCommands)
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
-                data.Add(new CommandList() { Name = eachCommand.DisplayName });
-            }
-            return data;
+                data = new List<CommandList>();
+                VSShortcutQueryEngine queryEngine = new VSShortcutQueryEngine(serviceProvider);
+                var allCommands = await queryEngine.GetAllCommandsAsync();
+                foreach (var eachCommand in allCommands)
+                {
+                    data.Add(new CommandList() { DisplayName = eachCommand.DisplayName, CommandName = eachCommand.CanonicalName });
+                }
+            });
         }
-      
+
+
+        public IEnumerable<CommandList> DataSource
+        {
+            get { return data; }
+        }
     }
 
     public class CommandList
     {
-        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string CommandName { get; set; }
     }
 
 }

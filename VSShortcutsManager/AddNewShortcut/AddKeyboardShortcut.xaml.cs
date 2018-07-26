@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.Threading;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,55 +21,28 @@ namespace VSShortcutsManager.AddNewShortcut
     /// </summary>
     public partial class AddKeyboardShortcut : Window
     {
-        //Variable to identify if in Chord input
-        private bool _isChordInput = false;
+
+        private IServiceProvider _serviceProvider;
         public AddKeyboardShortcut(IServiceProvider serviceProvider)
         {
             InitializeComponent();
-
-            //To Replace this with All Commands.
-            cmbCommandList.ItemsSource = new ScopeListViewModel(serviceProvider).DataSource;
-            cmbScopeList.ItemsSource = new ScopeListViewModel(serviceProvider).DataSource;
+            _serviceProvider = serviceProvider;
+            cmbCommandList.ItemsSource = new CommandListViewModel(_serviceProvider).DataSource;
+            cmbScopeList.ItemsSource = new ScopeListViewModel(_serviceProvider).DataSource;
         }
         private void btnClose_Click(object sender, RoutedEventArgs e) => this.Close();
 
         private void btnAddShortcut_Click(object sender, RoutedEventArgs e)
         {
-            string command = "";//txtCommand.Text;
-            string scope = cmbScopeList.SelectedValue.ToString();
-            string shortcut = txtShortcut.Text;
+            string shortcutcommand = cmbCommandList.SelectedValue.ToString();
+            string shortcutScope = cmbScopeList.SelectedValue.ToString();
+            string shortcutKeys = txtShortcut.Text;
+            string shortcutBinding  = shortcutScope + "::" + shortcutKeys;
+           
+            VSShortcutQueryEngine queryEngine = new VSShortcutQueryEngine(_serviceProvider);
+           
 
-            const string succcessMess = "Keyboard shortcut added successfully";
-            MessageBox.Show(command + ":" + scope + ":" + shortcut + succcessMess, "Success");
-
+            queryEngine.BindShortcut(shortcutcommand, shortcutBinding);
         }
-
-        private void txtCommand_TextChanged(object sender, TextChangedEventArgs e) => reloadConflicts();
-
-
-        private void txtShortcut_TextChanged(object sender, TextChangedEventArgs e) => reloadConflicts();
-        private void reloadConflicts()
-        {
-            //Temporary.. ToDo - Replace with actual functionality
-            string command = "";// txtCommand.Text;
-            string scope = "";//cmbScopeList.SelectedValue.ToString();
-            string shortcut = txtShortcut.Text;
-
-            string conflict = "";
-            if (!String.IsNullOrEmpty(command))
-            {
-                conflict += "Command:" + command;
-            }
-            if (!String.IsNullOrEmpty(scope))
-            {
-                conflict += ";Scope:" + scope;
-            }
-            if (!String.IsNullOrEmpty(shortcut))
-            {
-                conflict += ";shortcut:" + shortcut;
-            }
-            txtConflicts.Text = conflict;
-        }
-       
     }
 }
