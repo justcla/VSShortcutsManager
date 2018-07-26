@@ -139,7 +139,8 @@ namespace VSShortcutsManager
         {
             var modifierKey = GetSelectedModifierKey();
             VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
-            Guid scopeGuid = Guid.Parse("8B382828-6202-11D1-8870-0000F87579D2");     // Get Guid Scope
+            var selectedscope = (Scope)cmbScopeList.SelectedItem;
+            Guid scopeGuid = Guid.Parse(selectedscope.ID);     // Get Guid Scope
             BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
             const bool includeGlobals = true;
             IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> bindingsMap = await engine.GetBindingsForModifiersAsync(scopeGuid, ModifierKeys.None, bindingSequence, includeGlobals);
@@ -184,6 +185,8 @@ namespace VSShortcutsManager
         private List<KeyList> _SystemKeys2;
         private List<KeyList> _CursorandEditKeys;
         private List<KeyList> _SystemandStateKeys;
+        private List<Scope> _ScopeLists;
+
         #endregion
 
         #region Constructor
@@ -299,7 +302,17 @@ namespace VSShortcutsManager
 
             }
         }
+        public List<Scope> ScopeLists
+        {
+            get { return _ScopeLists; }
 
+            set
+            {
+                _ScopeLists = value;
+                OnPropertyChanged(new PropertyChangedEventArgs("ScopeLists"));
+
+            }
+        }
         #endregion
 
         #region private Methods
@@ -418,6 +431,62 @@ namespace VSShortcutsManager
             SystemandStateKeys.Add(new KeyList() { Name = "ScrollLock", Command = "Window.Move Navigation Bar" });
             SystemandStateKeys.Add(new KeyList() { Name = "Pause/Break", Command = "Window.Move Navigation Bar" });
 
+            //Scope Lists
+            ScopeLists = new List<Scope>();
+            ScopeLists.Add(new Scope() { Name = "Team Explorer", ID = "{7AA20502-9463-47B7-BF43-341BAF51157C}" });
+            ScopeLists.Add(new Scope() { Name = "VC Dialog Editor", ID = "{543E0C02-8C85-4E43-933A-5EF320E3431F}" });
+            ScopeLists.Add(new Scope() { Name = "Find All References Tool Window", ID = "{1FA1FD06-3592-4D1D-AC75-0B953320140C}" });
+            ScopeLists.Add(new Scope() { Name = "Live Property Explorer", ID = "{31FC2115-5126-4A87-B2F7-77EAAB65048B}" });
+            ScopeLists.Add(new Scope() { Name = "XML (Text) Editor", ID = "{FA3CD31E-987B-443A-9B81-186104E8DAC1}" });
+            ScopeLists.Add(new Scope() { Name = "Text Editor", ID = "{8B382828-6202-11D1-8870-0000F87579D2}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft SQL Server Data Tools, T-SQL PDW Editor", ID = "{C9626B29-6A42-411C-BD76-DAD855C86913}" });
+            ScopeLists.Add(new Scope() { Name = "ADO.NET Entity Data Model Designer", ID = "{C99AEA30-8E36-4515-B76F-496F5A48A6AA}" });
+            ScopeLists.Add(new Scope() { Name = "Solution Explorer", ID = "{3AE79031-E1BC-11D0-8F78-00A0C9110057}" });
+            ScopeLists.Add(new Scope() { Name = "Query Designer", ID = "{B2C40B32-3A37-4CA9-97B9-FA44248B69FF}" });
+            ScopeLists.Add(new Scope() { Name = "CSharp Editor with Encoding", ID = "{08467B34-B90F-4D91-BDCA-EB8C8CF3033A}" });
+            ScopeLists.Add(new Scope() { Name = "WebBrowser", ID = "{E8B06F41-6D01-11D2-AA7D-00C04F990343}" });
+            ScopeLists.Add(new Scope() { Name = "CSS Editor", ID = "{A5401142-F49D-43DB-90B1-F57BA349E55C}" });
+            ScopeLists.Add(new Scope() { Name = "DataSet Editor", ID = "{B334A759-F450-40A5-BE2A-65937BCD5415}" });
+            ScopeLists.Add(new Scope() { Name = "XAML Designer", ID = "{E9B8485C-1217-4277-9ED6-C825A5AC1968}" });
+            ScopeLists.Add(new Scope() { Name = "{DEE22B65-9761-4A26-8FB2-759B971D6DFC}", ID = "{DEE22B65-9761-4A26-8FB2-759B971D6DFC}" });
+            ScopeLists.Add(new Scope() { Name = "XAML Designer", ID = "{E9B8485C-1217-4277-9ED6-C825A5AC1968}" });
+            ScopeLists.Add(new Scope() { Name = "View Designer", ID = "{B968E165-98E0-41F0-8FBE-A8ED1D246A90}" });
+            ScopeLists.Add(new Scope() { Name = "XAML Editor", ID = "{A4F9FF65-A78C-4650-866D-5069CC4127CF}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft SQL Server Data Tools, Table Designer", ID = "{2366CF66-2394-4701-AFCA-37ED7FD41648}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft Visual Basic Editor", ID = "{2C015C70-C72C-11D0-88C3-00A0C9110049}" });
+            ScopeLists.Add(new Scope() { Name = "Global", ID = "{5EFC7975-14BC-11CF-9B2B-00AA00573819}" });
+            ScopeLists.Add(new Scope() { Name = "HTML Editor", ID = "{40D31677-CBC0-4297-A9EF-89D907823A98}" });
+            ScopeLists.Add(new Scope() { Name = "Live Visual Tree", ID = "{A2EAF38F-A0AD-4503-91F8-5F004A69A040}" });
+            ScopeLists.Add(new Scope() { Name = "Work Item Query View", ID = "{B6303490-B828-410C-9216-AE727D0E282D}" });
+            ScopeLists.Add(new Scope() { Name = "DOM Explorer", ID = "{01E50993-E6A4-491E-AB3F-3A9939DE3524}" });
+            ScopeLists.Add(new Scope() { Name = "Team Foundation Build Detail Editor", ID = "{86306A97-84F2-4F5A-889B-1318501AEB5F}" });
+            ScopeLists.Add(new Scope() { Name = "Database Designer", ID = "{CFF78A9B-78A3-45A3-9142-0267AFC261FA}" });
+            ScopeLists.Add(new Scope() { Name = "Work Item Editor", ID = "{40A91D9D-8076-4D28-87C5-5AF9F0ACFE0F}" });
+            ScopeLists.Add(new Scope() { Name = "JSON Editor", ID = "{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}" });
+            ScopeLists.Add(new Scope() { Name = "CSharp Editor", ID = "{A6C744A8-0E4A-4FC6-886A-064283054674}" });
+            ScopeLists.Add(new Scope() { Name = "VC String Editor", ID = "{58442DA9-10DA-4AA9-A2AF-96E4D481379B}" });
+            ScopeLists.Add(new Scope() { Name = "Interactive Window", ID = "{2D0A56AA-9527-4B78-B6E6-EBE6E05DA749}" });
+            ScopeLists.Add(new Scope() { Name = "Merge Editor Window", ID = "{9A9A8AAA-ACD2-4DB6-BD81-8D64176C52B6}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft Visual Basic Code Page Editor", ID = "{6C33E1AA-1401-4536-AB67-0E21E6E569DA}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft Visual Basic Code Page Editor", ID = "{6C33E1AA-1401-4536-AB67-0E21E6E569DA}" });
+            ScopeLists.Add(new Scope() { Name = "Settings Designer", ID = "{515231AD-C9DC-4AA3-808F-E1B65E72081C}" });
+            ScopeLists.Add(new Scope() { Name = "Windows Forms Designer", ID = "{BA09E2AF-9DF2-4068-B2F0-4C7E5CC19E2F}" });
+            ScopeLists.Add(new Scope() { Name = "Markdown Editor", ID = "{B3984FB3-6A50-488A-A8A5-1EA6929ADF43}" });
+            ScopeLists.Add(new Scope() { Name = "VC Accelerator Editor", ID = "{EB56D0B5-BEE7-4D0C-8BE6-88A8ED256695}" });
+            ScopeLists.Add(new Scope() { Name = "Managed Resources Editor", ID = "{FEA4DCC9-3645-44CD-92E7-84B55A16465C}" });
+            ScopeLists.Add(new Scope() { Name = "FSharpEditorFactory", ID = "{8A5AA6CF-46E3-4520-A70A-7393D15233E9}" });
+            ScopeLists.Add(new Scope() { Name = "JavaScript Console", ID = "{074F1AD9-308B-488C-861E-CF88182E2788}" });
+            ScopeLists.Add(new Scope() { Name = "Difference Viewer", ID = "{79D52DDF-52BC-43F1-9663-B3E85CDCA912}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft SQL Server Data Tools, Schema Compare", ID = "{00E9D2E3-9044-47D1-978C-BE2825249219}" });
+            ScopeLists.Add(new Scope() { Name = "Table Designer", ID = "{4194FEE5-6777-419F-A5FC-47A536DF1BDB}" });
+            ScopeLists.Add(new Scope() { Name = "HTML Editor Design View", ID = "{CB3FCFEA-03DF-11D1-81D2-00A0C91BBEE3}" });
+            ScopeLists.Add(new Scope() { Name = "HTML Editor Source View", ID = "{CB3FCFEB-03DF-11D1-81D2-00A0C91BBEE3}" });
+            ScopeLists.Add(new Scope() { Name = "VC Image Editor", ID = "{C0BA70ED-069E-412B-9C06-7442E28A11B9}" });
+            ScopeLists.Add(new Scope() { Name = "Microsoft SQL Server Data Tools, T-SQL Editor", ID = "{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}" });
+            ScopeLists.Add(new Scope() { Name = "Query Results", ID = "{0058A1F7-65F3-4DB9-B3D0-CA7E64DD73CD}" });
+            ScopeLists.Add(new Scope() { Name = "Test Explorer", ID = "{E1B7D1F8-9B3C-49B1-8F4F-BFC63A88835D}" });
+            ScopeLists.Add(new Scope() { Name = "XML Schema Designer", ID = "{DEE6CEF9-3BCA-449A-82A6-FC757D6956FB}" });
+
         }
         #endregion
 
@@ -431,6 +500,12 @@ namespace VSShortcutsManager
         }
 
         #endregion
+    }
+    public class Scope
+    {
+        public string Name { get; set; }
+
+        public string ID { get; set; }
     }
 
 }
