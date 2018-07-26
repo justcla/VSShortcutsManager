@@ -61,7 +61,6 @@
     </Compile>
     <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
     <Compile Include="AddNewShortcut\CommandListViewModel.cs" />
-    <Compile Include="AddNewShortcut\InputKeys.cs" />
     <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
     <Compile Include="AddNewShortcut\ScopeListViewModel.cs" />
     <Compile Include="BindingConflict.cs" />

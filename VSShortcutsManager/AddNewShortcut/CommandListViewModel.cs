@@ -26,10 +26,10 @@ namespace VSShortcutsManager.AddNewShortcut
         {
             data = new List<CommandList>();
             VSShortcutQueryEngine queryEngine = new VSShortcutQueryEngine(serviceProvider);
-            var allCommands = queryEngine.GetAllBindingScopesAsync().Result;
+            var allCommands = queryEngine.GetAllCommandsAsync().Result;
             foreach (var eachCommand in allCommands)
             {
-                data.Add(new CommandList() { Name = eachCommand.Name });
+                data.Add(new CommandList() { Name = eachCommand.DisplayName });
             }
             return data;
         }

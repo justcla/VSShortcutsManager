@@ -25,9 +25,9 @@ namespace VSShortcutsManager.AddNewShortcut
         public AddKeyboardShortcut(IServiceProvider serviceProvider)
         {
             InitializeComponent();
-            CommandListViewModel commandListViewModel = new CommandListViewModel();
-            
-            cmbCommandList.ItemsSource = commandListViewModel.DataSource(serviceProvider);
+
+            //To Replace this with All Commands.
+            cmbCommandList.ItemsSource = new ScopeListViewModel(serviceProvider).DataSource;
             cmbScopeList.ItemsSource = new ScopeListViewModel(serviceProvider).DataSource;
         }
         private void btnClose_Click(object sender, RoutedEventArgs e) => this.Close();
@@ -69,26 +69,6 @@ namespace VSShortcutsManager.AddNewShortcut
             }
             txtConflicts.Text = conflict;
         }
-
-        //To Do -- 
-        private void txtShortcut_KeyDown(object sender, KeyEventArgs e)
-        {
-            _isChordInput = true;
-            var inputKey = e.Key;
-            if (InputKeys.checkIfModifierKey(inputKey))
-            {
-                txtShortcut.Text = InputKeys.ConvertToModifierKey(inputKey).ToString();
-            }
-
-        }
-
-        private void txtShortcut_KeyUp(object sender, KeyEventArgs e)
-        {
-            var inputKey = e.Key;
-            if (InputKeys.checkIfModifierKey(inputKey))
-            {
-                _isChordInput = false;
-            }
-        }
+       
     }
 }
