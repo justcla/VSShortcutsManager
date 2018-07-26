@@ -8,201 +8,195 @@
              d:DesignHeight="800" d:DesignWidth="960"
              Title="ShortCut List View"
             ResizeMode="CanResizeWithGrip"
-        Background="SkyBlue">
-  <Window.Resources>
-    <Style x:Key="buttonStyle" TargetType="{x:Type Button}">
-      <Setter Property="Background" Value="AliceBlue" />
-      <Setter Property="Foreground" Value="Black" />
-      <Setter Property="FontSize" Value="14" />
-      <Setter Property="SnapsToDevicePixels" Value="True" />
+        Background="Gainsboro">
+    <Window.Resources>
+        <Style x:Key="buttonStyle" TargetType="{x:Type Button}">
+           <Setter Property="FontSize" Value="14" />         
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border BorderBrush="DarkGray" BorderThickness="1,1,1,1" Background="{TemplateBinding Background}">
+                            <Grid>
+                                <ContentPresenter x:Name="MyContentPresenter" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="{x:Type Button}">
-            <Border CornerRadius="4" Background="{TemplateBinding Background}">
-              <Grid>
-                <ContentPresenter x:Name="MyContentPresenter" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
-              </Grid>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="FontWeight" Value="Bold" />
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
+        <Style x:Key="buttonPressedStyle" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Orange" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border  BorderBrush="DarkOrange" BorderThickness="1,1,1,1" Background="{TemplateBinding Background}">
+                            <Grid>
+                                <ContentPresenter x:Name="MyContentPresenter" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-    <Style x:Key="buttonPressedStyle" TargetType="{x:Type Button}">
-      <Setter Property="Background" Value="Orange" />
-      <Setter Property="Foreground" Value="White" />
-      <Setter Property="FontSize" Value="14" />
-      <Setter Property="SnapsToDevicePixels" Value="True" />
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="{x:Type Button}">
-            <Border CornerRadius="4" Background="{TemplateBinding Background}">
-              <Grid>
-                <ContentPresenter x:Name="MyContentPresenter" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
-              </Grid>
-            </Border>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
+    </Window.Resources>
+    <Grid Background="White" Margin="1">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
 
-  </Window.Resources>
-  <Grid Background="White" Margin="1">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="*"></ColumnDefinition>
-      <ColumnDefinition Width="*"></ColumnDefinition>
-      <ColumnDefinition Width="*"></ColumnDefinition>
-      <ColumnDefinition Width="*"></ColumnDefinition>
-
-    </Grid.ColumnDefinitions>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="30"></RowDefinition>
-      <RowDefinition Height="*"></RowDefinition>
-      <RowDefinition Height="40"></RowDefinition>
-    </Grid.RowDefinitions>
-    <DockPanel Grid.Row="0" Grid.ColumnSpan="4" Height="30" Background="SkyBlue">
-      <Border BorderThickness="1,1,1,1" BorderBrush="SkyBlue"></Border>
-      <TextBlock Name="txtChords" Text="{Binding Chords}" >
-        <TextBlock.Style>
-          <Style>
-            <Setter Property="TextBlock.FontSize" Value="16"></Setter>
-            <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
-          </Style>
-        </TextBlock.Style>
-      </TextBlock>
-      <ComboBox  ItemsSource="{Binding ScopeLists}" DisplayMemberPath="Name" SelectedValuePath="ID"  SelectedValue="{Binding Scope.Name}" Name="cmbScopeList" Width="200" Height="28" HorizontalAlignment="Right" Margin="5" >
-      </ComboBox>
-    </DockPanel>
-    <DockPanel Grid.Row="1" Grid.Column="0">
-      <Border BorderBrush="SkyBlue" BorderThickness="1,1,1,1"></Border>
-      <StackPanel>
-        <ListView Margin="0" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Name="lvAlphaKeys" BorderThickness="0" ItemsSource="{Binding AlphaKeys}" MouseDoubleClick="lvAlphaKeys_MouseDoubleClick" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-      </StackPanel>
-    </DockPanel>
-    <DockPanel Grid.Row="1" Grid.Column="1">
-      <Border BorderBrush="SkyBlue" BorderThickness="1,1,1,1"></Border>
-      <StackPanel>
-        <ListView Margin="0" Name="lvFunctionKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding FunctionKeys}">
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-        <ListView Margin="0,20,0,0" Name="lvSystemKeys1" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemKeys1}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-        <ListView Margin="0,20,0,0" Name="lvSystemKeys2" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemKeys2}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-      </StackPanel>
-    </DockPanel>
-    <DockPanel Grid.Row="1" Grid.Column="2">
-      <Border BorderBrush="SkyBlue" BorderThickness="1,1,1,1"></Border>
-      <StackPanel>
-        <ListView Margin="0" Name="lvnumKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding NumericKeys}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-        <ListView Margin="0,20,0,0" Name="lvSpecialKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SpecialKeys}">
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-      </StackPanel>
-    </DockPanel>
-    <DockPanel Grid.Row="1" Grid.Column="3">
-      <Border BorderBrush="SkyBlue" BorderThickness="1"></Border>
-      <StackPanel>
-        <ListView Margin="0,0,0,0" Name="lvNumpadKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden"  BorderThickness="0" ItemsSource="{Binding NumpadKeys}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-        <ListView Margin="0,20,0,0" Name="lvNumpadSymbolKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding NumpadsymbolKeys}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-        <ListView Margin="0,20,0,0" Name="lvSystemandStateKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemandStateKeys}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-        <ListView Margin="0,20,0,0" Name="lvCursorandEditKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding CursorandEditKeys}" >
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
-              </WrapPanel>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-      </StackPanel>
-    </DockPanel>
-    <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.ColumnSpan="4" Background="SkyBlue" >
-      <Button Name="btnControl"  Style="{StaticResource buttonStyle}" Width="70" Height="26" Margin="2" Click="btnControl_Click">Ctrl</Button>
-      <Button Name="btnAlt"  Style="{StaticResource buttonStyle}" Width="70" Height="26" Margin="2" Click="btnAlt_Click">Alt</Button>
-      <Button Name="btnShift"  Style="{StaticResource buttonStyle}" Width="70" Height="26" Margin="2" Click="btnShift_Click">Shift</Button>
-    </StackPanel>
-  </Grid>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0" Grid.ColumnSpan="4" Height="30" Background="Gainsboro">
+            <TextBlock Name="txtChords" Text="{Binding Chords}" >
+                <TextBlock.Style>
+                    <Style>
+                        <Setter Property="TextBlock.FontSize" Value="16"></Setter>
+                        <Setter Property="TextBlock.FontWeight" Value="Bold"></Setter>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <ComboBox  ItemsSource="{Binding ScopeLists}" DisplayMemberPath="Name" SelectedValuePath="ID"  SelectedValue="{Binding Scope.Name}" Name="cmbScopeList" Width="200" Height="28" HorizontalAlignment="Right" Margin="5" >
+            </ComboBox>
+        </DockPanel>
+        <DockPanel Grid.Row="1" Grid.Column="0">
+            <Border BorderBrush="LightGray" BorderThickness="1,0,0,1"></Border>
+            <StackPanel>
+                <ListView Margin="0" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Name="lvAlphaKeys" BorderThickness="0" ItemsSource="{Binding AlphaKeys, Mode=TwoWay}" MouseDoubleClick="lvAlphaKeys_MouseDoubleClick" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Key}" Width="30" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName, Mode=TwoWay}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </DockPanel>
+        <DockPanel Grid.Row="1" Grid.Column="1">
+            <Border BorderBrush="LightGray" BorderThickness="1,0,0,1"></Border>
+            <StackPanel>
+                <ListView Margin="0" Name="lvFunctionKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding FunctionKeys, Mode=TwoWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Key}" Width="65" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName, Mode=TwoWay}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView Margin="0,20,0,0" Name="lvSystemKeys1" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemKeys1}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView Margin="0,20,0,0" Name="lvSystemKeys2" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemKeys2}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </DockPanel>
+        <DockPanel Grid.Row="1" Grid.Column="2">
+            <Border BorderBrush="LightGray" BorderThickness="1,0,0,1"></Border>
+            <StackPanel>
+                <ListView Margin="0" Name="lvnumKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding NumericKeys}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView Margin="0,20,0,0" Name="lvSpecialKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SpecialKeys}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </DockPanel>
+        <DockPanel Grid.Row="1" Grid.Column="3">
+            <Border BorderBrush="LightGray" BorderThickness="1,0,0,1"></Border>
+            <StackPanel>
+                <ListView Margin="0,0,0,0" Name="lvNumpadKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden"  BorderThickness="0" ItemsSource="{Binding NumpadKeys}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView Margin="0,20,0,0" Name="lvNumpadSymbolKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding NumpadsymbolKeys}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView Margin="0,20,0,0" Name="lvSystemandStateKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding SystemandStateKeys}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView Margin="0,20,0,0" Name="lvCursorandEditKeys" ScrollViewer.HorizontalScrollBarVisibility="Hidden" BorderThickness="0" ItemsSource="{Binding CursorandEditKeys}" >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </DockPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.ColumnSpan="4" Background="Gainsboro" >
+            <Button Name="btnControl"  Style="{StaticResource buttonStyle}" Width="70" Height="26" Margin="2" Click="btnControl_Click">Ctrl</Button>
+            <Button Name="btnAlt"  Style="{StaticResource buttonStyle}" Width="70" Height="26" Margin="2" Click="btnAlt_Click">Alt</Button>
+            <Button Name="btnShift"  Style="{StaticResource buttonStyle}" Width="70" Height="26" Margin="2" Click="btnShift_Click">Shift</Button>
+        </StackPanel>
+    </Grid>
 </Window>
