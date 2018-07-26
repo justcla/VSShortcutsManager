@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local ="clr-namespace:CustomComboBox"
+             xmlns:local ="clr-namespace:CustomControls"
              mc:Ignorable="d" 
              Title="Add Keyboard Shortcut" Height="450" Width="518.293"
             ShowInTaskbar="False"
@@ -24,7 +24,8 @@
             HorizontalAlignment="Left" Height="23" Margin="198,95,0,0" Width="265">
         </local:AutoFilteredComboBox>
         <Label x:Name="lblShortcut" Content="Shortcut:" HorizontalAlignment="Left" Margin="43,145,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
-        <TextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="265" KeyDown="txtShortcut_KeyDown" KeyUp="txtShortcut_KeyUp"/>
+        <TextBlock Text="Press Tab to move focus out of the shorcut box" HorizontalAlignment="Left" Margin="198,170,0,0" VerticalAlignment="Top" Width="265" />
+        <local:KeyCapturingTextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="265" TextChanged="txtShortcut_TextChanged"/>
         <Label x:Name="lblConflicts" Content="Potential Conflicts:" HorizontalAlignment="Left" Margin="43,195,0,0" VerticalAlignment="Top" Height="26" Width="105"/>
         <TextBox x:Name="txtConflicts" HorizontalAlignment="Left" Height="75" Margin="198,195,0,0" AcceptsReturn="True" TextWrapping="Wrap" VerticalAlignment="Top" Width="265">
             <!--<TextBox.Text>

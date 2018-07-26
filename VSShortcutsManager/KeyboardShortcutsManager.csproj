@@ -56,6 +56,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AddNewShortcut\AddKeyboardShortcut.xaml.cs">
+      <DependentUpon>AddKeyboardShortcut.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
+    <Compile Include="AddNewShortcut\CommandListViewModel.cs" />
+    <Compile Include="AddNewShortcut\InputKeys.cs" />
+    <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
+    <Compile Include="AddNewShortcut\ScopeListViewModel.cs" />
     <Compile Include="BindingConflict.cs" />
     <Compile Include="BindingSequence.cs" />
     <Compile Include="Command.cs" />
@@ -260,6 +268,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="AddNewShortcut\AddKeyboardShortcut.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="CommandShortcutsControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

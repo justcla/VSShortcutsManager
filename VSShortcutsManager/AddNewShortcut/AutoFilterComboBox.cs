@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace CustomComboBox 
+namespace CustomControls 
 {
   /// <summary>
   /// ComboBox with filtering capabilities.
