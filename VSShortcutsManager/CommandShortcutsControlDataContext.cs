@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
+using EnvDTE;
 
 namespace VSShortcutsManager
 {
-    public class CommandShortcutsControlDataContext : INotifyPropertyChanged
+    public class CommandShortcutsControlDataContext : NotifyPropertyChangedBase
     {
         #region ctor
 
@@ -54,18 +57,47 @@ namespace VSShortcutsManager
             return (uint)this.Commands.Count;
         }
 
-        #endregion // Public methods
-
-        #region INotifyPropertyChanged
-
-        private void OnPropertyChanged([CallerMemberName]string propertyName = null)
+        public void DeleteShortcuts(IEnumerable<CommandShortcut> commandShortcuts)
         {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            int count = commandShortcuts.Where(command => command.Binding != null).Count();
+            if (count < 1)
+            {
+                return;
+            }
+
+            string msg = count == 1
+                ? "Are you sure you want to delete the selected shortcut?"
+                : "Are you sure you want to delete the selected shortcuts?";
+            if (System.Windows.MessageBoxResult.Yes != MessageBox.Show(msg, "Deleting shortcuts", System.Windows.MessageBoxButton.YesNo))
+            {
+                return;
+            }
+
+            var commands = commandShortcuts
+                .Where(command => command.Binding != null)
+                .GroupBy(k => k, v => v.Binding)
+                .ToDictionary(k => k.Key, v => v.ToList());
+
+            DTE dte = (DTE)this.serviceProvider.GetService(typeof(DTE));
+
+            foreach (var kvp in commands)
+            {
+                var commandShortcut = kvp.Key;
+                var dteCommand = dte.Commands.Item(commandShortcut.CommandText);
+                if (dteCommand == null)
+                {
+                    Debug.WriteLine("Could not find command '{0}' in the DTE Commands.", kvp.Key.CommandText);
+                    continue;
+                }
+
+                DeleteCommandBindings(dteCommand, kvp.Value);
+                commandShortcut.Binding = null;
+                commandShortcut.ShortcutText = null;
+                commandShortcut.ScopeText = null;
+            }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        #endregion // INotifyPropertyChanged
+        #endregion // Public methods
 
         #region Private helpers
 
@@ -120,8 +152,8 @@ namespace VSShortcutsManager
             }
 
             string s = sequences
-                .Where(chord => chord != null)
-                .Select(chord => GenerateBindingSequenceText(chord))
+                .Where(sequence => sequence != null)
+                .Select(sequence => GenerateBindingSequenceText(sequence))
                 .Aggregate((current, next) => current + ", " + next);
 
             return s;
@@ -168,6 +200,20 @@ namespace VSShortcutsManager
             return scope.Name;
         }
 
+        private static void DeleteCommandBindings(EnvDTE.Command command, List<CommandBinding> deletedBindings)
+        {
+            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => binding.OriginalDTEString));
+
+            var oldBindings = (object[])command.Bindings;
+
+            var newBindings = oldBindings
+                .Where(bindingText => !deletedBindingsSet.Contains(bindingText.ToString()))
+                .ToArray();
+
+            command.Bindings = new object[0]; // unexplained workaround - resetting a binding array requires resetting it to an empty array first.
+            command.Bindings = newBindings;
+        }
+
         #endregion // Private helpers
 
         #region Fields
@@ -179,7 +225,7 @@ namespace VSShortcutsManager
         #endregion // Fields
     }
 
-    public class CommandShortcut
+    public class CommandShortcut : NotifyPropertyChangedBase
     {
         public CommandShortcut(CommandId id, string commandText, CommandBinding binding, string shortcutText, string scopeText)
         {
@@ -191,10 +237,34 @@ namespace VSShortcutsManager
         }
 
         public CommandId Id { get; private set; }
+
         public string CommandText { get; private set; }
-        public CommandBinding Binding { get; private set; }
-        public string ShortcutText { get; private set; }
-        public string ScopeText { get; private set; }
+
+        public CommandBinding Binding { get; set; }
+
+        public string ShortcutText
+        {
+            get { return shortcutText; }
+
+            set
+            {
+                this.shortcutText = value;
+                OnPropertyChanged();
+            }
+        }
+        private string shortcutText;
+
+        public string ScopeText
+        {
+            get { return scopeText; }
+
+            set
+            {
+                this.scopeText = value;
+                OnPropertyChanged();
+            }
+        }
+        private string scopeText;
     }
 
     public class VSCommandShortcuts : List<CommandShortcut>
@@ -212,5 +282,15 @@ namespace VSShortcutsManager
             // Shallow clone is enough
             return new VSCommandShortcuts(this);
         }
+    }
+
+    public abstract class NotifyPropertyChangedBase : INotifyPropertyChanged
+    {
+        protected void OnPropertyChanged([CallerMemberName]string propertyName = null)
+        {
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
     }
 }
