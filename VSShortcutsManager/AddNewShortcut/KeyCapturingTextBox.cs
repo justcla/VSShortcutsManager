@@ -22,23 +22,27 @@ namespace CustomControls
                 return;
             }
 
-            // Allow user to input Tab only when there are no keys in the sequence yet; otherwise, Tab
-            // moves to the next control.
-            if (BindingSequences.Count > 0 && (key == Key.Tab))
-            {
-                return;
-            }
-
             e.Handled = true;
 
-            if (BindingSequences.Count == 2)
-            {
-                BindingSequences.Clear();
-            }
-
             ModifierKeys modifiers = Keyboard.Modifiers;
-            string keyName = key.ToString();
-            BindingSequences.Add(new BindingSequence(modifiers, keyName));
+
+            if (e.Key == Key.Back && modifiers == ModifierKeys.None)
+            {
+                if (BindingSequences.Count > 0)
+                {
+                    BindingSequences.RemoveAt(BindingSequences.Count - 1);
+                }
+            }
+            else
+            {
+                if (BindingSequences.Count == 2)
+                {
+                    BindingSequences.Clear();
+                }
+
+                string keyName = key.ToString();
+                BindingSequences.Add(new BindingSequence(modifiers, keyName));
+            }
 
             base.Text = string.Join(", ", BindingSequences);
             base.CaretIndex = base.Text.Length;
@@ -55,7 +59,8 @@ namespace CustomControls
                 && key != Key.LeftCtrl
                 && key != Key.RightCtrl
                 && key != Key.LeftShift
-                && key != Key.RightShift;
+                && key != Key.RightShift
+                && key != Key.Tab;
         }
 
         public ObservableCollection<BindingSequence> BindingSequences { get; } = new ObservableCollection<BindingSequence>();
