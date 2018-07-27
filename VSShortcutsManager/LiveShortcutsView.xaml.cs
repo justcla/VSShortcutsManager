@@ -61,6 +61,7 @@ namespace VSShortcutsManager
             viewModel = new LiveShortCutViewViewModel();
             this.KeyDown += captureKeyDown;
             DataContext = viewModel;
+            RefreshShortcuts();
         }
         #endregion
 
@@ -75,9 +76,9 @@ namespace VSShortcutsManager
         }
         private void lvAlphaKeys_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            //var item = (KeyList)lvAlphaKeys.SelectedItem;
-            //viewModel.Chords = "Ctrl + Alt +" + item.Name;
-            //CtrlKeyPressed = AltKeyPressed = ShiftKeyPressed = false;
+            var item = (KeyValuePair<string, ShortcutKeyCommand>)lvAlphaKeys.SelectedItem;
+            viewModel.Chords = "Ctrl + Alt +" + item.Key;
+            CtrlKeyPressed = AltKeyPressed = ShiftKeyPressed = false;
         }
         private void btnControl_Click(object sender, RoutedEventArgs e)
         {
@@ -94,6 +95,11 @@ namespace VSShortcutsManager
             AltKeyPressed = !AltKeyPressed;
             RefreshShortcuts();
         }
+        private void cmbScopeList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            RefreshShortcuts();
+        }
+
         #endregion
 
         #region private Methods
@@ -137,8 +143,12 @@ namespace VSShortcutsManager
         }
         private async void RefreshShortcuts()
         {
+
             try
             {
+                //Reset the old commands to blank before assigning new commands
+                viewModel.ResetShortCutKeystoDefaultValue();
+
                 var modifierKeys = GetSelectedModifierKeys();
                 VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
                 var selectedscope = (Scope)cmbScopeList.SelectedItem;
@@ -146,11 +156,21 @@ namespace VSShortcutsManager
                 BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
                 const bool includeGlobals = true;
                 IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> matchingShortcuts = await engine.GetBindingsForModifiersAsync(scopeGuid, modifierKeys, bindingSequence, includeGlobals);
+
                 foreach (var matchingShortcut in matchingShortcuts)
                 {
-                    var key = matchingShortcut.Key;
-                    var commandBindings = matchingShortcut.Value;
-                    var commandString = String.Join(",", commandBindings.Select(commandBinding => commandBinding.Item2.DisplayName));
+                    string key = matchingShortcut.Key;
+                    IEnumerable<Tuple<CommandBinding, Command>> commandBindings = matchingShortcut.Value;
+                    int? sequenceCountofFirstCommandBinding = commandBindings.FirstOrDefault()?.Item1.Sequences.Count;
+                    string commandString = "";
+                    if (sequenceCountofFirstCommandBinding == 1)
+                    {
+                        commandString = commandBindings.FirstOrDefault().Item2.DisplayName;
+                    }
+                    else if (sequenceCountofFirstCommandBinding > 1)
+                    {
+                        commandString = "<Chord>";
+                    }
                     UpdateShortcutValue(key, commandString);
                 }
             }
@@ -173,7 +193,7 @@ namespace VSShortcutsManager
             else if (viewModel.NumericKeys?.ContainsKey(key) == true)
             {
                 viewModel.NumericKeys[key].DispalyName = commandString;
-            }
+            }            
             else if (viewModel.NumpadKeys?.ContainsKey(key) == true)
             {
                 viewModel.NumpadKeys[key].DispalyName = commandString;
@@ -198,8 +218,27 @@ namespace VSShortcutsManager
             {
                 viewModel.SystemandStateKeys[key].DispalyName = commandString;
             }
+            //else if (viewModel.SpecialKeys?.ContainsKey(key) == true)
+            else
+            {
+
+                KeyValuePair<string, ShortcutKeyCommand>? actualkeyItem = viewModel.SpecialKeys?.FirstOrDefault(k => k.Key.Contains(key));
+                if(actualkeyItem?.Key!=null)
+                {
+                    viewModel.SpecialKeys[actualkeyItem?.Key].DispalyName = commandString;
+                    return;
+                }
+
+                actualkeyItem = viewModel.SystemandStateKeys?.FirstOrDefault(k => k.Key.Contains(key));
+                if (actualkeyItem?.Key != null)
+                {
+                    viewModel.SystemandStateKeys[actualkeyItem?.Key].DispalyName = commandString;
+                    return;
+                }
+            }
         }
         #endregion
+
     }
 
     public class LiveShortCutViewViewModel : INotifyPropertyChanged
@@ -391,15 +430,15 @@ namespace VSShortcutsManager
             FunctionKeys.Add("F7", new ShortcutKeyCommand() { DispalyName = "" });
             FunctionKeys.Add("F8", new ShortcutKeyCommand() { DispalyName = "" });
             FunctionKeys.Add("F9", new ShortcutKeyCommand() { DispalyName = "" });
-            FunctionKeys.Add("F10",new ShortcutKeyCommand() { DispalyName = "" });
-            FunctionKeys.Add("F11",new ShortcutKeyCommand() { DispalyName = "" });
-            FunctionKeys.Add("F12",new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F10", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F11", new ShortcutKeyCommand() { DispalyName = "" });
+            FunctionKeys.Add("F12", new ShortcutKeyCommand() { DispalyName = "" });
 
             NumericKeys = new Dictionary<string, ShortcutKeyCommand>();
             NumericKeys.Add("1", new ShortcutKeyCommand() { DispalyName = "" });
             NumericKeys.Add("2", new ShortcutKeyCommand() { DispalyName = "" });
             NumericKeys.Add("3", new ShortcutKeyCommand() { DispalyName = "" });
-            NumericKeys.Add("4", new ShortcutKeyCommand() { DispalyName = "" }); 
+            NumericKeys.Add("4", new ShortcutKeyCommand() { DispalyName = "" });
             NumericKeys.Add("5", new ShortcutKeyCommand() { DispalyName = "" });
             NumericKeys.Add("6", new ShortcutKeyCommand() { DispalyName = "" });
             NumericKeys.Add("7", new ShortcutKeyCommand() { DispalyName = "" });
@@ -412,55 +451,55 @@ namespace VSShortcutsManager
             SpecialKeys.Add("=+", new ShortcutKeyCommand() { DispalyName = "" });
             SpecialKeys.Add("[{", new ShortcutKeyCommand() { DispalyName = "" });
             SpecialKeys.Add("]}", new ShortcutKeyCommand() { DispalyName = "" });
-            SpecialKeys.Add( "\\|", new ShortcutKeyCommand() { DispalyName = "" });
-            SpecialKeys.Add( ";:", new ShortcutKeyCommand() { DispalyName = "" });
-            SpecialKeys.Add( "'\"", new ShortcutKeyCommand() { DispalyName = "" });
-            SpecialKeys.Add( ",<", new ShortcutKeyCommand() { DispalyName = "" });
-            SpecialKeys.Add( ".>", new ShortcutKeyCommand() { DispalyName = "" });
-            SpecialKeys.Add( "/?", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("\\|", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add(";:", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("'\"", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add(",<", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add(".>", new ShortcutKeyCommand() { DispalyName = "" });
+            SpecialKeys.Add("/?", new ShortcutKeyCommand() { DispalyName = "" });
 
             NumpadKeys = new Dictionary<string, ShortcutKeyCommand>();
-            NumpadKeys.Add("NumPad0", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad1", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad2", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad3", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad4", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad5", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad6", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad7", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad8", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadKeys.Add("NumPad9", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 0", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 1", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 2", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 3", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 4", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 5", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 6", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 7", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 8", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadKeys.Add("Num 9", new ShortcutKeyCommand() { DispalyName = "" });
 
             NumpadsymbolKeys = new Dictionary<string, ShortcutKeyCommand>();
-            NumpadsymbolKeys.Add("NumPad.", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadsymbolKeys.Add("NumPad/", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadsymbolKeys.Add("NumPad*", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadsymbolKeys.Add("NumPad-", new ShortcutKeyCommand() { DispalyName = "" });
-            NumpadsymbolKeys.Add("NumPad+", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("Num .", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("Num /", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("Num *", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("Num -", new ShortcutKeyCommand() { DispalyName = "" });
+            NumpadsymbolKeys.Add("Num +", new ShortcutKeyCommand() { DispalyName = "" });
 
 
             SystemKeys1 = new Dictionary<string, ShortcutKeyCommand>();
-            SystemKeys1.Add("ESC", new ShortcutKeyCommand() { DispalyName = "" });
-            SystemKeys1.Add("TAB", new ShortcutKeyCommand() { DispalyName = "" });
-            SystemKeys1.Add("BackSpace", new ShortcutKeyCommand() { DispalyName = "" });
-            SystemKeys1.Add("ENTER", new ShortcutKeyCommand() { DispalyName = "" });
-            SystemKeys1.Add("SPACE", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("Esc", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("Tab", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("Bkspce", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("Enter", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys1.Add("Space", new ShortcutKeyCommand() { DispalyName = "" });
 
             SystemKeys2 = new Dictionary<string, ShortcutKeyCommand>();
-            SystemKeys2.Add("INS", new ShortcutKeyCommand() { DispalyName = "" }); 
-            SystemKeys2.Add("DEL", new ShortcutKeyCommand() { DispalyName = "" });
-            SystemKeys2.Add("HOME", new ShortcutKeyCommand() { DispalyName = "" });
-            SystemKeys2.Add("END", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("Ins", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("Del", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("Home", new ShortcutKeyCommand() { DispalyName = "" });
+            SystemKeys2.Add("End", new ShortcutKeyCommand() { DispalyName = "" });
             SystemKeys2.Add("PgUp", new ShortcutKeyCommand() { DispalyName = "" });
             SystemKeys2.Add("PgDn", new ShortcutKeyCommand() { DispalyName = "" });
 
             CursorandEditKeys = new Dictionary<string, ShortcutKeyCommand>();
-            CursorandEditKeys.Add("Up", new ShortcutKeyCommand() { DispalyName = "" });
-            CursorandEditKeys.Add("Down", new ShortcutKeyCommand() { DispalyName = "" });
-            CursorandEditKeys.Add("Left", new ShortcutKeyCommand() { DispalyName = "" });
-            CursorandEditKeys.Add("Right", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Up Arrow", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Down Arrow", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Left Arrow", new ShortcutKeyCommand() { DispalyName = "" });
+            CursorandEditKeys.Add("Right Arrow", new ShortcutKeyCommand() { DispalyName = "" });
 
-            SystemandStateKeys = CursorandEditKeys = new Dictionary<string, ShortcutKeyCommand>();
+            SystemandStateKeys = new Dictionary<string, ShortcutKeyCommand>();
             SystemandStateKeys.Add("PrintScreen", new ShortcutKeyCommand() { DispalyName = "" });
             SystemandStateKeys.Add("ScrollLock", new ShortcutKeyCommand() { DispalyName = "" });
             SystemandStateKeys.Add("Pause/Break", new ShortcutKeyCommand() { DispalyName = "" });
@@ -522,9 +561,119 @@ namespace VSShortcutsManager
             ScopeLists.Add(new Scope() { Name = "XML Schema Designer", ID = "{DEE6CEF9-3BCA-449A-82A6-FC757D6956FB}" });
 
         }
+
         #endregion
 
         #region Public Method
+        public void ResetShortCutKeystoDefaultValue()
+        {
+            try
+            {
+                AlphaKeys["A"].DispalyName = "";
+                AlphaKeys["B"].DispalyName = "";
+                AlphaKeys["C"].DispalyName = "";
+                AlphaKeys["D"].DispalyName = "";
+                AlphaKeys["E"].DispalyName = "";
+                AlphaKeys["F"].DispalyName = "";
+                AlphaKeys["G"].DispalyName = "";
+                AlphaKeys["H"].DispalyName = "";
+                AlphaKeys["I"].DispalyName = "";
+                AlphaKeys["J"].DispalyName = "";
+                AlphaKeys["K"].DispalyName = "";
+                AlphaKeys["L"].DispalyName = "";
+                AlphaKeys["M"].DispalyName = "";
+                AlphaKeys["N"].DispalyName = "";
+                AlphaKeys["O"].DispalyName = "";
+                AlphaKeys["P"].DispalyName = "";
+                AlphaKeys["Q"].DispalyName = "";
+                AlphaKeys["R"].DispalyName = "";
+                AlphaKeys["S"].DispalyName = "";
+                AlphaKeys["T"].DispalyName = "";
+                AlphaKeys["U"].DispalyName = "";
+                AlphaKeys["V"].DispalyName = "";
+                AlphaKeys["W"].DispalyName = "";
+                AlphaKeys["X"].DispalyName = "";
+                AlphaKeys["Y"].DispalyName = "";
+                AlphaKeys["Z"].DispalyName = "";
+
+                FunctionKeys["F1"].DispalyName = "";
+                FunctionKeys["F2"].DispalyName = "";
+                FunctionKeys["F3"].DispalyName = "";
+                FunctionKeys["F4"].DispalyName = "";
+                FunctionKeys["F5"].DispalyName = "";
+                FunctionKeys["F6"].DispalyName = "";
+                FunctionKeys["F7"].DispalyName = "";
+                FunctionKeys["F8"].DispalyName = "";
+                FunctionKeys["F9"].DispalyName = "";
+                FunctionKeys["F10"].DispalyName = "";
+                FunctionKeys["F11"].DispalyName = "";
+                FunctionKeys["F12"].DispalyName = "";
+
+                NumericKeys["1"].DispalyName = "";
+                NumericKeys["2"].DispalyName = "";
+                NumericKeys["3"].DispalyName = "";
+                NumericKeys["4"].DispalyName = "";
+                NumericKeys["5"].DispalyName = "";
+                NumericKeys["6"].DispalyName = "";
+                NumericKeys["7"].DispalyName = "";
+                NumericKeys["8"].DispalyName = "";
+                NumericKeys["9"].DispalyName = "";
+
+                SpecialKeys["`~"].DispalyName = "";
+                SpecialKeys["-_"].DispalyName = "";
+                SpecialKeys["=+"].DispalyName = "";
+                SpecialKeys["[{"].DispalyName = "";
+                SpecialKeys["]}"].DispalyName = "";
+                SpecialKeys["\\|"].DispalyName = "";
+                SpecialKeys[";:"].DispalyName = "";
+                SpecialKeys["'\""].DispalyName = "";
+                SpecialKeys[",<"].DispalyName = "";
+                SpecialKeys[".>"].DispalyName = "";
+                SpecialKeys["/?"].DispalyName = "";
+
+                NumpadKeys["Num 0"].DispalyName = "";
+                NumpadKeys["Num 1"].DispalyName = "";
+                NumpadKeys["Num 2"].DispalyName = "";
+                NumpadKeys["Num 3"].DispalyName = "";
+                NumpadKeys["Num 4"].DispalyName = "";
+                NumpadKeys["Num 5"].DispalyName = "";
+                NumpadKeys["Num 6"].DispalyName = "";
+                NumpadKeys["Num 7"].DispalyName = "";
+                NumpadKeys["Num 8"].DispalyName = "";
+                NumpadKeys["Num 9"].DispalyName = "";
+
+                NumpadsymbolKeys["Num ."].DispalyName = "";
+                NumpadsymbolKeys["Num /"].DispalyName = "";
+                NumpadsymbolKeys["Num *"].DispalyName = "";
+                NumpadsymbolKeys["Num -"].DispalyName = "";
+                NumpadsymbolKeys["Num +"].DispalyName = "";
+
+                SystemKeys1["Esc"].DispalyName = "";
+                SystemKeys1["Tab"].DispalyName = "";
+                SystemKeys1["Bkspce"].DispalyName = "";
+                SystemKeys1["Enter"].DispalyName = "";
+                SystemKeys1["Space"].DispalyName = "";
+                SystemKeys2["Ins"].DispalyName = "";
+                SystemKeys2["Del"].DispalyName = "";
+                SystemKeys2["Home"].DispalyName = "";
+                SystemKeys2["End"].DispalyName = "";
+                SystemKeys2["PgUp"].DispalyName = "";
+                SystemKeys2["PgDn"].DispalyName = "";
+
+                CursorandEditKeys["Up Arrow"].DispalyName = "";
+                CursorandEditKeys["Down Arrow"].DispalyName = "";
+                CursorandEditKeys["Left Arrow"].DispalyName = "";
+                CursorandEditKeys["Right Arrow"].DispalyName = "";
+
+                SystemandStateKeys["PrintScreen"].DispalyName = "";
+                SystemandStateKeys["ScrollLock"].DispalyName = "";
+                SystemandStateKeys["Pause/Break"].DispalyName = "";
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
         public void OnPropertyChanged(PropertyChangedEventArgs e)
         {
             if (PropertyChanged != null)

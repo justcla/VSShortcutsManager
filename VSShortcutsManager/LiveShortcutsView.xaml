@@ -70,7 +70,7 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
-            <ComboBox  ItemsSource="{Binding ScopeLists}" DisplayMemberPath="Name" SelectedValuePath="ID"  SelectedValue="{Binding Scope.Name}" Name="cmbScopeList" Width="200" Height="28" HorizontalAlignment="Right" Margin="5" >
+            <ComboBox  ItemsSource="{Binding ScopeLists}" DisplayMemberPath="Name" SelectedValuePath="ID"  SelectedValue="{Binding Scope.Name}" Name="cmbScopeList" Width="200" Height="28" HorizontalAlignment="Right" Margin="5" SelectionChanged="cmbScopeList_SelectionChanged" >
             </ComboBox>
         </DockPanel>
         <DockPanel Grid.Row="1" Grid.Column="0">
@@ -81,7 +81,7 @@
                         <DataTemplate>
                             <WrapPanel>
                                 <TextBlock Text="{Binding Key}" Width="30" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Value.DispalyName, Mode=TwoWay}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -96,7 +96,7 @@
                         <DataTemplate>
                             <WrapPanel>
                                 <TextBlock Text="{Binding Key}" Width="65" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Value.DispalyName, Mode=TwoWay}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -105,8 +105,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="65" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -115,8 +115,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="65" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="65" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -130,8 +130,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="30" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -140,8 +140,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="30" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="30" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -155,8 +155,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -165,8 +165,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -175,8 +175,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -185,8 +185,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <WrapPanel>
-                                <TextBlock Text="{Binding Name}" Width="80" FontWeight="Bold" />
-                                <TextBlock Text="{Binding Command}"  Foreground="SlateGray" Cursor="Hand" />
+                                <TextBlock Text="{Binding Key}" Width="80" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Value.DispalyName}"  Foreground="SlateGray" Cursor="Hand" />
                             </WrapPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
