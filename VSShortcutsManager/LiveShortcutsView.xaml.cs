@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
 
 namespace VSShortcutsManager
 {
@@ -51,6 +53,31 @@ namespace VSShortcutsManager
                 btnShift.Style = ShiftKeyPressed ? Resources["buttonPressedStyle"] as Style : FindResource("buttonStyle") as Style;
             }
         }
+
+        internal VSShortcutQueryEngine ShortcutQueryEngine { get; private set; }
+        IEnumerable<Command> _allCommands;
+        public IEnumerable<Command> AllCommands {
+            get {
+                if (_allCommands == null)
+                {
+                    ThreadHelper.JoinableTaskFactory.Run(async () =>
+                    {
+                        _allCommands = await ShortcutQueryEngine.GetAllCommandsAsync();
+                    });
+                }
+                return _allCommands;
+            }
+            private set { }
+        }
+
+        private void InitializeShortcutEngine(IServiceProvider serviceProvider)
+        {
+            if (ShortcutQueryEngine == null)
+            {
+                ShortcutQueryEngine = new VSShortcutQueryEngine(serviceProvider);
+            }
+        }
+
         #endregion
 
         #region Construcor
@@ -58,6 +85,7 @@ namespace VSShortcutsManager
         {
             InitializeComponent();
             this.ServiceProvider = ServiceProvider;
+            InitializeShortcutEngine(this.ServiceProvider);
             viewModel = new LiveShortCutViewViewModel();
             this.KeyDown += captureKeyDown;
             DataContext = viewModel;
@@ -141,45 +169,120 @@ namespace VSShortcutsManager
             }
             return modifierkeys;
         }
+
         private async void RefreshShortcuts()
         {
-
             try
             {
                 //Reset the old commands to blank before assigning new commands
                 viewModel.ResetShortCutKeystoDefaultValue();
 
-                var modifierKeys = GetSelectedModifierKeys();
-                VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
-                var selectedscope = (Scope)cmbScopeList.SelectedItem;
-                Guid scopeGuid = (selectedscope != null) ? Guid.Parse(selectedscope.ID) : Guid.Empty;
-                BindingSequence bindingSequence = BindingSequence.Empty; // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
-                const bool includeGlobals = true;
-                IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> matchingShortcuts = await engine.GetBindingsForModifiersAsync(scopeGuid, modifierKeys, bindingSequence, includeGlobals);
+                // Get all the user parameter input from the UI
+                Guid scopeGuid = GetSelectedScope();
+                ModifierKeys modifierKeys = GetSelectedModifierKeys();
+                BindingSequence startingChord = GetStartingChord();
+                bool includeGlobals = GetIsIncludedGlobals();
 
-                foreach (var matchingShortcut in matchingShortcuts)
-                {
-                    string key = matchingShortcut.Key;
-                    IEnumerable<Tuple<CommandBinding, Command>> commandBindings = matchingShortcut.Value;
-                    int? sequenceCountofFirstCommandBinding = commandBindings.FirstOrDefault()?.Item1.Sequences.Count;
-                    string commandString = "";
-                    if (sequenceCountofFirstCommandBinding == 1)
-                    {
-                        commandString = commandBindings.FirstOrDefault().Item2.DisplayName;
-                    }
-                    else if (sequenceCountofFirstCommandBinding > 1)
-                    {
-                        commandString = "<Chord>";
-                    }
-                    UpdateShortcutValue(key, commandString);
-                }
+                // Get the map of matching shortcut for this scope and modifier keys from the Query Engine
+                IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> matchingShortcuts = GetBindingsForModifiers(scopeGuid, modifierKeys, startingChord, includeGlobals);
+
+                // Note: This method will affect the model in the view, which in turn will reflect on the UI through bindings.
+                UpdateCommandsInViewModel(matchingShortcuts);
             }
             catch (Exception ex)
             {
-
+                System.Diagnostics.Debug.WriteLine("Exception occurred: " + ex.Message, ex);
             }
 
         }
+
+        private static BindingSequence GetStartingChord()
+        {
+            // TODO: This is if there is a Chord, otherwise BindingSequence.EMPTY
+            return BindingSequence.Empty;
+        }
+
+        private static bool GetIsIncludedGlobals()
+        {
+            // TODO: Read this from the checkbox in the UI/model
+            return true;
+        }
+
+        private Guid GetSelectedScope()
+        {
+            Scope selectedscope = (Scope)cmbScopeList.SelectedItem;
+            Guid scopeGuid = (selectedscope != null) ? Guid.Parse(selectedscope.ID) : Guid.Empty;
+            return scopeGuid;
+        }
+
+        private void UpdateCommandsInViewModel(IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> matchingShortcuts)
+        {
+            foreach (var matchingShortcut in matchingShortcuts)
+            {
+                string key = matchingShortcut.Key;
+                string commandText = GetCommandDisplayText(matchingShortcut.Value);
+
+                UpdateShortcutValue(key, commandText);
+            }
+        }
+
+        private static string GetCommandDisplayText(IEnumerable<Tuple<CommandBinding, Command>> commandBindings)
+        {
+            int? sequenceCountofFirstCommandBinding = commandBindings.FirstOrDefault()?.Item1.Sequences.Count;
+
+            string commandString = "";
+            if (sequenceCountofFirstCommandBinding == 1)
+            {
+                commandString = commandBindings.FirstOrDefault().Item2.DisplayName;
+            }
+            else if (sequenceCountofFirstCommandBinding > 1)
+            {
+                commandString = "<Chord>";
+            }
+
+            return commandString;
+        }
+
+        public IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> GetBindingsForModifiers(Guid scope, ModifierKeys modifiers, BindingSequence chordStart, bool includeGlobals)
+        {
+            IEnumerable<Command> allCommands = AllCommands;
+
+            var bindingMap = new Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>();
+
+            foreach (Command command in allCommands)
+            {
+                // Each command can have zero-many bindings. We'll look at each binding to see if it should be returned (matching scope and modifier)
+                foreach (CommandBinding binding in command.Bindings)
+                {
+                    // Ensure the binding is in the desired scope (or Global if includeGlobals is true)
+                    if (!VSShortcutQueryEngine.ScopeMatches(scope, binding.Scope.Guid) && !(VSShortcutQueryEngine.ScopeIsGlobal(binding.Scope.Guid) && includeGlobals))
+                    {
+                        continue;
+                    }
+
+                    // If the user passed in a starting chord (chordStart is not empty), only return this binding if it is a chord and starts with the chordStart
+                    if (chordStart != BindingSequence.Empty
+                        && (binding.Sequences.Count < 2 || !VSShortcutQueryEngine.SameBindingSequence(binding.Sequences[0], chordStart)))
+                    {
+                        continue;
+                    }
+
+                    // Does the binding have the right modifiers? Two cases: chordStart is empty / chordStart is not empty
+                    BindingSequence sequenceOfInterest = (chordStart != BindingSequence.Empty) ? binding.Sequences[1] : binding.Sequences[0];
+                    if (sequenceOfInterest.Modifiers != modifiers)
+                    {
+                        continue;
+                    }
+
+                    // Found a command with matching modifiers for the given scope (with matching starting chord).
+                    // Add it to the relevant entry in the dictionary.
+                    VSShortcutQueryEngine.AddCommandBindingToBindingMap(bindingMap, command, binding, sequenceOfInterest.Key);
+                }
+            }
+
+            return bindingMap;
+        }
+
         private void UpdateShortcutValue(string key, string commandString)
         {
             if (viewModel.AlphaKeys?.ContainsKey(key) == true)

@@ -785,7 +785,7 @@ namespace VSShortcutsManager
         private void OpenLiveShortcutsView(object sender, EventArgs e)
         {
             LiveShortcutsView dialog = new LiveShortcutsView(ServiceProvider);
-            dialog.Show();
+            dialog.ShowDialog();
         }
 
         private void OpenAddKeyboardShortcutDialog(object sender, EventArgs e)
