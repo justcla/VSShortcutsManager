@@ -355,9 +355,8 @@ namespace VSShortcutsManager
 
         
 
-        public async Task<IEnumerable<BindingConflict>> GetConflictsAsync(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        public async Task<IEnumerable<BindingConflict>> GetConflictsAsync(IEnumerable<Command> commands, KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
-            IEnumerable<Command> commands = await GetAllCommandsAsync();
             Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>> conflictsMap = new Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>>();
 
             BindingSequence[] callerChord = sequences.ToArray();
