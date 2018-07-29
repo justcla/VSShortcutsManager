@@ -353,44 +353,7 @@ namespace VSShortcutsManager
             return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
         }
 
-        public async Task<IDictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>> GetBindingsForModifiersAsync(Guid scope, ModifierKeys modifiers, BindingSequence chordStart, bool includeGlobals)
-        {
-            IEnumerable<Command> commands = await GetAllCommandsAsync();
-            var bindingMap = new Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>>();
-
-            foreach(Command command in commands)
-            {
-                // Each command can have zero-many bindings. We'll look at each binding to see if it should be returned (matching scope and modifier)
-                foreach (CommandBinding binding in command.Bindings)
-                {
-                    // Ensure the binding is in the desired scope (or Global if includeGlobals is true)
-                    if (!ScopeMatches(scope, binding.Scope.Guid) && !(ScopeIsGlobal(binding.Scope.Guid) && includeGlobals))
-                    {
-                        continue;
-                    }
-
-                    // If the user passed in a starting chord (chordStart is not empty), only return this binding if it is a chord and starts with the chordStart
-                    if (chordStart != BindingSequence.Empty
-                        && (binding.Sequences.Count < 2 || !SameBindingSequence(binding.Sequences[0], chordStart)))
-                    {
-                        continue;
-                    }
-
-                    // Does the binding have the right modifiers? Two cases: chordStart is empty / chordStart is not empty
-                    BindingSequence sequenceOfInterest = (chordStart != BindingSequence.Empty) ? binding.Sequences[1] : binding.Sequences[0];
-                    if (sequenceOfInterest.Modifiers != modifiers)
-                    {
-                        continue;
-                    }
-
-                    // Found a command with matching modifiers for the given scope (with matching starting chord).
-                    // Add it to the relevant entry in the dictionary.
-                    AddCommandBindingToBindingMap(bindingMap, command, binding, sequenceOfInterest.Key);
-                }
-            }
-
-            return bindingMap;
-        }
+        
 
         public async Task<IEnumerable<BindingConflict>> GetConflictsAsync(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
@@ -783,7 +746,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private static void AddCommandBindingToBindingMap(Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> bindingMap, Command command, CommandBinding binding, string key)
+        public static void AddCommandBindingToBindingMap(Dictionary<string, IEnumerable<Tuple<CommandBinding, Command>>> bindingMap, Command command, CommandBinding binding, string key)
         {
             // Add the command/binding tuple to the relevant key in the binding map.
             IEnumerable<Tuple<CommandBinding, Command>> commandsForKey;
@@ -832,7 +795,7 @@ namespace VSShortcutsManager
             shortCutCommand.Bindings = newBindings;
         }
 
-        private bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
+        public static bool SameBindingSequence(BindingSequence bindingSeq1, BindingSequence bindingSeq2)
         {
             if (bindingSeq1 == null) return bindingSeq2 == null;
             if (bindingSeq2 == null) return false;
@@ -840,12 +803,12 @@ namespace VSShortcutsManager
                 && bindingSeq1.Key == bindingSeq2.Key;
         }
 
-        private bool ScopeIsGlobal(Guid scope)
+        public static bool ScopeIsGlobal(Guid scope)
         {
             return scope == VSConstants.GUID_VSStandardCommandSet97;
         }
 
-        private bool ScopeMatches(Guid comparisonBase, Guid toTest)
+        public static bool ScopeMatches(Guid comparisonBase, Guid toTest)
         {
             if (comparisonBase == Guid.Empty)
             {
