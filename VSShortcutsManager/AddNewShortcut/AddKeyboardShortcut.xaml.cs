@@ -84,13 +84,19 @@ namespace VSShortcutsManager.AddNewShortcut
         {
             try
             {
+                // Pull the values from the UI (Command, Scope, Shortcut)
                 string shortcutcommand = cmbCommandList.SelectedValue?.ToString();
                 string shortcutScope = cmbScopeList.SelectedValue?.ToString();
                 string shortcutKeys = txtShortcut.Text;
+
                 string shortcutBinding = shortcutScope + "::" + shortcutKeys;
+
                 if (!string.IsNullOrEmpty(shortcutcommand) && !string.IsNullOrEmpty(shortcutScope) && !string.IsNullOrEmpty(shortcutKeys))
                 {
-                    List<VSShortcut> conflictList = getConflictsText(shortcutcommand, shortcutScope, shortcutKeys);
+                    // Get all the conflict data into a list ready for display
+                    List<ConflictTableData> conflictList = PrepareConflictsTableData(shortcutcommand, shortcutScope, shortcutKeys);
+
+                    // Bind the data to the view model
                     listConflicts.ItemsSource = conflictList;
                     btnAddShortcut.IsEnabled = true;
                 }
@@ -105,24 +111,60 @@ namespace VSShortcutsManager.AddNewShortcut
             }
         }
 
-        private List<VSShortcut> getConflictsText(string shortcutcommand, string shortcutScope, string shortcutKeys)
+        private List<ConflictTableData> PrepareConflictsTableData(string shortcutcommand, string shortcutScopeText, string shortcutKeysText)
         {
-            var conflictList = new List<VSShortcut>();
-            var scope = _queryEngine.GetScopeByName(shortcutScope);
-            var sequences = _queryEngine.GetBindingSequencesFromBindingString(shortcutKeys);
-            var conflictTexts = new List<string>();
+            // Convert text like "Text Editor" and "Ctrl+R, Ctrl+O" into objects representing the Scope and key bindings
+            KeybindingScope scope = _queryEngine.GetScopeByName(shortcutScopeText);
+            IEnumerable<BindingSequence> shortcutChords = _queryEngine.GetBindingSequencesFromBindingString(shortcutKeysText);
+
+            List<ConflictTableData> conflictList = new List<ConflictTableData>();
             ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
-                var conflicts = await _queryEngine.GetConflictsAsync(scope, sequences);
-                foreach (var conflict in conflicts)
+                // Fetch all the conflict data for the give nScope/Shortcut combination
+                IEnumerable<BindingConflict> conflicts = await _queryEngine.GetConflictsAsync(scope, shortcutChords);
+
+                // Put each conflict into the backing object to use on the UI display
+                foreach (BindingConflict conflict in conflicts)
                 {
-                    foreach (var binding in conflict.AffectedBindings)
+                    // Handle all the conflict for this conflict type
+                    ConflictType conflictType = conflict.Type;
+
+                    foreach (Tuple<CommandBinding, Command> binding in conflict.AffectedBindings)
                     {
-                        conflictList.Add(new VSShortcut { Command = binding.Item2.CanonicalName, Scope = binding.Item1.Scope.Name, Shortcut = binding.Item1.OriginalDTEString});
+                        conflictList.Add(new ConflictTableData
+                        {
+                            ConflictType = GetConflictTypeText(conflictType),
+                            Command = binding.Item2.CanonicalName,
+                            Scope = binding.Item1.Scope.Name,
+                            Shortcut = binding.Item1.OriginalDTEString
+                        });
                     }
                 }
             });
             return conflictList;
+
+        }
+
+        private static string GetConflictTypeText(ConflictType conflictType)
+        {
+            switch (conflictType)
+            {
+                case ConflictType.HiddenInSomeScopes:
+                    return "Blocked in";
+                case ConflictType.HidesGlobalBindings:
+                    return "Blocks";
+                case ConflictType.ReplacesBindings:
+                default:
+                    return "Replaces";
+            }
+        }
+
+        class ConflictTableData
+        {
+            public string ConflictType { get; set; }
+            public string Scope { get; set; }
+            public string Command { get; set; }
+            public string Shortcut { get; set; }
 
         }
 
