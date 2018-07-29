@@ -79,9 +79,19 @@ namespace VSShortcutsManager.AddNewShortcut
             InitializeComponent();
             _serviceProvider = serviceProvider;
             InitializeShortcutEngine(_serviceProvider);
-            cmbCommandList.ItemsSource = new CommandListViewModel(_serviceProvider).DataSource;
+
+            InitializeUIFields();
+        }
+
+        private void InitializeUIFields()
+        {
+            // Initialize backing objects for combo boxes on the UI
+            // Command list combo box
+            cmbCommandList.ItemsSource = new CommandListViewModel(AllCommandsCache).DataSource;
+            // Scope list combo box
             cmbScopeList.ItemsSource = new ScopeListViewModel(_serviceProvider).DataSource;
         }
+
         private void btnClose_Click(object sender, RoutedEventArgs e) => this.Close();
 
         private void btnAddShortcut_Click(object sender, RoutedEventArgs e)
