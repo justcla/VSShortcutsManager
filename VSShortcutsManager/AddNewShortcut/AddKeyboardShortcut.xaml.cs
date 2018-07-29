@@ -97,9 +97,46 @@ namespace VSShortcutsManager.AddNewShortcut
         {
             // Initialize backing objects for combo boxes on the UI
             // Command list combo box
-            cmbCommandList.ItemsSource = new CommandListViewModel(AllCommandsCache).DataSource;
+            cmbCommandList.ItemsSource = GetCommandNamesList();
             // Scope list combo box
-            cmbScopeList.ItemsSource = new ScopeListViewModel(GetAllKeybindingScopes()).DataSource;
+            cmbScopeList.ItemsSource = GetScopeDisplayData();
+        }
+
+        private IEnumerable<string> GetCommandNamesList()
+        {
+            var displayData = new List<string>();
+            foreach (Command eachCommand in AllCommandsCache)
+            {
+                // Filter out commands with no name
+                string canonicalName = eachCommand.CanonicalName;
+                if (string.IsNullOrEmpty(canonicalName))
+                {
+                    continue;
+                }
+
+                // Use the proper command name as the display name
+                displayData.Add(canonicalName);
+            }
+
+            return displayData.OrderBy(o => o.ToString());
+        }
+
+        private IEnumerable<string> GetScopeDisplayData()
+        {
+            var displayData = new List<string>();
+            foreach (KeybindingScope keybindingScope in GetAllKeybindingScopes())
+            {
+                // Filter out scopes with no name
+                string scopeName = keybindingScope.Name;
+                if (scopeName == null)
+                {
+                    continue;
+                }
+
+                displayData.Add(scopeName);
+            }
+
+            return displayData;
         }
 
         private void btnClose_Click(object sender, RoutedEventArgs e) => this.Close();
