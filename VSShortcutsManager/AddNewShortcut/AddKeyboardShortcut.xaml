@@ -30,6 +30,7 @@
         <ListView x:Name="listConflicts" ItemsSource="{Binding}" Margin="198,205,19,67">
             <ListView.View>
                 <GridView>
+                    <GridViewColumn Header="Conflict Type" DisplayMemberBinding="{Binding ConflictType}"  Width="80" />
                     <GridViewColumn Header="Scope" DisplayMemberBinding="{Binding Scope}"  Width="80" />
                     <GridViewColumn Header="Command" DisplayMemberBinding="{Binding Command}" Width="100" />
                     <GridViewColumn Header="Shortcut" DisplayMemberBinding="{Binding Shortcut}"  Width="80" />

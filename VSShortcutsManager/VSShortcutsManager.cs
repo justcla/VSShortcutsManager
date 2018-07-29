@@ -793,7 +793,7 @@ namespace VSShortcutsManager
             AddNewShortcut.AddKeyboardShortcut addShortcutWindow = new AddNewShortcut.AddKeyboardShortcut(ServiceProvider);
             addShortcutWindow.Width = 500;
             addShortcutWindow.Height = 450;
-            addShortcutWindow.Show();
+            addShortcutWindow.ShowDialog();
         }
 
     }
