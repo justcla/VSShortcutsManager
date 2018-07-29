@@ -1,41 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-using EnvDTE;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.Shell;
+﻿using System.Collections.Generic;
+
 namespace VSShortcutsManager.AddNewShortcut
 {
     public class ScopeListViewModel
     {
+        public IEnumerable<ScopeDisplayItem> DataSource { get; }
 
-        private List<ScopeList> data;
-
-        //Done for Sample. to be replaced with acutal code with list of all commands
-        public ScopeListViewModel(IServiceProvider serviceProvider)
+        public ScopeListViewModel(IEnumerable<KeybindingScope> keybindingScopes)
         {
+            this.DataSource = GetScopeDisplayData(keybindingScopes);
+        }
 
-            data = new List<ScopeList>();
-            VSShortcutQueryEngine queryEngine = new VSShortcutQueryEngine(serviceProvider);
-            var allCommands = queryEngine.GetAllBindingScopesAsync().Result;
-            foreach (var eachCommand in allCommands)
+        private static List<ScopeDisplayItem> GetScopeDisplayData(IEnumerable<KeybindingScope> keybindingScopes)
+        {
+            var displayData = new List<ScopeDisplayItem>();
+            foreach (KeybindingScope keybindingScope in keybindingScopes)
             {
-                data.Add(new ScopeList() { Name = eachCommand.Name, Guid = eachCommand.Guid.ToString() });
+                ScopeDisplayItem displayItem = new ScopeDisplayItem()
+                {
+                    Name = keybindingScope.Name,
+                    Guid = keybindingScope.Guid.ToString()
+                };
+                displayData.Add(displayItem);
             }
 
+            return displayData;
         }
 
-
-        public IEnumerable<ScopeList> DataSource
-        {
-            get { return data; }
-        }
     }
 
-    public class ScopeList
+    public class ScopeDisplayItem
     {
         public string Name { get; set; }
         public string Guid { get; set; }

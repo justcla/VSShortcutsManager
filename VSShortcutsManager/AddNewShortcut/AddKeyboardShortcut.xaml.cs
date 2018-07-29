@@ -66,6 +66,16 @@ namespace VSShortcutsManager.AddNewShortcut
             private set { }
         }
 
+        private IEnumerable<KeybindingScope> GetAllKeybindingScopes()
+        {
+            IEnumerable<KeybindingScope> result = null;
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                result = await ShortcutQueryEngine.GetAllBindingScopesAsync();
+            });
+            return result;
+        }
+
         private void InitializeShortcutEngine(IServiceProvider serviceProvider)
         {
             if (ShortcutQueryEngine == null)
@@ -89,7 +99,7 @@ namespace VSShortcutsManager.AddNewShortcut
             // Command list combo box
             cmbCommandList.ItemsSource = new CommandListViewModel(AllCommandsCache).DataSource;
             // Scope list combo box
-            cmbScopeList.ItemsSource = new ScopeListViewModel(_serviceProvider).DataSource;
+            cmbScopeList.ItemsSource = new ScopeListViewModel(GetAllKeybindingScopes()).DataSource;
         }
 
         private void btnClose_Click(object sender, RoutedEventArgs e) => this.Close();
