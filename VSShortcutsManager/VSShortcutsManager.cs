@@ -58,7 +58,7 @@ namespace VSShortcutsManager
         /// VS Package that provides this command, not null.
         /// </summary>
         private readonly Package package;
-        private readonly VSShortcutQueryEngine queryEngine;
+        public readonly VSShortcutQueryEngine queryEngine;
 
         private readonly int UPDATE_NEVER = 0;
         private readonly int UPDATE_PROMPT = 1;

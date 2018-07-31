@@ -8,9 +8,12 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell.Settings;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -18,7 +21,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace VSShortcutsManager
 {
-    internal sealed class VSShortcutQueryEngine
+    public sealed class VSShortcutQueryEngine
     {
         #region Private Fields / Consts
 
@@ -119,6 +122,75 @@ namespace VSShortcutsManager
             {Key.Divide, ID_Intl_Base + 1157},
             {Key.Clear, ID_Intl_Base + 394}
         };
+
+        internal string GetLocalizedShortcutText(ObservableCollection<BindingSequence> bindingSequences)
+        {
+            string localizedShortcutKeys = string.Empty;
+
+            if (bindingSequences.Count > 0)
+            {
+                // Localize the first part of the shortcut (ie."Control+D6" -> "Ctrl+6")
+                localizedShortcutKeys += GetLocalizedShortcutKey(bindingSequences[0]);
+                // Check for two-part chord (ie. Ctrl+R, Ctrl+O)
+                if (bindingSequences.Count > 1)
+                {
+                    localizedShortcutKeys += ", " + GetLocalizedShortcutKey(bindingSequences[1]);
+                }
+            }
+
+            return localizedShortcutKeys;
+        }
+
+        private string GetLocalizedShortcutKey(BindingSequence bindingSequence)
+        {
+            // Localize modifiers
+            string localizedModifiers = GetLocalizedModifiersText(bindingSequence.Modifiers);
+
+            // Localize key
+            string localizedKey = GetLocalizedKeyText(bindingSequence);
+
+            // Return the combination
+            return localizedModifiers + localizedKey;
+        }
+
+        private string GetLocalizedModifiersText(ModifierKeys modifiers)
+        {
+            string localizedModifiersText = "";
+            localizedModifiersText += GetLocalizedModifierStringPart(modifiers, ModifierKeys.Control);
+            localizedModifiersText += GetLocalizedModifierStringPart(modifiers, ModifierKeys.Shift);
+            localizedModifiersText += GetLocalizedModifierStringPart(modifiers, ModifierKeys.Alt);
+            System.Diagnostics.Debug.WriteLine("Got localized modifiers: " + localizedModifiersText);
+            return localizedModifiersText;
+        }
+
+        private string GetLocalizedModifierStringPart(ModifierKeys modifiers, ModifierKeys modKey)
+        {
+            if ((modifiers & modKey) == modKey && ModifierKeyIdToNameMap.TryGetValue(modKey, out string locModText))
+            {
+                return locModText + "+";
+            }
+            return "";
+        }
+
+        private string GetLocalizedKeyText(BindingSequence bindingSequence)
+        {
+            Key keyObj = (Key)Enum.Parse(typeof(Key), bindingSequence.Key);  // TODO: Handle parse errors
+
+            // First, try to get the localized key from the LocalizedKeyMap
+            // LocalizedKeyMap contains non-alphanumeric/punc chars (ie. F1-F24,Home,Ins,Period,Comma,UpArrow,NumPad0-9)
+            if (LocalizedKeyMap.ContainsKey(keyObj))
+            {
+                return LocalizedKeyMap[keyObj];
+            }
+
+            // Otherwise, pull it from ToUnicode
+            // ToUniCode can return regular alphanumberic/punctuation chars (ie. [A-Z][0-9](`-=[]\;',./))
+            return KeycharUtil.GetCharFromKey(keyObj).ToString();
+        }
+
+
+
+        // --- These implementations should closely resemble these in IOleCommandTarget.c
 
         #region Various Maps
 
@@ -237,7 +309,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Dictionary<string, ModifierKeys> ModifierNameKeyIdMap
+        public Dictionary<string, ModifierKeys> ModifierNameKeyIdMap
         {
             get
             {
@@ -252,7 +324,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Dictionary<ModifierKeys, string> ModifierKeyIdToNameMap
+        public Dictionary<ModifierKeys, string> ModifierKeyIdToNameMap
         {
             get
             {
@@ -818,6 +890,105 @@ namespace VSShortcutsManager
         }
 
         #endregion
+
+    }
+
+    class KeycharUtil
+    {
+        // --- Get char from Key, courtesy of https://stackoverflow.com/a/5826175/879243
+
+        public enum MapType : uint
+        {
+            MAPVK_VK_TO_VSC = 0x0,
+            MAPVK_VSC_TO_VK = 0x1,
+            MAPVK_VK_TO_CHAR = 0x2,
+            MAPVK_VSC_TO_VK_EX = 0x3,
+        }
+
+        [DllImport("user32.dll")]
+        public static extern int ToUnicode(
+            uint wVirtKey,
+            uint wScanCode,
+            byte[] lpKeyState,
+            [Out, MarshalAs(UnmanagedType.LPWStr, SizeParamIndex = 4)]
+            StringBuilder pwszBuff,
+            int cchBuff,
+            uint wFlags);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetKeyboardState(byte[] lpKeyState);
+
+        [DllImport("user32.dll")]
+        public static extern uint MapVirtualKey(uint uCode, MapType uMapType);
+
+        public static char GetCharFromKey(Key key)
+        {
+            char ch = '\0';
+
+            int virtualKey = KeyInterop.VirtualKeyFromKey(key);
+            uint scanCode = MapVirtualKey((uint)virtualKey, MapType.MAPVK_VK_TO_VSC);
+            // Prepare keyboard state
+            byte[] keyboardState = GetKeyboardStateWithoutModifiers();
+            StringBuilder stringBuilder = new StringBuilder(2);
+
+            int result = ToUnicode((uint)virtualKey, scanCode, keyboardState, stringBuilder, stringBuilder.Capacity, 0);
+            switch (result)
+            {
+                case -1:
+                    break;
+                case 0:
+                    break;
+                case 1:
+                    {
+                        ch = stringBuilder[0];
+                        break;
+                    }
+                default:
+                    {
+                        ch = stringBuilder[0];
+                        break;
+                    }
+            }
+            return ch;
+        }
+
+        private static byte[] GetKeyboardStateWithoutModifiers()
+        {
+            // Return a keyboardState array with all modifiers stripped
+            byte[] keyboardState = new byte[256];
+            GetKeyboardState(keyboardState);
+
+            // TODO: Find out where these constants are defines for real and reference them.
+            const byte VK_SHIFT = 0x10;
+            const byte VK_CONTROL = 0x11;
+            const byte VK_ALT = 0x12;
+            const byte VK_LSHIFT = 0xA0;
+            const byte VK_RSHIFT = 0xA1;
+            const byte VK_LCONTROL = 0xA2;
+            const byte VK_RCONTROL = 0xA3;
+            const byte VK_LALT = 0xA4;
+            const byte VK_RALT = 0xA5;
+
+            // Set all modifier keys to OFF (Ctrl, Shift, Alt)
+            TurnOffKey(ref keyboardState, VK_SHIFT);
+            TurnOffKey(ref keyboardState, VK_CONTROL);
+            TurnOffKey(ref keyboardState, VK_ALT);
+            TurnOffKey(ref keyboardState, VK_LSHIFT);
+            TurnOffKey(ref keyboardState, VK_RSHIFT);
+            TurnOffKey(ref keyboardState, VK_LCONTROL);
+            TurnOffKey(ref keyboardState, VK_RCONTROL);
+            TurnOffKey(ref keyboardState, VK_LALT);
+            TurnOffKey(ref keyboardState, VK_RALT);
+
+            return keyboardState;
+        }
+
+        private static void TurnOffKey(ref byte[] keyboardState, byte vkKey)
+        {
+            // The highest-order bit represents on/off.
+            // When the key is on, the value is 0x81 or 0x80, when off, the value is 0x01 or 0x00.
+            keyboardState[vkKey] = (byte)(keyboardState[vkKey] & ~0x80);
+        }
 
     }
 }

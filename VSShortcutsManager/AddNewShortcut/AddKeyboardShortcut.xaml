@@ -9,21 +9,27 @@
             ShowInTaskbar="False"
         ShowActivated="True" ResizeMode="NoResize">
     <Grid Margin="0,0,2,0">
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition Width="0*"/>
         </Grid.ColumnDefinitions>
+
         <Label x:Name="lblCommand" Content="Command:" HorizontalAlignment="Left" Margin="43,45,0,0" VerticalAlignment="Top" Height="26" Width="65"/>
         <local:AutoFilteredComboBox VerticalAlignment="Top" x:Name="cmbCommandList" ItemsSource="{Binding}"
             HorizontalAlignment="Left" Height="23" Margin="198,45,0,0" Width="265" LostFocus="cmbCommandList_LostFocus">
         </local:AutoFilteredComboBox>
+
         <Label x:Name="lblScope" Content="Scope:" HorizontalAlignment="Left" Margin="43,95,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
         <ComboBox VerticalAlignment="Top" x:Name="cmbScopeList" ItemsSource="{Binding}"
             HorizontalAlignment="Left" Height="23" Margin="198,95,0,0" Width="265"  LostFocus="cmbCommandList_LostFocus">
         </ComboBox>
+
         <Label x:Name="lblShortcut" Content="Shortcut:" HorizontalAlignment="Left" Margin="43,145,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
+        <local:KeyCapturingTextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0"
+                                   TextWrapping="Wrap" VerticalAlignment="Top" Width="265" LostFocus="txtShortcut_LostFocus" />
         <TextBlock Text="Press Tab to move focus out of the shorcut box" HorizontalAlignment="Left" Margin="198,170,0,0" VerticalAlignment="Top" Width="265" />
-        <local:KeyCapturingTextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="265" LostFocus="txtShortcut_LostFocus" />
+
         <Label x:Name="lblConflicts" Content="Potential Conflicts:" HorizontalAlignment="Left" Margin="43,195,0,0" VerticalAlignment="Top" Height="26" Width="105"/>
         <ListView x:Name="listConflicts" ItemsSource="{Binding}" Margin="198,205,19,67">
             <ListView.View>
@@ -35,7 +41,11 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Button x:Name="btnAddShortcut" Content="Add Shortcut" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="262,376,0,0" Height="20" Click="btnAddShortcut_Click" IsDefault="True" IsEnabled="False"/>
-        <Button x:Name="btnClose" Content="Close" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="368,376,0,0" Height="20" Click="btnClose_Click" IsCancel="True"/>
+
+        <Button x:Name="btnAddShortcut" Content="Add Shortcut" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="262,376,0,0" Height="20"
+                Click="btnAddShortcut_Click" IsDefault="True" IsEnabled="False"/>
+        <Button x:Name="btnClose" Content="Close" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="368,376,0,0" Height="20"
+                Click="btnClose_Click" IsCancel="True"/>
+
     </Grid>
 </Window>
