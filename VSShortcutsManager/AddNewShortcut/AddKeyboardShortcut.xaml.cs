@@ -169,6 +169,7 @@ namespace VSShortcutsManager.AddNewShortcut
                 MessageBox.Show(ex.Message);
             }
         }
+
         private MessageBoxResult seekConfirm (string shortcutScope, string shortcutKeys)
         {
             var conflictList = listConflicts.Items;
