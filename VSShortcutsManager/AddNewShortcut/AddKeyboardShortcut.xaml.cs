@@ -24,15 +24,121 @@ namespace VSShortcutsManager.AddNewShortcut
     {
 
         private IServiceProvider _serviceProvider;
-        private VSShortcutQueryEngine _queryEngine;
+        private VSShortcutQueryEngine ShortcutQueryEngine { get; set; }
+
+        private IEnumerable<string> _commandNames;
+        public IEnumerable<string> CommandNames { get {
+                if (_commandNames == null)
+                {
+                    _commandNames = ExtractCommandNames(AllCommandsCache);
+                }
+                return _commandNames;
+            }
+            private set { }
+        }
+
+        private IEnumerable<string> ExtractCommandNames(IEnumerable<Command> allCommands)
+        {
+            var commandNamesList = new List<string>();
+            foreach(Command command in allCommands)
+            {
+                commandNamesList.Add(command.CanonicalName);
+            }
+            return commandNamesList;
+        }
+
+        //internal VSShortcutQueryEngine ShortcutQueryEngine { get; private set; }
+        IEnumerable<Command> _allCommandsCache;
+
+        public IEnumerable<Command> AllCommandsCache
+        {
+            get
+            {
+                if (_allCommandsCache == null)
+                {
+                    ThreadHelper.JoinableTaskFactory.Run(async () =>
+                    {
+                        _allCommandsCache = await ShortcutQueryEngine.GetAllCommandsAsync();
+                    });
+                }
+                return _allCommandsCache;
+            }
+            private set { }
+        }
+
+        private IEnumerable<KeybindingScope> GetAllKeybindingScopes()
+        {
+            IEnumerable<KeybindingScope> result = null;
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                result = await ShortcutQueryEngine.GetAllBindingScopesAsync();
+            });
+            return result;
+        }
+
+        private void InitializeShortcutEngine(IServiceProvider serviceProvider)
+        {
+            if (ShortcutQueryEngine == null)
+            {
+                ShortcutQueryEngine = new VSShortcutQueryEngine(serviceProvider);
+            }
+        }
+
         public AddKeyboardShortcut(IServiceProvider serviceProvider)
         {
             InitializeComponent();
             _serviceProvider = serviceProvider;
-            _queryEngine = new VSShortcutQueryEngine(_serviceProvider);
-            cmbCommandList.ItemsSource = new CommandListViewModel(_serviceProvider).DataSource;
-            cmbScopeList.ItemsSource = new ScopeListViewModel(_serviceProvider).DataSource;
+            InitializeShortcutEngine(_serviceProvider);
+
+            InitializeUIFields();
         }
+
+        private void InitializeUIFields()
+        {
+            // Initialize backing objects for combo boxes on the UI
+            // Command list combo box
+            cmbCommandList.ItemsSource = GetCommandNamesList();
+            // Scope list combo box
+            cmbScopeList.ItemsSource = GetScopeDisplayData();
+        }
+
+        private IEnumerable<string> GetCommandNamesList()
+        {
+            var displayData = new List<string>();
+            foreach (Command eachCommand in AllCommandsCache)
+            {
+                // Filter out commands with no name
+                string canonicalName = eachCommand.CanonicalName;
+                if (string.IsNullOrEmpty(canonicalName))
+                {
+                    continue;
+                }
+
+                // Use the proper command name as the display name
+                displayData.Add(canonicalName);
+            }
+
+            return displayData.OrderBy(o => o.ToString());
+        }
+
+        private IEnumerable<string> GetScopeDisplayData()
+        {
+            var displayData = new List<string>();
+            foreach (KeybindingScope keybindingScope in GetAllKeybindingScopes())
+            {
+                // Filter out scopes with no name
+                string scopeName = keybindingScope.Name;
+                if (scopeName == null)
+                {
+                    continue;
+                }
+
+                displayData.Add(scopeName);
+            }
+
+            return displayData;
+        }
+
         private void btnClose_Click(object sender, RoutedEventArgs e) => this.Close();
 
         private void btnAddShortcut_Click(object sender, RoutedEventArgs e)
@@ -48,13 +154,13 @@ namespace VSShortcutsManager.AddNewShortcut
                 {
                     if (seekConfirm(shortcutScope, shortcutKeys) == MessageBoxResult.Yes)
                     {
-                        _queryEngine.BindShortcut(shortcutcommand, shortcutBinding);
+                        ShortcutQueryEngine.BindShortcut(shortcutcommand, shortcutBinding);
                         MessageBox.Show("Shortcut added succesfully");
                     }
                 }
                 else
                 {
-                    _queryEngine.BindShortcut(shortcutcommand, shortcutBinding);
+                    ShortcutQueryEngine.BindShortcut(shortcutcommand, shortcutBinding);
                     MessageBox.Show("Shortcut added succesfully");
                 }
             }
@@ -114,19 +220,19 @@ namespace VSShortcutsManager.AddNewShortcut
         private List<ConflictTableData> PrepareConflictsTableData(string shortcutcommand, string shortcutScopeText, string shortcutKeysText)
         {
             // Convert text like "Text Editor" and "Ctrl+R, Ctrl+O" into objects representing the Scope and key bindings
-            KeybindingScope scope = _queryEngine.GetScopeByName(shortcutScopeText);
-            IEnumerable<BindingSequence> shortcutChords = _queryEngine.GetBindingSequencesFromBindingString(shortcutKeysText);
+            KeybindingScope scope = ShortcutQueryEngine.GetScopeByName(shortcutScopeText);
+            IEnumerable<BindingSequence> shortcutChords = ShortcutQueryEngine.GetBindingSequencesFromBindingString(shortcutKeysText);
 
             List<ConflictTableData> conflictList = new List<ConflictTableData>();
             ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
                 // Fetch all the conflict data for the give nScope/Shortcut combination
-                IEnumerable<BindingConflict> conflicts = await _queryEngine.GetConflictsAsync(scope, shortcutChords);
+                IEnumerable<BindingConflict> conflicts = await ShortcutQueryEngine.GetConflictsAsync(AllCommandsCache, scope, shortcutChords);
 
                 // Put each conflict into the backing object to use on the UI display
                 foreach (BindingConflict conflict in conflicts)
                 {
-                    // Handle all the conflict for this conflict type
+                    // Handle all the conflicts for this conflict type
                     ConflictType conflictType = conflict.Type;
 
                     foreach (Tuple<CommandBinding, Command> binding in conflict.AffectedBindings)

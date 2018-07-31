@@ -60,9 +60,7 @@
       <DependentUpon>AddKeyboardShortcut.xaml</DependentUpon>
     </Compile>
     <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
-    <Compile Include="AddNewShortcut\CommandListViewModel.cs" />
     <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
-    <Compile Include="AddNewShortcut\ScopeListViewModel.cs" />
     <Compile Include="BindingConflict.cs" />
     <Compile Include="BindingSequence.cs" />
     <Compile Include="Command.cs" />

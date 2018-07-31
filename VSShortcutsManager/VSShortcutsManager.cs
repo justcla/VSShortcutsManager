@@ -58,6 +58,8 @@ namespace VSShortcutsManager
         /// VS Package that provides this command, not null.
         /// </summary>
         private readonly Package package;
+        public readonly VSShortcutQueryEngine queryEngine;
+
         private readonly int UPDATE_NEVER = 0;
         private readonly int UPDATE_PROMPT = 1;
         private readonly int UPDATE_ALWAYS = 2;
@@ -88,6 +90,23 @@ namespace VSShortcutsManager
             private set;
         }
 
+        IEnumerable<Command> _allCommandsCache;
+        public IEnumerable<Command> AllCommandsCache
+        {
+            get
+            {
+                if (_allCommandsCache == null)
+                {
+                    ThreadHelper.JoinableTaskFactory.Run(async () =>
+                    {
+                        _allCommandsCache = await queryEngine.GetAllCommandsAsync();
+                    });
+                }
+                return _allCommandsCache;
+            }
+            private set { }
+        }
+
         /// <summary>
         /// Initializes the singleton instance of the command.
         /// </summary>
@@ -105,6 +124,9 @@ namespace VSShortcutsManager
         private VSShortcutsManager(Package package)
         {
             this.package = package ?? throw new ArgumentNullException("package");
+
+            // Intialize the VSShortcutQueryEngine
+            this.queryEngine = new VSShortcutQueryEngine(ServiceProvider);
 
             // Register all the command handlers with the Global Command Service
             RegisterCommandHandlers();
@@ -458,7 +480,6 @@ namespace VSShortcutsManager
 
         private List<VSShortcut> ParseVSSettingsFile(XDocument vsSettingsFile)
         {
-            VSShortcutQueryEngine engine = new VSShortcutQueryEngine(ServiceProvider);
             var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
             var shortcutList = new List<VSShortcut>();
 
@@ -466,27 +487,76 @@ namespace VSShortcutsManager
             {
                 foreach (var shortcut in userShortcut.Descendants("Shortcut"))
                 {
-                    var scope = engine.GetScopeByName(shortcut.Attribute("Scope").Value);
-                    var sequences = engine.GetBindingSequencesFromBindingString(shortcut.Value);
-                    var conflictTexts = new List<string>();
-                    ThreadHelper.JoinableTaskFactory.Run(async () =>
-                    {
-                        var conflicts = await engine.GetConflictsAsync(scope, sequences);
-                        foreach (var conflict in conflicts)
-                        {
-                            foreach (var binding in conflict.AffectedBindings)
-                            {
-                                conflictTexts.Add($"[{binding.Item1.Scope.Name}] {binding.Item2.CanonicalName} ({binding.Item1.OriginalDTEString})");
-                            }
-                        }
-                    });
+                    // Read values from XML definitions
+                    string scopeText = shortcut.Attribute("Scope").Value;
+                    string commandText = shortcut.Attribute("Command").Value;
+                    string shortcutText = shortcut.Value;
 
-                    shortcutList.Add(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value, Conflicts=conflictTexts });
+                    List<string> conflictList = GetConflictListText(scopeText, shortcutText);
+
+                    shortcutList.Add(new VSShortcut
+                    {
+                        Command = commandText,
+                        Scope = scopeText,
+                        Shortcut = shortcutText,
+                        Conflicts = conflictList
+                    });
                 }
             }
             return shortcutList;
         }
-       
+
+        private List<string> GetConflictListText(string scopeText, string shortcutText)
+        {
+            // Convert text to objects
+            KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
+            IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
+
+            // Get all conflicts for the given Scope/Shortcut (as objects)
+            IEnumerable<BindingConflict> conflicts = GetAllConflictObjects(scope, sequences);
+
+            // Add the localized text for each conflict to a list and return it.
+            return ConvertToLocalizedTextList(conflicts);
+        }
+
+        private IEnumerable<BindingConflict> GetAllConflictObjects(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        {
+            IEnumerable<BindingConflict> conflicts = null;  // Must we really assign this to run to compile?
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                conflicts = await queryEngine.GetConflictsAsync(AllCommandsCache, scope, sequences);
+
+            });
+            return conflicts;
+        }
+
+        private static List<string> ConvertToLocalizedTextList(IEnumerable<BindingConflict> conflicts)
+        {
+            List<string> conflictTextList = new List<string>();
+            // Work through each binding conflict type (ie. Block, Blocked in, Replaces)
+            foreach (BindingConflict conflictsOfType in conflicts)
+            {
+                // Add the text description of each binding to the conflictText list
+                foreach (Tuple<CommandBinding, Command> binding in conflictsOfType.AffectedBindings)
+                {
+                    conflictTextList.Add(GetConflictText(binding));
+                }
+            }
+
+            return conflictTextList;
+        }
+
+        private static string GetConflictText(Tuple<CommandBinding, Command> binding)
+        {
+            // Prepare conflict item text
+            string scopeText = binding.Item1.Scope.Name;
+            string localizedShortcutText = binding.Item1.OriginalDTEString;
+            string commandNameText = binding.Item2.CanonicalName;
+
+            // Combine into string: "[Text Editor] Edit.Duplicate (Ctrl+D)"
+            return $"[{scopeText}] {commandNameText} ({localizedShortcutText})";
+        }
+
         private string BrowseForVsSettingsFile()
         {
             const string vsSettingsFilter = "VS settings files (*.vssettings)|*.vssettings|XML files (*.xml)|*.xml|All files (*.*)|*.*";

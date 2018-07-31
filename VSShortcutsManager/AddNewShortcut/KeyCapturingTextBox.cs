@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 using VSShortcutsManager;
@@ -44,8 +45,28 @@ namespace CustomControls
                 BindingSequences.Add(new BindingSequence(modifiers, keyName));
             }
 
-            base.Text = string.Join(", ", BindingSequences);
+            // Print the text to the input box
+            UpdateShortcutKeysDisplay();
+        }
+
+        private void UpdateShortcutKeysDisplay()
+        {
+            base.Text = GetLocalizedShortcutText(BindingSequences);
             base.CaretIndex = base.Text.Length;
+        }
+
+        private string GetLocalizedShortcutText(ObservableCollection<BindingSequence> bindingSequences)
+        {
+            // Localize the binding sequence (ie. "Control+D8" => "Ctrl+8")
+            VSShortcutQueryEngine queryEngine = VSShortcutsManager.VSShortcutsManager.Instance.queryEngine;
+            if (queryEngine == null)
+            {
+                // Abort!
+                System.Diagnostics.Debug.WriteLine("VSShortcutQueryEngine not initialized.");
+                return string.Join(", ", bindingSequences);
+            }
+
+            return queryEngine.GetLocalizedShortcutText(bindingSequences);
         }
 
         private bool ShouldCapture(Key key)
