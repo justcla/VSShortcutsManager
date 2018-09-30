@@ -61,40 +61,41 @@
     </Compile>
     <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
     <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
-    <Compile Include="BindingConflict.cs" />
-    <Compile Include="BindingSequence.cs" />
-    <Compile Include="Command.cs" />
-    <Compile Include="CommandBinding.cs" />
-    <Compile Include="CommandId.cs" />
-    <Compile Include="CommandsFilter.cs" />
-    <Compile Include="CommandShortcuts.cs" />
-    <Compile Include="CommandShortcutsControl.xaml.cs">
+    <Compile Include="Core\BindingConflict.cs" />
+    <Compile Include="Core\BindingSequence.cs" />
+    <Compile Include="Core\Command.cs" />
+    <Compile Include="Core\CommandBinding.cs" />
+    <Compile Include="Core\CommandId.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandsFilter.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandShortcuts.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandShortcutsControl.xaml.cs">
       <DependentUpon>CommandShortcutsControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CommandShortcutsControlDataContext.cs" />
-    <Compile Include="CommandShortcutsSearchTask.cs" />
-    <Compile Include="ConflictType.cs" />
-    <Compile Include="DynamicItemMenuCommand.cs" />
-    <Compile Include="FileUtils.cs" />
-    <Compile Include="ImportShortcuts.xaml.cs">
+    <Compile Include="CommandShortcutsWindow\CommandShortcutsControlDataContext.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandShortcutsSearchTask.cs" />
+    <Compile Include="Core\ConflictType.cs" />
+    <Compile Include="Menu\DynamicItemMenuCommand.cs" />
+    <Compile Include="Util\FileUtils.cs" />
+    <Compile Include="ImportShortcuts\ImportShortcuts.xaml.cs">
       <DependentUpon>ImportShortcuts.xaml</DependentUpon>
     </Compile>
-    <Compile Include="KeyBindingScope.cs" />
-    <Compile Include="LiveShortcutsView.xaml.cs">
+    <Compile Include="Core\KeyBindingScope.cs" />
+    <Compile Include="LiveShortcutsView\LiveShortcutsView.xaml.cs">
       <DependentUpon>LiveShortcutsView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SaveShortcutsDialog.xaml.cs">
+    <Compile Include="ExportShortcuts\SaveShortcutsDialog.xaml.cs">
       <DependentUpon>SaveShortcutsDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ShortcutFileInfo.cs" />
-    <Compile Include="ShortcutsImportDialog.xaml.cs">
+    <Compile Include="ExtensionScanner\ShortcutFileInfo.cs" />
+    <Compile Include="ImportShortcuts\ShortcutsImportDialog.xaml.cs">
       <DependentUpon>ShortcutsImportDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ShortcutsScanner.cs" />
+    <Compile Include="ExtensionScanner\ShortcutsScanner.cs" />
     <Compile Include="UserShortcutsManager.cs" />
-    <Compile Include="VSPathUtils.cs" />
-    <Compile Include="VSShortcutQueryEngine.cs" />
+    <Compile Include="Util\VSPathUtils.cs" />
+    <Compile Include="Core\VSShortcutQueryEngine.cs" />
+    <Compile Include="Core\VSShortcut.cs" />
     <Compile Include="VSShortcutsManager.cs" />
     <Compile Include="VSShortcutsManagerPackage.cs" />
   </ItemGroup>
@@ -116,7 +117,7 @@
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="Resources\VSSettingsManagerPackage.ico" />
-    <VSCTCompile Include="VSShortcutsManager.vsct">
+    <VSCTCompile Include="Menu\VSShortcutsManager.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
@@ -269,23 +270,23 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="CommandShortcutsControl.xaml">
+    <Page Include="CommandShortcutsWindow\CommandShortcutsControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="LiveShortcutsView.xaml">
+    <Page Include="LiveShortcutsView\LiveShortcutsView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="ImportShortcuts.xaml">
+    <Page Include="ImportShortcuts\ImportShortcuts.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="SaveShortcutsDialog.xaml">
+    <Page Include="ExportShortcuts\SaveShortcutsDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="ShortcutsImportDialog.xaml">
+    <Page Include="ImportShortcuts\ShortcutsImportDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -298,6 +299,7 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="..\packages\Microsoft.VisualStudio.SDK.EmbedInteropTypes.15.0.9\build\Microsoft.VisualStudio.SDK.EmbedInteropTypes.targets" Condition="Exists('..\packages\Microsoft.VisualStudio.SDK.EmbedInteropTypes.15.0.9\build\Microsoft.VisualStudio.SDK.EmbedInteropTypes.targets')" />
