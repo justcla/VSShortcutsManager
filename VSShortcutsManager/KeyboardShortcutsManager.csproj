@@ -74,6 +74,7 @@
     <Compile Include="CommandShortcutsWindow\CommandShortcutsControlDataContext.cs" />
     <Compile Include="CommandShortcutsWindow\CommandShortcutsSearchTask.cs" />
     <Compile Include="Core\ConflictType.cs" />
+    <Compile Include="Util\KeycharUtil.cs" />
     <Compile Include="Menu\DynamicItemMenuCommand.cs" />
     <Compile Include="Util\FileUtils.cs" />
     <Compile Include="ImportShortcuts\ImportShortcuts.xaml.cs">

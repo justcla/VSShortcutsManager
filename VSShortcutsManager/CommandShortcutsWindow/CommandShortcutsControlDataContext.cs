@@ -103,7 +103,7 @@ namespace VSShortcutsManager
 
         private void PopulateCommands(IServiceProvider serviceProvider)
         {
-            var queryEngine = new VSShortcutQueryEngine(serviceProvider);
+            var queryEngine = VSShortcutQueryEngine.GetInstance(serviceProvider);
 
             queryEngine.GetAllCommandsAsync().ContinueWith((task) =>
             {

@@ -126,7 +126,7 @@ namespace VSShortcutsManager
             this.package = package ?? throw new ArgumentNullException("package");
 
             // Intialize the VSShortcutQueryEngine
-            this.queryEngine = new VSShortcutQueryEngine(ServiceProvider);
+            this.queryEngine = VSShortcutQueryEngine.GetInstance(ServiceProvider);
 
             // Register all the command handlers with the Global Command Service
             RegisterCommandHandlers();
