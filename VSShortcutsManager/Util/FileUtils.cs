@@ -45,9 +45,6 @@ namespace VSShortcutsManager
 
         public static void CopyVSKToIDEDir(string fileToCopy)
         {
-            // Bail out if file does not exist
-            if (!File.Exists(fileToCopy)) return;
-
             CopyFileUsingXCopy(fileToCopy, VSPathUtils.GetVsInstallPath());
         }
 

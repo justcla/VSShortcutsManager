@@ -74,7 +74,7 @@ namespace VSShortcutsManager
         {
             if (ShortcutQueryEngine == null)
             {
-                ShortcutQueryEngine = new VSShortcutQueryEngine(serviceProvider);
+                ShortcutQueryEngine = VSShortcutQueryEngine.GetInstance(serviceProvider);
             }
         }
 
