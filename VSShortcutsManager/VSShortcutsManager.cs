@@ -40,6 +40,7 @@ namespace VSShortcutsManager
         public const int ScanExtensionsCmdId = 0x1300;
         public const int AddNewShortcutCmdId = 0x1410;
         public const int LiveShortcutsViewCmdId = 0x1420;
+        public const int RefreshCommandShortcutsViewCmdId = 0x1760;
         public const int CommandShortcutsToolWinCmdId = 0x1610;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
@@ -190,6 +191,8 @@ namespace VSShortcutsManager
                 commandService.AddCommand(CreateMenuItem(AddNewShortcutCmdId, this.OpenAddKeyboardShortcutDialog));
                 // Open Live Shortcuts View
                 commandService.AddCommand(CreateMenuItem(LiveShortcutsViewCmdId, this.OpenLiveShortcutsView));
+                // Refresh Command Shortcuts View
+                commandService.AddCommand(CreateMenuItem(RefreshCommandShortcutsViewCmdId, this.RefreshViewEventHandler));
 
             }
         }
@@ -856,6 +859,28 @@ namespace VSShortcutsManager
         {
             LiveShortcutsView dialog = new LiveShortcutsView(ServiceProvider);
             dialog.ShowDialog();
+        }
+
+        private void RefreshViewEventHandler(object sender, EventArgs e)
+        {
+            RefreshCommandShortcutsView();
+        }
+
+        private void RefreshCommandShortcutsView()
+        {
+            // Get a handle on the CommandShortcuts Toolwindow
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            CommandShortcuts window = (CommandShortcuts)this.package.FindToolWindow(typeof(CommandShortcuts), 0, true);
+            if ((null == window) || (null == window.Frame))
+            {
+                throw new NotSupportedException("Cannot find CommandShortcuts tool window");
+            }
+
+            // Call the Refresh method on the CommandShortcuts Toolwindow
+            CommandShortcutsControl cmdShortcutsControl = (CommandShortcutsControl)window.Content;
+            CommandShortcutsControlDataContext cmdShortcutsDataContext = (CommandShortcutsControlDataContext)cmdShortcutsControl.DataContext;
+            cmdShortcutsDataContext.RefreshView();
         }
 
         private void OpenAddKeyboardShortcutDialog(object sender, EventArgs e)

@@ -17,7 +17,9 @@ namespace VSShortcutsManager
         {
             this.serviceProvider = serviceProvider;
 
-            this.PopulateCommands(serviceProvider);
+            this.queryEngine = VSShortcutQueryEngine.GetInstance(this.serviceProvider);
+
+            this.PopulateCommands();
         }
 
         #endregion // ctor
@@ -40,7 +42,17 @@ namespace VSShortcutsManager
 
         public void ClearSearch()
         {
-            this.Commands = this.allCommands.Clone();
+            this.Commands = this.allCommandsCache.Clone();
+        }
+
+        public void RefreshView()
+        {
+            // Update local cache with fresh copy of commandShortcuts from the QueryEngine
+            PopulateCommands();
+
+            // Update the Commands object to get the view to refresh
+            // Being done inside PopulateCommand method. Consider moving that out.
+            //this.Commands = this.allCommandsCache.Clone();
         }
 
         public uint SearchCommands(string searchCriteria, bool matchCase = true)
@@ -52,7 +64,7 @@ namespace VSShortcutsManager
 
             var commandsFilter = new CommandsFilterFactory().GetCommandsFilter(searchCriteria, matchCase);
 
-            this.Commands = commandsFilter.Filter(this.allCommands);
+            this.Commands = commandsFilter.Filter(this.allCommandsCache);
 
             return (uint)this.Commands.Count;
         }
@@ -82,6 +94,7 @@ namespace VSShortcutsManager
 
             foreach (var kvp in commands)
             {
+                // Find the command in the DTE command table
                 var commandShortcut = kvp.Key;
                 var dteCommand = dte.Commands.Item(commandShortcut.CommandText);
                 if (dteCommand == null)
@@ -90,7 +103,10 @@ namespace VSShortcutsManager
                     continue;
                 }
 
+                // Delete the shortcut from the command table (via DTE)
                 DeleteCommandBindings(dteCommand, kvp.Value);
+
+                // Update the model object for changes to reflect on the view
                 commandShortcut.Binding = null;
                 commandShortcut.ShortcutText = null;
                 commandShortcut.ScopeText = null;
@@ -101,20 +117,24 @@ namespace VSShortcutsManager
 
         #region Private helpers
 
-        private void PopulateCommands(IServiceProvider serviceProvider)
+        private void PopulateCommands()
         {
-            var queryEngine = VSShortcutQueryEngine.GetInstance(serviceProvider);
-
             queryEngine.GetAllCommandsAsync().ContinueWith((task) =>
             {
-                var allCommands = task.Result;
+                // Pull all command shortcuts into a temporary var
+                IEnumerable<Command> allCommands = task.Result;
 
-                var allCommandShortcuts = allCommands
+                // Remove all commands with no valid name
+                // and convert them to the CommandShortcut objects
+                IEnumerable<CommandShortcut> allCommandShortcuts = allCommands
                     .Where(command => !string.IsNullOrWhiteSpace(command?.CanonicalName))
                     .SelectMany(command => GenerateCommandsShortcuts(command));
-                
-                this.allCommands = new VSCommandShortcuts(allCommandShortcuts);
-                this.Commands = this.allCommands.Clone();
+
+                // Update the local commands cache
+                this.allCommandsCache = new VSCommandShortcuts(allCommandShortcuts);
+
+                // Update the backing object on the Toolwindow control (with a clone of the cache)
+                this.Commands = this.allCommandsCache.Clone();
             });
 
         }
@@ -175,13 +195,13 @@ namespace VSShortcutsManager
             {
                 buffer.Append("Ctrl+");
             }
-            if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Alt))
-            {
-                buffer.Append("Alt+");
-            }
             if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Shift))
             {
                 buffer.Append("Shift+");
+            }
+            if (bindingSequence.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Alt))
+            {
+                buffer.Append("Alt+");
             }
             buffer.Append(bindingSequence.Key);
 
@@ -218,9 +238,10 @@ namespace VSShortcutsManager
 
         #region Fields
 
-        private VSCommandShortcuts allCommands;
+        private VSCommandShortcuts allCommandsCache;
         private VSCommandShortcuts commands;
         private IServiceProvider serviceProvider;
+        private VSShortcutQueryEngine queryEngine;
 
         #endregion // Fields
     }

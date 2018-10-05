@@ -99,6 +99,15 @@
           <MenuText>Show &amp;All Shortcuts</MenuText>
         </Strings>
       </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="RefreshViewCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;Refresh</ButtonText>
+          <MenuText>&amp;Refresh Command Shortcuts View</MenuText>
+          <ToolTipText>Refresh the view of Command Shortcuts</ToolTipText>
+          <CanonicalName>RefreshCommandShortcutsView</CanonicalName>
+          <LocCanonicalName>RefreshCommandShortcutsView</LocCanonicalName>
+        </Strings>
+      </Button>
       <Button guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0200" type="Button">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="GlobalToolsGroups" />
         <Strings>
@@ -272,6 +281,9 @@
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" />
     </CommandPlacement>
     <!-- Actions group -->
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="RefreshViewCmdId" priority="0x0050">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
+    </CommandPlacement>
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="AddNewShortcutCmdId" priority="0x0100">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarActionsGroup" />
     </CommandPlacement>
@@ -334,6 +346,7 @@
       <IDSymbol name="FilterUserShortcutsCmdId" value="0x1730" />
       <IDSymbol name="DeleteShortcutsCmdId" value="0x1740" />
       <IDSymbol name="KeyboardOptionsCmdId" value="0x1750" />
+      <IDSymbol name="RefreshViewCmdId" value="0x1760" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
