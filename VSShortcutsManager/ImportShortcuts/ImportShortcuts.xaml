@@ -6,66 +6,64 @@
              xmlns:local="clr-namespace:VSShortcutsManager"
              xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
              Title="Import Shortcuts"
-             SizeToContent="Height"
+             Height="400"
+             Width="800"
              MinHeight="200"
     >
     <ui:DialogWindow.Resources>
         <FrameworkElement x:Key="ProxyElement" DataContext="{Binding}" />
     </ui:DialogWindow.Resources>
 
-    <Grid
-        Height="Auto"
-        MinHeight="200"
-        ScrollViewer.CanContentScroll="True"
-        ScrollViewer.VerticalScrollBarVisibility="Visible"
-        >
-        <Grid.RowDefinitions>
-            <RowDefinition Height="40"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="50"/>
-        </Grid.RowDefinitions>
-        <Label Grid.Row="0"
-            Content="Check the shortcuts you want to import" HorizontalAlignment="Left" Margin="5,10,0,5" VerticalAlignment="Top"/>
-        <DataGrid
-            Grid.Row="1"
-            Width="Auto"
-            Height="Auto"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Top"
-            AlternatingRowBackground="Gainsboro" AlternationCount="2"
-            AutoGenerateColumns="False" Margin="10,5,10,5"
-            ItemsSource="{Binding VSShortcutUIs}"
-            HeadersVisibility="Column" 
-            ScrollViewer.CanContentScroll="True"
-            ScrollViewer.VerticalScrollBarVisibility="Visible"
-            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-            >
-            <DataGrid.Columns>
-                <DataGridTemplateColumn IsReadOnly="False">
-                    <DataGridTemplateColumn.Header>
-                        <CheckBox IsChecked="{Binding DataContext.IsSelectAll, Source={StaticResource ProxyElement}, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}"></CheckBox>
-                    </DataGridTemplateColumn.Header>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <CheckBox Margin="4,0,0,0"  IsChecked="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" Width="1*"/>
-                <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" Width="2*"/>
-                <DataGridTextColumn Header="Scope" IsReadOnly="True" Binding="{Binding Scope}" Width="1.5*"/>
-                <DataGridTemplateColumn Header="Conflicts" IsReadOnly="True" Width="4*">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ListView ItemsSource="{Binding Conflicts}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0, 5, 10, 10">
-            <Button Content="OK" Height="25" VerticalAlignment="Bottom" Width="100" Name="OkButton" Click="OkButton_Click" ClickMode="Release" />
-            <Button Content="Cancel" Height="25" Margin="10, 0, 0, 0" VerticalAlignment="Bottom" Width="100" Name="CancelButton" Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
-        </StackPanel>
+    <Grid>
+        <!--<DockPanel VerticalAlignment="Top" HorizontalAlignment="Stretch">
+        </DockPanel>-->
+
+        <!--<StackPanel Margin="0,0,0,50" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="Auto">-->
+
+            <Label Content="Import selected shortcuts" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30"/>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0, 30, 0, 45">
+
+            <!--<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Width="Auto" >-->
+            <DataGrid
+                AlternatingRowBackground="Gainsboro" AlternationCount="2"
+                AutoGenerateColumns="False" 
+                ItemsSource="{Binding VSShortcutUIs}"
+                HeadersVisibility="Column" 
+                ScrollViewer.CanContentScroll="True"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                >
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn IsReadOnly="False">
+                        <DataGridTemplateColumn.Header>
+                            <CheckBox IsChecked="{Binding DataContext.IsSelectAll, Source={StaticResource ProxyElement}, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}"></CheckBox>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox Margin="4,0,0,0"  IsChecked="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" MinWidth="100"/>
+                    <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" MinWidth="200"/>
+                    <DataGridTextColumn Header="Scope" IsReadOnly="True" Binding="{Binding Scope}" MinWidth="120"/>
+                    <DataGridTemplateColumn Header="Conflicts" IsReadOnly="True" MinWidth="250">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ListView ItemsSource="{Binding Conflicts}" ScrollViewer.CanContentScroll="False"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </ScrollViewer>
+        <!--</StackPanel>-->
+
+        <DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Bottom" LastChildFill="False">
+            <Button Content="_Import Shortcuts" Name="OkButton" Height="25" Width="100" Margin="10" VerticalAlignment="Bottom" DockPanel.Dock="Left" 
+                    Click="OkButton_Click" ClickMode="Release"/>
+            <Button Content="_Cancel" Name="CancelButton" Height="25" Width="100" Margin="10" VerticalAlignment="Bottom" DockPanel.Dock="Right" 
+                    Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
+        </DockPanel>
     </Grid>
 </ui:DialogWindow>

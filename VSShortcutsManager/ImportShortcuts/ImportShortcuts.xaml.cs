@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Xml.Linq;
 
 namespace VSShortcutsManager
 {
@@ -12,15 +13,26 @@ namespace VSShortcutsManager
     /// </summary>
     public partial class ImportShortcuts : DialogWindow
     {
+        private readonly string chosenFile;
+        private readonly List<VSShortcut> shortcuts;
+        private XDocument vsSettingsXDoc;
+
         public bool isCancelled { get; private set; }
 
-        public ImportShortcuts(List<VSShortcut> shortcuts)
+        public ImportShortcuts(string chosenFile, XDocument vsSettingsXDoc, List<VSShortcut> shortcuts)
         {
+            // Store the input parameters
+            this.chosenFile = chosenFile;
+            this.vsSettingsXDoc = vsSettingsXDoc;
+            this.shortcuts = shortcuts;
+
+            // Convert shortcut objects to UI objects
             var shortcutUIs = new List<VSShortcutUI>();
             foreach (var shortcut in shortcuts)
             {
                 shortcutUIs.Add(new VSShortcutUI(true, shortcut, setSelectAllFalse));
             }
+
             var importShortcutsDataModel = new ImportShortcutsDataModel(shortcutUIs);
             this.DataContext = importShortcutsDataModel;
             InitializeComponent();
@@ -78,7 +90,7 @@ namespace VSShortcutsManager
                 }
             }
 
-           public void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            public void OnPropertyChanged([CallerMemberName] string propertyName = null)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
@@ -157,7 +169,11 @@ namespace VSShortcutsManager
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             this.isCancelled = false;
-            Close();
+
+            bool success = VSShortcutsManager.Instance.PerformImportUserShortcuts(chosenFile, vsSettingsXDoc, this);
+
+            // Close the window if shortcuts successfully imported.
+            if (success) Close();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -174,7 +190,7 @@ namespace VSShortcutsManager
         public List<VSShortcut> GetUncheckedShortcuts()
         {
             var shortcuts = new List<VSShortcut>();
-            foreach (var shortcut in ((ImportShortcutsDataModel) this.DataContext).VSShortcutUIs)
+            foreach (var shortcut in ((ImportShortcutsDataModel)this.DataContext).VSShortcutUIs)
             {
                 if (!shortcut.Included)
                 {
