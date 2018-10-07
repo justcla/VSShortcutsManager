@@ -7,8 +7,9 @@
              xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
              Title="Import Shortcuts"
              Height="400"
-             Width="800"
+             Width="713"
              MinHeight="200"
+             MinWidth="400"
     >
     <ui:DialogWindow.Resources>
         <FrameworkElement x:Key="ProxyElement" DataContext="{Binding}" />
@@ -22,41 +23,44 @@
 
             <Label Content="Import selected shortcuts" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30"/>
 
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0, 30, 0, 45">
+        <!--<ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0, 30, 0, 45">-->
 
             <!--<DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Width="Auto" >-->
             <DataGrid
+                 Margin="0, 30, 0, 45"
                 AlternatingRowBackground="Gainsboro" AlternationCount="2"
                 AutoGenerateColumns="False" 
                 ItemsSource="{Binding VSShortcutUIs}"
                 HeadersVisibility="Column" 
                 ScrollViewer.CanContentScroll="True"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                Width="Auto"
                 >
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn IsReadOnly="False">
+                    <DataGridTemplateColumn IsReadOnly="False" MinWidth="28" MaxWidth="28">
                         <DataGridTemplateColumn.Header>
                             <CheckBox IsChecked="{Binding DataContext.IsSelectAll, Source={StaticResource ProxyElement}, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}"></CheckBox>
                         </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox Margin="4,0,0,0"  IsChecked="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
+                                <CheckBox Margin="4,0,0,0" IsChecked="{Binding Included, NotifyOnTargetUpdated=True , UpdateSourceTrigger=PropertyChanged}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" MinWidth="100"/>
-                    <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" MinWidth="200"/>
-                    <DataGridTextColumn Header="Scope" IsReadOnly="True" Binding="{Binding Scope}" MinWidth="120"/>
-                    <DataGridTemplateColumn Header="Conflicts" IsReadOnly="True" MinWidth="250">
+                    <DataGridTextColumn Header="Shortcut" IsReadOnly="True" Binding="{Binding Shortcut}" MinWidth="60" Width="100"/>
+                    <DataGridTextColumn Header="Command" IsReadOnly="True" Binding="{Binding Command}" MinWidth="70" Width="200"/>
+                    <DataGridTextColumn Header="Scope" IsReadOnly="True" Binding="{Binding Scope}" MinWidth="60" Width="100"/>
+                    <DataGridTemplateColumn Header="Conflicts" IsReadOnly="True" MinWidth="250" Width="250">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ListView ItemsSource="{Binding Conflicts}" ScrollViewer.CanContentScroll="False"/>
+                                <ListView ItemsSource="{Binding Conflicts}" ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
-        </ScrollViewer>
+        <!--</ScrollViewer>-->
         <!--</StackPanel>-->
 
         <DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Bottom" LastChildFill="False">
