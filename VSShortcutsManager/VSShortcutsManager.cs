@@ -52,6 +52,11 @@ namespace VSShortcutsManager
 
         // UserSettingsStore constants
         private const string VSK_IMPORTS_REGISTRY_KEY = "VskImportsRegistry";
+
+        // Constants for shortcut type display (TODO: Move to enum)
+        private const string OperationType_Remove = "Remove";
+        private const string OperationType_Add = "Add";
+
         //private const string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
         //private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
 
@@ -438,25 +443,41 @@ namespace VSShortcutsManager
 
             foreach (var userShortcut in userShortcuts)
             {
+                // Parse all the "Remove Shortcut" entries
+                foreach (var shortcut in userShortcut.Descendants("RemoveShortcut"))
+                {
+                    // TODO: Move hard-coded strings to constants/Enums
+                    VSShortcut item = CreateShortcutItem(shortcut, OperationType_Remove);
+                    shortcutList.Add(item);
+                }
+                // Parse all the "Add Shortcut" entries
                 foreach (var shortcut in userShortcut.Descendants("Shortcut"))
                 {
-                    // Read values from XML definitions
-                    string scopeText = shortcut.Attribute("Scope").Value;
-                    string commandText = shortcut.Attribute("Command").Value;
-                    string shortcutText = shortcut.Value;
-
-                    List<string> conflictList = GetConflictListText(scopeText, shortcutText);
-
-                    shortcutList.Add(new VSShortcut
-                    {
-                        Command = commandText,
-                        Scope = scopeText,
-                        Shortcut = shortcutText,
-                        Conflicts = conflictList
-                    });
+                    VSShortcut item = CreateShortcutItem(shortcut, OperationType_Add);
+                    shortcutList.Add(item);
                 }
             }
             return shortcutList;
+        }
+
+        private VSShortcut CreateShortcutItem(XElement shortcut, string operationType)
+        {
+            string shortcutOperation = operationType;  // Add or Remove shortcut
+            // Read values from XML definitions
+            string scopeText = shortcut.Attribute("Scope").Value;
+            string commandText = shortcut.Attribute("Command").Value;
+            string shortcutText = shortcut.Value;
+
+            List<string> conflictList = GetConflictListText(scopeText, shortcutText);
+
+            return new VSShortcut
+            {
+                Operation = operationType,
+                Command = commandText,
+                Scope = scopeText,
+                Shortcut = shortcutText,
+                Conflicts = conflictList
+            };
         }
 
         public bool PerformImportUserShortcuts(string chosenFile, XDocument vsSettingsXDoc, ImportShortcuts window)

@@ -120,6 +120,14 @@ namespace VSShortcutsManager
                 }
             }
 
+            public string Operation
+            {
+                get
+                {
+                    return this.vsShortcut.Operation;
+                }
+            }
+
             public string Command
             {
                 get
