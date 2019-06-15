@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Settings;
+﻿using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -7,14 +6,13 @@ using System.Runtime.InteropServices;
 
 namespace VSShortcutsManager
 {
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(VSShortcutsManagerPackage.PackageGuidString)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.ShellInitialized_string)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideToolWindow(typeof(CommandShortcuts))]
-    public sealed class VSShortcutsManagerPackage : Package
+    public sealed class VSShortcutsManagerPackage : AsyncPackage
     {
         /// <summary>
         /// VSSettingsManagerPackage GUID string.
@@ -32,12 +30,17 @@ namespace VSShortcutsManager
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        protected override async System.Threading.Tasks.Task InitializeAsync(System.Threading.CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            base.Initialize();
+            await base.InitializeAsync(cancellationToken, progress);
+
+            // When initialized asynchronously, we *may* be on a background thread at this point.
+            // Do any initialization that requires the UI thread after switching to the UI thread.
+            // Otherwise, remove the switch to the UI thread if you don't need it.
+            await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             // Initialize settings manager (TODO: could be done lazily on get)
-            SettingsManager = (ISettingsManager)this.GetService(typeof(SVsSettingsPersistenceManager));
+            SettingsManager = (ISettingsManager)await this.GetServiceAsync(typeof(SVsSettingsPersistenceManager));
 
             // Adds commands handlers for the VS Shortcuts operations (Apply, Backup, Restore, Reset)
             VSShortcutsManager.Initialize(this);

@@ -117,6 +117,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="Resources\KeyboardShortcutsMgr_icon2.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\VSSettingsManagerPackage.ico" />
     <VSCTCompile Include="Menu\VSShortcutsManager.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
