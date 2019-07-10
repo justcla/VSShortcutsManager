@@ -11,8 +11,6 @@ using Microsoft.Win32;
 using System.Linq;
 using EnvDTE;
 using System.Diagnostics;
-using System.Text;
-using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell.Settings;
 using System.Xml.Linq;
 
@@ -53,9 +51,7 @@ namespace VSShortcutsManager
         // UserSettingsStore constants
         private const string VSK_IMPORTS_REGISTRY_KEY = "VskImportsRegistry";
 
-        // Constants for shortcut type display (TODO: Move to enum)
-        private const string OperationType_Remove = "Remove";
-        private const string OperationType_Add = "Add";
+        private readonly Dictionary<string, string> ShortcutOperations = new Dictionary<string, string> { { "Shortcut", "Add" }, { "RemoveShortcut", "Remove" } };
 
         //private const string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
         //private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
@@ -438,41 +434,75 @@ namespace VSShortcutsManager
 
         private List<VSShortcut> ParseVSSettingsFile(XDocument vsSettingsXDoc)
         {
-            var userShortcuts = vsSettingsXDoc.Descendants("UserShortcuts");
+            // Initialize the list of parsed shortcuts to return
             var shortcutList = new List<VSShortcut>();
 
+            // Grab the only child in the "UserShortcuts" node
+            var userShortcuts = vsSettingsXDoc.Descendants("UserShortcuts");
             foreach (var userShortcut in userShortcuts)
             {
-                // Parse all the "Remove Shortcut" entries
-                foreach (var shortcut in userShortcut.Descendants("RemoveShortcut"))
+                // Parse each Shortcut entry
+                foreach (var shortcut in userShortcut.Descendants())
                 {
-                    // TODO: Move hard-coded strings to constants/Enums
-                    VSShortcut item = CreateShortcutItem(shortcut, OperationType_Remove);
-                    shortcutList.Add(item);
-                }
-                // Parse all the "Add Shortcut" entries
-                foreach (var shortcut in userShortcut.Descendants("Shortcut"))
-                {
-                    VSShortcut item = CreateShortcutItem(shortcut, OperationType_Add);
-                    shortcutList.Add(item);
+                    // Convert the XML of one row of Shortcut entry into a parsed VSShortcut object
+                    VSShortcut parsedShortcutItem = CreateShortcutItem(shortcut);
+                    if (parsedShortcutItem == null)
+                    {
+                        Debug.WriteLine("Skipping entry: " + shortcut.Value);
+                        continue;
+                    }
+
+                    // Add successfully parsed VSShortcut to the list
+                    shortcutList.Add(parsedShortcutItem);
                 }
             }
             return shortcutList;
         }
 
-        private VSShortcut CreateShortcutItem(XElement shortcut, string operationType)
+        /// <summary>
+        /// Parse the XML elemenent into a valid VSShortcuts object.
+        /// 
+        /// Note: Deliberately NOT parsing the Command text. We will display the command text
+        /// unparsed and allow it to fail at the time of import. Not all commands will always
+        /// be available on a user's instance of VS. But it's good to show that the VSSettings
+        /// file did include the shortcut for it.
+        /// </summary>
+        private VSShortcut CreateShortcutItem(XElement shortcut)
         {
-            string shortcutOperation = operationType;  // Add or Remove shortcut
             // Read values from XML definitions
+            string operationType = shortcut.Name.LocalName;
             string scopeText = shortcut.Attribute("Scope").Value;
             string commandText = shortcut.Attribute("Command").Value;
             string shortcutText = shortcut.Value;
 
-            List<string> conflictList = GetConflictListText(scopeText, shortcutText);
+            // Parse the Operation type (Add or Remove shortcut)
+            if (!ShortcutOperations.ContainsKey(operationType))
+            {
+                Debug.WriteLine("Ignoring UserShortcut element: " + operationType + " with value: " + shortcut.Value);
+                return null;
+            }
+            string operationDisplayName = ShortcutOperations[operationType];
+            // Parse the text into known objects. Abort if text is not recognized.
+            KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
+            if (scope == null)
+            {
+                Debug.WriteLine("Unable to parse scopeText: " + scopeText);
+                return null;
+            }
+            // Parse the shortcut key combinations
+            IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
+            if (sequences == null)
+            {
+                Debug.WriteLine("Unable to parse shortcutText: " + shortcutText);
+                return null;
+            }
+
+            // Prepare the conflict list
+            List<string> conflictList = GetConflictListText(scope, sequences);
 
             return new VSShortcut
             {
-                Operation = operationType,
+                Operation = operationDisplayName,
                 Command = commandText,
                 Scope = scopeText,
                 Shortcut = shortcutText,
@@ -554,12 +584,8 @@ namespace VSShortcutsManager
             }
         }
 
-        private List<string> GetConflictListText(string scopeText, string shortcutText)
+        private List<string> GetConflictListText(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
-            // Convert text to objects
-            KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
-            IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
-
             // Get all conflicts for the given Scope/Shortcut (as objects)
             IEnumerable<BindingConflict> conflicts = GetAllConflictObjects(scope, sequences);
 
