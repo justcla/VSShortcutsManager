@@ -5,7 +5,8 @@
         <DisplayName>Keyboard Shortcuts Manager</DisplayName>
         <Description xml:space="preserve">(Previously VS Shortcuts Manager) Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts. Scans for keyboard shortcuts provided by other extensions.</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=JustinClareburtMSFT.VSShortcutsManager</MoreInfo>
-        <ReleaseNotes>ReleaseNotes.txt</ReleaseNotes>
+        <GettingStartedGuide>https://github.com/justcla/VSShortcutsManager</GettingStartedGuide>
+        <ReleaseNotes>https://github.com/justcla/VSShortcutsManager/blob/master/VSShortcutsManager/ReleaseNotes.txt</ReleaseNotes>
         <Icon>Resources\KeyboardShortcutsMgr_icon2.png</Icon>
     </Metadata>
     <Installation>

@@ -11,8 +11,6 @@ using Microsoft.Win32;
 using System.Linq;
 using EnvDTE;
 using System.Diagnostics;
-using System.Text;
-using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell.Settings;
 using System.Xml.Linq;
 
@@ -52,6 +50,9 @@ namespace VSShortcutsManager
 
         // UserSettingsStore constants
         private const string VSK_IMPORTS_REGISTRY_KEY = "VskImportsRegistry";
+
+        private readonly Dictionary<string, string> ShortcutOperations = new Dictionary<string, string> { { "Shortcut", "Add" }, { "RemoveShortcut", "Remove" } };
+
         //private const string USER_SHORTCUTS_DEFS = "UserShortcutsDefs";
         //private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
 
@@ -163,11 +164,12 @@ namespace VSShortcutsManager
                 clearUserShortcutsCmd.BeforeQueryStatus += new EventHandler(OnBeforeQueryStatusClearUserShortcuts);
                 commandService.AddCommand(clearUserShortcutsCmd);
 
-                // User Shortcuts
+                // Import User Shortcuts from file
                 commandService.AddCommand(CreateMenuItem(ImportUserShortcutsCmdId, this.ImportShortcuts));
-                // Add a dummy entry for the user shortcuts menu
+                // Load User Shortcuts (from known vssettings files)
+                // Add a dummy entry for the Load User Shortcuts menu
                 commandService.AddCommand(CreateMenuItem(UserShortcutsMenu, null));
-                // Add an entry for the dyanmic/expandable menu item for user shortcuts
+                // Add an entry for the dyanmic/expandable menu item for Load User Shortcuts
                 commandService.AddCommand(new DynamicItemMenuCommand(new CommandID(VSShortcutsManagerCmdSetGuid, DynamicUserShortcutsStartCmdId),
                     IsValidUserShortcutsItem,
                     ExecuteUserShortcutsCommand,
@@ -421,37 +423,128 @@ namespace VSShortcutsManager
                 return;
             }
 
-            XDocument vsSettingsFile = XDocument.Load(chosenFile);
-            var shortcutList = ParseVSSettingsFile(vsSettingsFile);
-            var window = new ImportShortcuts(shortcutList);
-            window.ShowModal();
-            if (!window.isCancelled)
-            {
-                var removeList = window.GetUncheckedShortcuts();
-                var newFile = UpdateAndSaveNewSettingsFile(vsSettingsFile, removeList);
-                LoadKeyboardShortcutsFromVSSettingsFile(newFile);
-                try
-                {
-                    File.Delete(newFile);
-                }
-                catch (Exception e)
-                {
-                    System.Diagnostics.Debug.WriteLine("Unable to delete temporary settings file: {0}", e.ToString());
-                }
+            // Parse the XML of the VSSettings file
+            XDocument vsSettingsXDoc = XDocument.Load(chosenFile);
+            List<VSShortcut> shortcutList = ParseVSSettingsFile(vsSettingsXDoc);
 
+            // Launch the Import Shortcuts window
+            ImportShortcuts window = new ImportShortcuts(chosenFile, vsSettingsXDoc, shortcutList);
+            window.ShowModal();
+        }
+
+        private List<VSShortcut> ParseVSSettingsFile(XDocument vsSettingsXDoc)
+        {
+            // Initialize the list of parsed shortcuts to return
+            var shortcutList = new List<VSShortcut>();
+
+            // Grab the only child in the "UserShortcuts" node
+            var userShortcuts = vsSettingsXDoc.Descendants("UserShortcuts");
+            foreach (var userShortcut in userShortcuts)
+            {
+                // Parse each Shortcut entry
+                foreach (var shortcut in userShortcut.Descendants())
+                {
+                    // Convert the XML of one row of Shortcut entry into a parsed VSShortcut object
+                    VSShortcut parsedShortcutItem = CreateShortcutItem(shortcut);
+                    if (parsedShortcutItem == null)
+                    {
+                        Debug.WriteLine("Skipping entry: " + shortcut.Value);
+                        continue;
+                    }
+
+                    // Add successfully parsed VSShortcut to the list
+                    shortcutList.Add(parsedShortcutItem);
+                }
+            }
+            return shortcutList;
+        }
+
+        /// <summary>
+        /// Parse the XML elemenent into a valid VSShortcuts object.
+        /// 
+        /// Note: Deliberately NOT parsing the Command text. We will display the command text
+        /// unparsed and allow it to fail at the time of import. Not all commands will always
+        /// be available on a user's instance of VS. But it's good to show that the VSSettings
+        /// file did include the shortcut for it.
+        /// </summary>
+        private VSShortcut CreateShortcutItem(XElement shortcut)
+        {
+            // Read values from XML definitions
+            string operationType = shortcut.Name.LocalName;
+            string scopeText = shortcut.Attribute("Scope").Value;
+            string commandText = shortcut.Attribute("Command").Value;
+            string shortcutText = shortcut.Value;
+
+            // Parse the Operation type (Add or Remove shortcut)
+            if (!ShortcutOperations.ContainsKey(operationType))
+            {
+                Debug.WriteLine("Ignoring UserShortcut element: " + operationType + " with value: " + shortcut.Value);
+                return null;
+            }
+            string operationDisplayName = ShortcutOperations[operationType];
+            // Parse the text into known objects. Abort if text is not recognized.
+            KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
+            if (scope == null)
+            {
+                Debug.WriteLine("Unable to parse scopeText: " + scopeText);
+                return null;
+            }
+            // Parse the shortcut key combinations
+            IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
+            if (sequences == null)
+            {
+                Debug.WriteLine("Unable to parse shortcutText: " + shortcutText);
+                return null;
+            }
+
+            // Prepare the conflict list
+            List<string> conflictList = GetConflictListText(scope, sequences);
+
+            return new VSShortcut
+            {
+                Operation = operationDisplayName,
+                Command = commandText,
+                Scope = scopeText,
+                Shortcut = shortcutText,
+                Conflicts = conflictList
+            };
+        }
+
+        public bool PerformImportUserShortcuts(string chosenFile, XDocument vsSettingsXDoc, ImportShortcuts window)
+        {
+            // Create a temporary file to import, without shortcuts that the user unchecked
+            List<VSShortcut> listOfShortcutsToRemove = window.GetUncheckedShortcuts();
+            var tempImportFile = CreateSettingsFile(vsSettingsXDoc, listOfShortcutsToRemove);
+
+            try
+            {
+                // Perform the import
+                if (!LoadKeyboardShortcutsFromVSSettingsFile(tempImportFile)) return false;
+
+                // Save the file in the "Load" list so it can be imported again.
                 AddUserShortcutsFileToRegistry(chosenFile);
+                return true;
+            }
+            finally
+            {
+                // Cleanup - Delete the temporary file.
+                DeleteFileSafely(tempImportFile);
             }
         }
 
-        private string UpdateAndSaveNewSettingsFile(XDocument vsSettingsFile, List<VSShortcut> removeList)
+        /// <summary>
+        /// Creates a new .vssettings file that matches the input vsSettingsXDoc without the items in the removeList
+        /// </summary>
+        /// <returns>string name of the file that was created</returns>
+        private string CreateSettingsFile(XDocument vsSettingsXDoc, List<VSShortcut> removeList)
         {
             // Gather shortcuts to be removed
-            var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
-            var shortcutsToDelete = new List<XElement>();
+            IEnumerable<XElement> userShortcuts = vsSettingsXDoc.Descendants("UserShortcuts");
+            List<XElement> shortcutsToDelete = new List<XElement>();
 
-            foreach (var userShortcut in userShortcuts)
+            foreach (XElement userShortcut in userShortcuts)
             {
-                foreach (var shortcut in userShortcut.Descendants("Shortcut"))
+                foreach (XElement shortcut in userShortcut.Descendants("Shortcut"))
                 {
                     if (removeList.Contains(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value }))
                     {
@@ -461,60 +554,38 @@ namespace VSShortcutsManager
             }
 
             // remove shortcuts
-            foreach (var shortcut in shortcutsToDelete)
+            foreach (XElement shortcut in shortcutsToDelete)
             {
                 shortcut.Remove();
             }
 
+            // Create a new VSSettings file without the removed shortcuts
+            //string saveFilePath = WriteToUniqueFilePath(vsSettingsXDoc);
+
             // save vs settings
             IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            string saveFilePath = GetExportFilePath(vsProfileDataManager);
 
-            // Generate default path for saving shortcuts
-            // e.g. c:\users\justcla\appdata\local\microsoft\visualstudio\15.0_cf83efb8exp\Settings\Exp\CurrentSettings-2017-12-27-1.vssettings
-            string uniqueExportPath = GetExportFilePath(vsProfileDataManager);
-            string userExportPath = Path.GetDirectoryName(uniqueExportPath);
-            string uniqueFilename = Path.GetFileNameWithoutExtension(uniqueExportPath);
-            string fileExtension = Path.GetExtension(uniqueExportPath);
-            string saveFilePath = Path.Combine(userExportPath, $"{uniqueFilename}{fileExtension}");
+            // Write the XmlDoc to file using the new unique filename
+            vsSettingsXDoc.Save(saveFilePath);
 
-            vsSettingsFile.Save(saveFilePath);
             return saveFilePath;
         }
 
-        private List<VSShortcut> ParseVSSettingsFile(XDocument vsSettingsFile)
+        private static void DeleteFileSafely(string tempImportFile)
         {
-            var userShortcuts = vsSettingsFile.Descendants("UserShortcuts");
-            var shortcutList = new List<VSShortcut>();
-
-            foreach (var userShortcut in userShortcuts)
+            try
             {
-                foreach (var shortcut in userShortcut.Descendants("Shortcut"))
-                {
-                    // Read values from XML definitions
-                    string scopeText = shortcut.Attribute("Scope").Value;
-                    string commandText = shortcut.Attribute("Command").Value;
-                    string shortcutText = shortcut.Value;
-
-                    List<string> conflictList = GetConflictListText(scopeText, shortcutText);
-
-                    shortcutList.Add(new VSShortcut
-                    {
-                        Command = commandText,
-                        Scope = scopeText,
-                        Shortcut = shortcutText,
-                        Conflicts = conflictList
-                    });
-                }
+                File.Delete(tempImportFile);
             }
-            return shortcutList;
+            catch (Exception e)
+            {
+                Debug.WriteLine("Unable to delete temporary import settings file: {0}", e.ToString());
+            }
         }
 
-        private List<string> GetConflictListText(string scopeText, string shortcutText)
+        private List<string> GetConflictListText(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
         {
-            // Convert text to objects
-            KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
-            IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
-
             // Get all conflicts for the given Scope/Shortcut (as objects)
             IEnumerable<BindingConflict> conflicts = GetAllConflictObjects(scope, sequences);
 
@@ -567,19 +638,46 @@ namespace VSShortcutsManager
             return FileUtils.BrowseForFile(vsSettingsFilter, initialFileOrFolder: lastSavedFile);
         }
 
-        public static void LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
+        public bool LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
         {
             if (!File.Exists(importFilePath))
             {
                 MessageBox.Show($"File does not exist: {importFilePath}", MSG_CAPTION_IMPORT);
-                return;
+                return false;
             }
 
+            // Handle the change in mapping scheme, if there is one.
+            string preloadMappingScheme = GetMappingScheme();
+
+            // Import the User Shortcuts from the .vssettings file
             IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsSettingsTreeForImport(importFilePath);
-            bool success = ImportSettingsFromSettingsTree(importShortcutsSettingsTree);
-            if (success)
+            if (!ImportSettingsFromSettingsTree(importShortcutsSettingsTree)) return false;
+
+            MessageBox.Show($"Keyboard shortcuts successfully imported!", MSG_CAPTION_IMPORT);
+
+            // Now check if the mapping scheme changed. If so, alert the user and offer to revert it.
+            RevertMappingSchemeIfRequired(preloadMappingScheme);
+
+            return true;
+        }
+
+
+        private void RevertMappingSchemeIfRequired(string preloadMappingScheme)
+        {
+            // Check if the mapping scheme changed.If so, alert the user.
+            string postLoadMappingScheme = GetMappingScheme();
+            if (postLoadMappingScheme != preloadMappingScheme)
             {
-                MessageBox.Show($"Keyboard shortcuts successfully imported!", MSG_CAPTION_IMPORT);
+                // Alert the user that the mapping scheme changed. Ask if they want to revert it.
+                DialogResult revertMappingScheme = MessageBox.Show($"Importing the user shortcuts caused the mapping scheme to changed.\n" +
+                    $"It used to be: {preloadMappingScheme}\n" +
+                    $"but now it is: {postLoadMappingScheme}\n\n" +
+                    $"Revert to previous mapping scheme?", "Mapping scheme changed", MessageBoxButtons.YesNo);
+                if (revertMappingScheme == DialogResult.Yes)
+                {
+                    // Switch back to the mapping scheme as it was before loading the user shortcuts.
+                    SetMappingScheme(preloadMappingScheme);
+                }
             }
         }
 
@@ -655,12 +753,20 @@ namespace VSShortcutsManager
             matchedCommand.MatchedCommandId = 0;
         }
 
+        /// <summary>
+        /// Handler for the Load User Shortcuts menu items.
+        /// </summary>
         private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
         {
+            // Get the name of shortcuts file from the invoked menu item (Dynamic menu - can't know at compile time)
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
-            string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from of the menu text
+            string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from the menu text
+
+            // Lookup the cache of known keyoard import files and get the full filepath
             ShortcutFileInfo userShortcutsDef = userShortcutsManager.GetUserShortcutsInfo(shortcutDefName);
             string importFilePath = userShortcutsDef.Filepath;
+
+            // If file is not available on the drive, abort and offer to remove it from the list.
             if (!File.Exists(importFilePath))
             {
                 if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -669,7 +775,9 @@ namespace VSShortcutsManager
                 }
                 return;
             }
-            LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
+
+            // Load the user shortcuts from the VSSettings file.
+            var success = LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
         }
 
         //---------- Mapping Schemes ----------------
@@ -781,6 +889,14 @@ namespace VSShortcutsManager
             Properties props = dte.Properties["Environment", "Keyboard"];
             Property prop = props.Item("SchemeName");
             prop.Value = mappingSchemeName == DEFAULT_MAPPING_SCHEME_NAME ? "" : mappingSchemeName + ".vsk";
+        }
+
+        private string GetMappingScheme()
+        {
+            DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+            Properties props = dte.Properties["Environment", "Keyboard"];
+            Property prop = props.Item("SchemeName");
+            return (string)prop.Value;
         }
 
         private void OnBeforeQueryStatusMappingSchemeDynamicItem(object sender, EventArgs args)

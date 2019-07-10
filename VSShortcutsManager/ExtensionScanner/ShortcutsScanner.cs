@@ -250,7 +250,8 @@ namespace VSShortcutsManager
                 if (MessageBox.Show($"One new user shortcut definition was found.\n\n{PrintList(newVsSettings)}\n\nWould you like to load these shortcuts now?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     // Load the settings
-                    VSShortcutsManager.LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
+                    // Hack: Trust that the VSShortcutsManager will have been initilized somehow.
+                    VSShortcutsManager.Instance.LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
                 }
             }
             else if (newVsSettings.Count > 1)
