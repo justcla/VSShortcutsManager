@@ -1,5 +1,6 @@
 ﻿Keyboard Shortcuts Manager
-
+08-Jul-2019: v2.0.1 - Added Async AutoLoad
+14-Jun-2019: v2.0.0 - Upgraded to VS2019
 21-Apr-2018: v1.0.9 - Fixed extension icon packaging.
 21-Apr-2018: v1.0.8 - Removed intermediate UI for Import shortcuts feature.
 20-Apr-2018: v1.0.7 - Implemented Import VSK feature.

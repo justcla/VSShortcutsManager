@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="1.1.0" Language="en-US" Publisher="Justin Clareburt" />
+        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="2.0.1" Language="en-US" Publisher="Justin Clareburt" />
         <DisplayName>Keyboard Shortcuts Manager</DisplayName>
         <Description xml:space="preserve">(Previously VS Shortcuts Manager) Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts. Scans for keyboard shortcuts provided by other extensions.</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=JustinClareburtMSFT.VSShortcutsManager</MoreInfo>

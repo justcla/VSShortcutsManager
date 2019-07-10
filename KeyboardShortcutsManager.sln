@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26711.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyboardShortcutsManager", "VSShortcutsManager\KeyboardShortcutsManager.csproj", "{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UIPrototypes", "UIPrototypes\UIPrototypes.csproj", "{7375EBEC-430F-48A1-9C67-667FF07CC5B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +15,6 @@ Global
 		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{618D5D4B-6C39-4D54-AA47-6EFA7735CB15}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7375EBEC-430F-48A1-9C67-667FF07CC5B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7375EBEC-430F-48A1-9C67-667FF07CC5B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7375EBEC-430F-48A1-9C67-667FF07CC5B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7375EBEC-430F-48A1-9C67-667FF07CC5B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
