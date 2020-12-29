@@ -61,6 +61,9 @@
     </Compile>
     <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
     <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
+    <Compile Include="CommandTable\Command.cs" />
+    <Compile Include="CommandTable\CommandTable.cs" />
+    <Compile Include="CommandTable\HostLoadType.cs" />
     <Compile Include="Core\BindingConflict.cs" />
     <Compile Include="Core\BindingSequence.cs" />
     <Compile Include="Core\Command.cs" />
@@ -73,7 +76,11 @@
     </Compile>
     <Compile Include="CommandShortcutsWindow\CommandShortcutsControlDataContext.cs" />
     <Compile Include="CommandShortcutsWindow\CommandShortcutsSearchTask.cs" />
+    <Compile Include="CommandTable\CommandTableFactory.cs" />
     <Compile Include="Core\ConflictType.cs" />
+    <Compile Include="CommandTable\ICommandTable.cs" />
+    <Compile Include="CommandTable\ItemId.cs" />
+    <Compile Include="CommandTable\ItemText.cs" />
     <Compile Include="Util\KeycharUtil.cs" />
     <Compile Include="Menu\DynamicItemMenuCommand.cs" />
     <Compile Include="Util\FileUtils.cs" />
@@ -127,10 +134,6 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="CommandTable">
-      <HintPath>lib\CommandTable.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
