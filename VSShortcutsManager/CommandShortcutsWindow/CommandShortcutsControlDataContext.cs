@@ -238,16 +238,64 @@ namespace VSShortcutsManager
 
         #region Fields
 
-        private VSCommandShortcuts allCommandsCache;
-        private VSCommandShortcuts commands;
-        private IServiceProvider serviceProvider;
-        private VSShortcutQueryEngine queryEngine;
+        private VSCommandShortcuts allCommandsCache;    // This holds all 4000+ commands in the system. Updated in PopulateCommands()
+        private VSCommandShortcuts commands;    // This is the object that is displayed on the window (the list of commands)
+        private VSCommandShortcuts popularCommands;
+        private VSCommandShortcuts userCommands;
+        private readonly IServiceProvider serviceProvider;
+        private readonly VSShortcutQueryEngine queryEngine;
+
+        internal void ApplyAllShortcutsFilter()
+        {
+            this.Commands = allCommandsCache.Clone();
+        }
+
+        internal void ApplyPopularShortcutsFilter()
+        {
+            // TODO: Implement this
+            popularCommands = allCommandsCache.Clone();
+            this.Commands = this.popularCommands.Clone();
+        }
+
+        internal void ApplyUserShortcutsFilter(List<VSShortcut> userShortcuts)
+        {
+            // Convert VSShortcut objects to CommandShortcut object
+            userCommands = ConvertVSShortcutListToVSCommandShortcuts(userShortcuts);
+            this.Commands = userCommands.Clone();
+        }
+
+        private VSCommandShortcuts ConvertVSShortcutListToVSCommandShortcuts(List<VSShortcut> userShortcuts)
+        {
+            VSCommandShortcuts vsCmdShortcuts = new VSCommandShortcuts();
+
+            //DTE dte = (DTE)serviceProvider.GetService(typeof(DTE));
+            //Commands dteCommands = dte.Commands;
+
+            foreach (VSShortcut userShortcut in userShortcuts)
+            {
+                string commandText = userShortcut.Command;
+                string shortcutText = userShortcut.Shortcut;
+                string scopeText = userShortcut.Scope;
+
+                //// Look up the command from DTE
+                //EnvDTE.Command dteCommand = dteCommands.Item(commandText);
+                //CommandId id = new CommandId(new Guid(dteCommand.Guid), dteCommand.ID);
+                //CommandBinding binding = null;  // This does not seem to be required.
+
+                var commandShortcut = new CommandShortcut(commandText, shortcutText, scopeText);
+                vsCmdShortcuts.Add(commandShortcut);
+            }
+            return vsCmdShortcuts;
+        }
 
         #endregion // Fields
     }
 
     public class CommandShortcut : NotifyPropertyChangedBase
     {
+
+        public CommandShortcut() { }
+
         public CommandShortcut(CommandId id, string commandText, CommandBinding binding, string shortcutText, string scopeText)
         {
             this.Id = id;
@@ -255,6 +303,13 @@ namespace VSShortcutsManager
             this.Binding = binding;
             this.ShortcutText = shortcutText;
             this.ScopeText = scopeText;
+        }
+
+        public CommandShortcut(string commandText, string shortcutText, string scopeText)
+        {
+            CommandText = commandText;
+            ShortcutText = shortcutText;
+            ScopeText = scopeText;
         }
 
         public CommandId Id { get; private set; }

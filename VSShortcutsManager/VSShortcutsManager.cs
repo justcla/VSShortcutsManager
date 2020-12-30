@@ -40,6 +40,9 @@ namespace VSShortcutsManager
         public const int LiveShortcutsViewCmdId = 0x1420;
         public const int RefreshCommandShortcutsViewCmdId = 0x1760;
         public const int CommandShortcutsToolWinCmdId = 0x1610;
+        public const int FilterAllShortcutsCmdId = 0x1710;
+        public const int FilterPopularShortcutsCmdId = 0x1720;
+        public const int FilterUserShortcutsCmdId = 0x1730;
 
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
@@ -196,6 +199,13 @@ namespace VSShortcutsManager
                 // Refresh Command Shortcuts View
                 commandService.AddCommand(CreateMenuItem(RefreshCommandShortcutsViewCmdId, this.RefreshViewEventHandler));
 
+                // Switch to "All" shortcuts filter
+                commandService.AddCommand(CreateMenuItem(FilterAllShortcutsCmdId, this.FilterAllShortcutsEventHandler));
+                // Switch to "Popular" shortcuts filter
+                commandService.AddCommand(CreateMenuItem(FilterPopularShortcutsCmdId, this.FilterPopularShortcutsEventHandler));
+                // Switch to "Mine" shortcuts filter
+                commandService.AddCommand(CreateMenuItem(FilterUserShortcutsCmdId, this.FilterUserShortcutsEventHandler));
+
             }
         }
 
@@ -205,6 +215,45 @@ namespace VSShortcutsManager
         }
 
         //----------------  Command entry points -------------
+
+        private void FilterAllShortcutsEventHandler(object sender, EventArgs e)
+        {
+            //MessageBox.Show("Filter: All shortcuts");
+            ApplyAllShortcutsFilter();
+        }
+
+        private void FilterPopularShortcutsEventHandler(object sender, EventArgs e)
+        {
+            //MessageBox.Show("Filter: Popular shortcuts");
+            ApplyPopularShortcutsFilter();
+        }
+
+        private void FilterUserShortcutsEventHandler(object sender, EventArgs e)
+        {
+            //MessageBox.Show("Filter: My shortcuts");
+            ApplyUserShortcutsFilter();
+        }
+
+        private void ApplyAllShortcutsFilter()
+        {
+            CommandShortcutsControlDataContext cmdShortcutsDataContext = GetCommandShortcutsDataContext();
+            cmdShortcutsDataContext.ApplyAllShortcutsFilter();
+        }
+
+        private void ApplyPopularShortcutsFilter()
+        {
+            CommandShortcutsControlDataContext cmdShortcutsDataContext = GetCommandShortcutsDataContext();
+            cmdShortcutsDataContext.ApplyAllShortcutsFilter();
+        }
+
+        private void ApplyUserShortcutsFilter()
+        {
+            // Fetch the list of user shortcuts - always fetches a fresh copy by exporting current settings
+            List<VSShortcut> userShortcuts = GetUserShortcuts();
+
+            CommandShortcutsControlDataContext cmdShortcutsDataContext = GetCommandShortcutsDataContext();
+            cmdShortcutsDataContext.ApplyUserShortcutsFilter(userShortcuts);
+        }
 
         private void BackupShortcuts(object sender, EventArgs e)
         {
@@ -256,11 +305,54 @@ namespace VSShortcutsManager
             MessageBox.Show("User shortcuts list has been reset.");
         }
 
+        //-------- Apply Shortcuts Filter --------
+
+        private List<VSShortcut> GetUserShortcuts()
+        {
+            IVsProfileDataManager vsProfileDataManager = GetProfileDataManager();
+
+            // Export current settings (temporary export file)
+
+            // Generate unique path for saving current user shortcuts
+            string tempExportPath = GetUniqueExportFilePath(vsProfileDataManager);
+
+            // About to write a temp file to disc. Make sure we always attempt to delete it.
+            try
+            {
+                // Export the current settings to a temporary file
+                int result = ExportKeyboardSettingsToFile(vsProfileDataManager, tempExportPath);
+                if (result != VSConstants.S_OK)
+                {
+                    // Something went wrong. Throw an exception, which can be swallowed for now.
+                    MessageBox.Show($"Oops.... Something went wrong trying to export settings to the following file:\n\n{tempExportPath}", MSG_CAPTION_SAVE_SHORTCUTS);
+                    throw new Exception("Could not export current user keyboard settings to temporary file.");
+                }
+
+                // Now parse the UserShortcuts section of the settings file that was just created.
+                // First, wait for file to finish being written (or we get an access error)
+                FileUtils.WaitForFileAccess(tempExportPath, 100, 3);
+                XDocument vsSettingsXDoc = XDocument.Load(tempExportPath);
+                List<VSShortcut> shortcutList = ParseVSSettingsFile(vsSettingsXDoc);
+
+                return shortcutList;
+            }
+            finally
+            {
+                // Cleanup - Delete the temporary file.
+                DeleteFileSafely(tempExportPath);
+            }
+        }
+
+        private static int ExportKeyboardSettingsToFile(IVsProfileDataManager vsProfileDataManager, string tempExportPath)
+        {
+            return vsProfileDataManager.ExportSettings(tempExportPath, GetShortcutsSettingsTreeForExport(vsProfileDataManager), out IVsSettingsErrorInformation errorInfo);
+        }
+
         //-------- Reset Shortcuts --------
 
         private bool ResetShortcutsViaProfileManager()
         {
-            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            IVsProfileDataManager vsProfileDataManager = GetProfileDataManager();
             IVsProfileSettingsFileInfo profileSettingsFileInfo = GetDefaultProfileSettingsFileInfo(vsProfileDataManager);
             if (profileSettingsFileInfo == null)
             {
@@ -314,12 +406,13 @@ namespace VSShortcutsManager
             //    return;
             //}
 
-            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+            IVsProfileDataManager vsProfileDataManager = GetProfileDataManager();
 
             // Generate default path for saving shortcuts
             // e.g. c:\users\justcla\appdata\local\microsoft\visualstudio\15.0_cf83efb8exp\Settings\Exp\CurrentSettings-2017-12-27-1.vssettings
-            string uniqueExportPath = GetExportFilePath(vsProfileDataManager);
-            string userExportPath = Path.GetDirectoryName(uniqueExportPath);
+            string uniqueExportPath = GetUniqueExportFilePath(vsProfileDataManager);
+            // Extract the components of the export path
+            string userExportDir = Path.GetDirectoryName(uniqueExportPath);
             string uniqueFilename = Path.GetFileNameWithoutExtension(uniqueExportPath);
             string fileExtension = Path.GetExtension(uniqueExportPath);
 
@@ -332,7 +425,7 @@ namespace VSShortcutsManager
             }
 
             // Construct the filename where the vssettings file will be saved
-            string saveFilePath = Path.Combine(userExportPath, $"{shortcutsName}{fileExtension}");
+            string saveFilePath = Path.Combine(userExportDir, $"{shortcutsName}{fileExtension}");
 
             // Check if file already exists
             if (File.Exists(saveFilePath))
@@ -377,7 +470,12 @@ namespace VSShortcutsManager
             MessageBox.Show(Text, MSG_CAPTION_SAVE_SHORTCUTS, MessageBoxButtons.OK);
         }
 
-        private static string GetExportFilePath(IVsProfileDataManager vsProfileDataManager)
+        private IVsProfileDataManager GetProfileDataManager()
+        {
+            return (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
+        }
+
+        private static string GetUniqueExportFilePath(IVsProfileDataManager vsProfileDataManager)
         {
             vsProfileDataManager.GetUniqueExportFileName((uint)__VSPROFILEGETFILENAME.PGFN_SAVECURRENT, out string exportFilePath);
             return exportFilePath;
@@ -445,7 +543,7 @@ namespace VSShortcutsManager
                 foreach (var shortcut in userShortcut.Descendants())
                 {
                     // Convert the XML of one row of Shortcut entry into a parsed VSShortcut object
-                    VSShortcut parsedShortcutItem = CreateShortcutItem(shortcut);
+                    VSShortcut parsedShortcutItem = ParseShortcutElement(shortcut);
                     if (parsedShortcutItem == null)
                     {
                         Debug.WriteLine("Skipping entry: " + shortcut.Value);
@@ -467,7 +565,7 @@ namespace VSShortcutsManager
         /// be available on a user's instance of VS. But it's good to show that the VSSettings
         /// file did include the shortcut for it.
         /// </summary>
-        private VSShortcut CreateShortcutItem(XElement shortcut)
+        private VSShortcut ParseShortcutElement(XElement shortcut)
         {
             // Read values from XML definitions
             string operationType = shortcut.Name.LocalName;
@@ -481,8 +579,9 @@ namespace VSShortcutsManager
                 Debug.WriteLine("Ignoring UserShortcut element: " + operationType + " with value: " + shortcut.Value);
                 return null;
             }
-            string operationDisplayName = ShortcutOperations[operationType];
-            // Parse the text into known objects. Abort if text is not recognized.
+            string operationDisplayName = ShortcutOperations[operationType];  // ie. convert to "Add" or "Remove"
+
+            // Validate the scope and shortcut keys
             KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
             if (scope == null)
             {
@@ -563,8 +662,8 @@ namespace VSShortcutsManager
             //string saveFilePath = WriteToUniqueFilePath(vsSettingsXDoc);
 
             // save vs settings
-            IVsProfileDataManager vsProfileDataManager = (IVsProfileDataManager)ServiceProvider.GetService(typeof(SVsProfileDataManager));
-            string saveFilePath = GetExportFilePath(vsProfileDataManager);
+            IVsProfileDataManager vsProfileDataManager = GetProfileDataManager();
+            string saveFilePath = GetUniqueExportFilePath(vsProfileDataManager);
 
             // Write the XmlDoc to file using the new unique filename
             vsSettingsXDoc.Save(saveFilePath);
@@ -984,6 +1083,12 @@ namespace VSShortcutsManager
 
         private void RefreshCommandShortcutsView()
         {
+            CommandShortcutsControlDataContext cmdShortcutsDataContext = GetCommandShortcutsDataContext();
+            cmdShortcutsDataContext.RefreshView();
+        }
+
+        private CommandShortcutsControlDataContext GetCommandShortcutsDataContext()
+        {
             // Get a handle on the CommandShortcuts Toolwindow
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -993,10 +1098,9 @@ namespace VSShortcutsManager
                 throw new NotSupportedException("Cannot find CommandShortcuts tool window");
             }
 
-            // Call the Refresh method on the CommandShortcuts Toolwindow
             CommandShortcutsControl cmdShortcutsControl = (CommandShortcutsControl)window.Content;
             CommandShortcutsControlDataContext cmdShortcutsDataContext = (CommandShortcutsControlDataContext)cmdShortcutsControl.DataContext;
-            cmdShortcutsDataContext.RefreshView();
+            return cmdShortcutsDataContext;
         }
 
         private void OpenAddKeyboardShortcutDialog(object sender, EventArgs e)
