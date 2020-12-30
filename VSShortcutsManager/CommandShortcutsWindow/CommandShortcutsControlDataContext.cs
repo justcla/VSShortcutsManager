@@ -222,7 +222,7 @@ namespace VSShortcutsManager
 
         private static void DeleteCommandBindings(EnvDTE.Command command, List<CommandBinding> deletedBindings)
         {
-            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => binding.OriginalDTEString));
+            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => string.Concat(binding.Scope.Name, "::", binding.OriginalDTEString)));
 
             var oldBindings = (object[])command.Bindings;
 
