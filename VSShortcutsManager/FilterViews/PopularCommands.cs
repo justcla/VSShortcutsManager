@@ -1,22 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace VSShortcutsManager
 {
     public class PopularCommands
     {
-        internal static List<string> GetPopularCommandNames()
+        private static List<string> popularCommandNames;
+
+        public static List<string> CommandList
         {
-            var popularCmdNames = new List<string>();
-            popularCmdNames.Add("Edit.Undo");
-            popularCmdNames.Add("Edit.Redo");
-            popularCmdNames.Add("Edit.Copy");
-            popularCmdNames.Add("Edit.Cut");
-            popularCmdNames.Add("Edit.Paste");
-            return popularCmdNames;
+            get
+            {
+                if (popularCommandNames == null)
+                {
+                    popularCommandNames = new List<string>
+                    {
+                        "Edit.Undo",
+                        "Edit.Redo",
+                        "Edit.Copy",
+                        "Edit.Cut",
+                        "Edit.Paste"
+                    };
+
+                }
+                return popularCommandNames;
+            }
+            set { }
         }
     }
 }
