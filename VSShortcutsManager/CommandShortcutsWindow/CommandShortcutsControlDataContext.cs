@@ -230,7 +230,6 @@ namespace VSShortcutsManager
                 .Where(bindingText => !deletedBindingsSet.Contains(bindingText.ToString()))
                 .ToArray();
 
-            command.Bindings = new object[0]; // unexplained workaround - resetting a binding array requires resetting it to an empty array first.
             command.Bindings = newBindings;
         }
 
