@@ -372,6 +372,7 @@ namespace VSShortcutsManager
 
         public async Task<Command> GetCommandByCommandIdAsync(CommandId id)
         {
+            // TODO: Check if this should call from a cached copy
             IEnumerable<Command> commands = await GetAllCommandsAsync();
             return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
         }

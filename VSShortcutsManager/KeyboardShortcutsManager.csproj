@@ -81,6 +81,7 @@
     <Compile Include="CommandTable\ICommandTable.cs" />
     <Compile Include="CommandTable\ItemId.cs" />
     <Compile Include="CommandTable\ItemText.cs" />
+    <Compile Include="FilterViews\PopularCommands.cs" />
     <Compile Include="Util\KeycharUtil.cs" />
     <Compile Include="Menu\DynamicItemMenuCommand.cs" />
     <Compile Include="Util\FileUtils.cs" />

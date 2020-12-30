@@ -243,7 +243,7 @@ namespace VSShortcutsManager
         private void ApplyPopularShortcutsFilter()
         {
             CommandShortcutsControlDataContext cmdShortcutsDataContext = GetCommandShortcutsDataContext();
-            cmdShortcutsDataContext.ApplyAllShortcutsFilter();
+            cmdShortcutsDataContext.ApplyPopularShortcutsFilter();
         }
 
         private void ApplyUserShortcutsFilter()

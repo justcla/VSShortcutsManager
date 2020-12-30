@@ -240,7 +240,6 @@ namespace VSShortcutsManager
 
         private VSCommandShortcuts allCommandsCache;    // This holds all 4000+ commands in the system. Updated in PopulateCommands()
         private VSCommandShortcuts commands;    // This is the object that is displayed on the window (the list of commands)
-        private VSCommandShortcuts popularCommands;
         private VSCommandShortcuts userCommands;
         private readonly IServiceProvider serviceProvider;
         private readonly VSShortcutQueryEngine queryEngine;
@@ -252,9 +251,14 @@ namespace VSShortcutsManager
 
         internal void ApplyPopularShortcutsFilter()
         {
-            // TODO: Implement this
-            popularCommands = allCommandsCache.Clone();
-            this.Commands = this.popularCommands.Clone();
+            this.Commands = GetPopularCommands();
+        }
+
+        private VSCommandShortcuts GetPopularCommands()
+        {
+            List<string> popularCmdNames = PopularCommands.GetPopularCommandNames();
+            IEnumerable<CommandShortcut> popularCmdShortcuts = allCommandsCache.Where(command => popularCmdNames.Contains(command.CommandText));
+            return new VSCommandShortcuts(popularCmdShortcuts);
         }
 
         internal void ApplyUserShortcutsFilter(List<VSShortcut> userShortcuts)
