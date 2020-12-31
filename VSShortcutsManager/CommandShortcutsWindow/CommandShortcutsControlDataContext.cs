@@ -95,7 +95,7 @@ namespace VSShortcutsManager
             foreach (var kvp in commands)
             {
                 // Find the command in the DTE command table
-                var commandShortcut = kvp.Key;
+                CommandShortcut commandShortcut = kvp.Key;
                 var dteCommand = dte.Commands.Item(commandShortcut.CommandText);
                 if (dteCommand == null)
                 {
@@ -107,6 +107,7 @@ namespace VSShortcutsManager
                 DeleteCommandBindings(dteCommand, kvp.Value);
 
                 // Update the model object for changes to reflect on the view
+                commandShortcut.IsRemoved = true;
                 commandShortcut.Binding = null;
                 commandShortcut.ShortcutText = null;
                 commandShortcut.ScopeText = null;
@@ -222,9 +223,9 @@ namespace VSShortcutsManager
 
         private static void DeleteCommandBindings(EnvDTE.Command command, List<CommandBinding> deletedBindings)
         {
-            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => string.Concat(binding.Scope.Name, "::", binding.OriginalDTEString)));
+            HashSet<string> deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => string.Concat(binding.Scope.Name, "::", binding.OriginalDTEString)));
 
-            var oldBindings = (object[])command.Bindings;
+            object[] oldBindings = (object[])command.Bindings;
 
             var newBindings = oldBindings
                 .Where(bindingText => !deletedBindingsSet.Contains(bindingText.ToString()))
@@ -263,20 +264,23 @@ namespace VSShortcutsManager
         internal void ApplyUserShortcutsFilter(List<VSShortcut> userShortcuts)
         {
             // Convert VSShortcut objects to CommandShortcut object
-            this.Commands = ConvertVSShortcutListToVSCommandShortcuts(userShortcuts);
+            this.Commands = ConvertVSShortcutListToVSCommandShortcuts(userShortcuts, isUserShortcut: true);
         }
 
-        private VSCommandShortcuts ConvertVSShortcutListToVSCommandShortcuts(List<VSShortcut> userShortcuts)
+        private VSCommandShortcuts ConvertVSShortcutListToVSCommandShortcuts(List<VSShortcut> userShortcuts, bool isUserShortcut = false)
         {
             VSCommandShortcuts vsCmdShortcuts = new VSCommandShortcuts();
 
             foreach (VSShortcut userShortcut in userShortcuts)
             {
-                string commandText = userShortcut.Command;
-                string shortcutText = userShortcut.Shortcut;
-                string scopeText = userShortcut.Scope;
-
-                var commandShortcut = new CommandShortcut(commandText, shortcutText, scopeText);
+                var commandShortcut = new CommandShortcut()
+                {
+                    CommandText = userShortcut.Command,
+                    ShortcutText = userShortcut.Shortcut,
+                    ScopeText = userShortcut.Scope,
+                    IsRemoved = userShortcut.Operation.Equals("Remove"),
+                    IsUserShortcut = isUserShortcut
+                };
                 vsCmdShortcuts.Add(commandShortcut);
             }
             return vsCmdShortcuts;
@@ -306,12 +310,13 @@ namespace VSShortcutsManager
             ScopeText = scopeText;
         }
 
-        public CommandId Id { get; private set; }
+        public CommandId Id { get; set; }
 
-        public string CommandText { get; private set; }
+        public string CommandText { get; set; }
 
         public CommandBinding Binding { get; set; }
 
+        private string shortcutText;
         public string ShortcutText
         {
             get { return shortcutText; }
@@ -322,8 +327,8 @@ namespace VSShortcutsManager
                 OnPropertyChanged();
             }
         }
-        private string shortcutText;
 
+        private string scopeText;
         public string ScopeText
         {
             get { return scopeText; }
@@ -334,7 +339,21 @@ namespace VSShortcutsManager
                 OnPropertyChanged();
             }
         }
-        private string scopeText;
+
+        private bool isRemoved = false;
+        public bool IsRemoved
+        {
+            get { return isRemoved; }
+
+            set
+            {
+                this.isRemoved = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsUserShortcut { get; set; }
+
     }
 
     public class VSCommandShortcuts : List<CommandShortcut>

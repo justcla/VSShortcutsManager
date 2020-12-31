@@ -14,10 +14,37 @@
             ItemsSource="{Binding Commands}"
             KeyUp="DataGrid_KeyUp"
             >
+            <!--<DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="FontWeight" Value="Normal"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRemoved}" Value="True">
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="TextBlock.TextDecorations" Value="Strikethrough"/>
+                            <Setter Property="FontStyle" Value="Italic" />
+                            <Setter Property="Background" Value="DarkGray" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>-->
+            <DataGrid.Resources>
+                <Style x:Key="tstyle" TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRemoved}" Value="True">
+                            <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
+                            <!--<Setter Property="FontWeight" Value="Bold"/>-->
+                        </DataTrigger>
+                        <!--<DataTrigger Binding="{Binding IsUserShortcut}" Value="True">-->
+                            <!--<Setter Property="FontStyle" Value="Italic"/>-->
+                            <!--<Setter Property="Foreground" Value="MediumBlue"/>-->
+                        <!--</DataTrigger>-->
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Command" Binding="{Binding CommandText, Mode=OneTime}" Width="3*" />
-                <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneWay}" Width="1*" />
-                <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneWay}" Width="1*" />
+                <DataGridTextColumn Header="Command" Binding="{Binding CommandText, Mode=OneTime}" Width="3*" ElementStyle="{StaticResource tstyle}"/>
+                <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneWay}" Width="1*" ElementStyle="{StaticResource tstyle}"/>
+                <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneWay}" Width="1*" ElementStyle="{StaticResource tstyle}"/>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>
