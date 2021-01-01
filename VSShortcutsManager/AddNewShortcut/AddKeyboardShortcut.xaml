@@ -5,9 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local ="clr-namespace:CustomControls"
              mc:Ignorable="d" 
-             Title="Add Keyboard Shortcut" Height="450" Width="518.293"
+             Title="Add Keyboard Shortcut" Height="450" Width="800"
             ShowInTaskbar="False"
-        ShowActivated="True" ResizeMode="NoResize">
+        ShowActivated="True" ResizeMode="CanResizeWithGrip">
     <Grid Margin="0,0,2,0">
 
         <Grid.ColumnDefinitions>
@@ -35,16 +35,16 @@
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Conflict Type" DisplayMemberBinding="{Binding ConflictType}"  Width="80" />
-                    <GridViewColumn Header="Scope" DisplayMemberBinding="{Binding Scope}"  Width="80" />
-                    <GridViewColumn Header="Command" DisplayMemberBinding="{Binding Command}" Width="100" />
-                    <GridViewColumn Header="Shortcut" DisplayMemberBinding="{Binding Shortcut}"  Width="80" />
+                    <GridViewColumn Header="Scope" DisplayMemberBinding="{Binding Scope}"  Width="140" />
+                    <GridViewColumn Header="Command" DisplayMemberBinding="{Binding Command}" Width="180" />
+                    <GridViewColumn Header="Shortcut" DisplayMemberBinding="{Binding Shortcut}"  Width="140" />
                 </GridView>
             </ListView.View>
         </ListView>
 
-        <Button x:Name="btnAddShortcut" Content="Add Shortcut" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="262,376,0,0" Height="20"
+        <Button x:Name="btnAddShortcut" Content="Add Shortcut" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="95" Margin="0,0,130,20" Height="20"
                 Click="btnAddShortcut_Click" IsDefault="True" IsEnabled="False"/>
-        <Button x:Name="btnClose" Content="Close" HorizontalAlignment="Left" VerticalAlignment="Top" Width="95" Margin="368,376,0,0" Height="20"
+        <Button x:Name="btnClose" Content="Close" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="95" Margin="0,0,20,20" Height="20"
                 Click="btnClose_Click" IsCancel="True"/>
 
     </Grid>
