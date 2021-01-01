@@ -100,6 +100,10 @@ namespace VSShortcutsManager.AddNewShortcut
             cmbCommandList.ItemsSource = GetCommandNamesList();
             // Scope list combo box
             cmbScopeList.ItemsSource = GetScopeDisplayData();
+            cmbScopeList.SelectedIndex = 0; // Make sure it defaults to a value
+
+            // Set focus on the Shortcut field
+            txtShortcut.Focus();
         }
 
         private IEnumerable<string> GetCommandNamesList()
@@ -124,11 +128,22 @@ namespace VSShortcutsManager.AddNewShortcut
         private IEnumerable<string> GetScopeDisplayData()
         {
             var displayData = new List<string>();
+
+            // Special scopes at the top.
+            string[] specialScopes =
+            {
+                "Text Editor",
+                "Global"
+            };
+            displayData.AddRange(specialScopes);
+            displayData.Add("-----------------------"); // This will need to be checked for later
+
+            // Now add all the other scopes in the system
             foreach (KeybindingScope keybindingScope in GetAllKeybindingScopes())
             {
-                // Filter out scopes with no name
+                // Filter out scopes with no name or already included (special scopes)
                 string scopeName = keybindingScope.Name;
-                if (scopeName == null)
+                if (scopeName == null || specialScopes.Contains(scopeName))
                 {
                     continue;
                 }
@@ -143,38 +158,32 @@ namespace VSShortcutsManager.AddNewShortcut
 
         private void btnAddShortcut_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string shortcutcommand = cmbCommandList.SelectedValue.ToString();
+            string shortcutScope = cmbScopeList.SelectedValue.ToString();
+            string shortcutKeys = txtShortcut.Text;
+
+            // Validate form - Maybe unecessary, since validation occurs elsewhere
+            if (string.IsNullOrEmpty(shortcutScope.Trim('-')))
             {
-                string shortcutcommand = cmbCommandList.SelectedValue.ToString();
-                string shortcutScope = cmbScopeList.SelectedValue.ToString();
-                string shortcutKeys = txtShortcut.Text;
-                string shortcutBinding = shortcutScope + "::" + shortcutKeys;
-                //Check if potential conflicts available
-                if (listConflicts.Items.Count > 0)
-                {
-                    if (seekConfirm(shortcutScope, shortcutKeys) == MessageBoxResult.Yes)
-                    {
-                        ShortcutQueryEngine.BindShortcut(shortcutcommand, shortcutBinding);
-                        MessageBox.Show("Shortcut added succesfully");
-                    }
-                }
-                else
-                {
-                    ShortcutQueryEngine.BindShortcut(shortcutcommand, shortcutBinding);
-                    MessageBox.Show("Shortcut added succesfully");
-                }
+                MessageBox.Show("Please select a scope.");
+                return;
             }
-            catch(Exception ex)
+
+            // If conflicts exist, confirm the action with the user
+            if (listConflicts.Items.Count > 0 && SeekConfirm(shortcutScope) != MessageBoxResult.Yes)
             {
-                MessageBox.Show(ex.Message);
+                // User said no. Abort!
+                return;
             }
+
+            // Attempt to add the shortcut
+            AddShortcutBinding(shortcutcommand, shortcutScope, shortcutKeys);
         }
 
-        private MessageBoxResult seekConfirm (string shortcutScope, string shortcutKeys)
+        private MessageBoxResult SeekConfirm (string shortcutScope)
         {
-            var conflictList = listConflicts.Items;
-            string messageBoxText = "";
-            switch(shortcutScope.ToLower())
+            string messageBoxText;
+            switch (shortcutScope.ToLower())
             {
                 case "global":
                     messageBoxText = "This 'Global' shortcut will overide in all local scope. Proceed?";
@@ -184,33 +193,16 @@ namespace VSShortcutsManager.AddNewShortcut
                     break;
             }
             const string messageBoxTittle = "Confirm Add Shortcut";
-            MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show(messageBoxText, messageBoxTittle, System.Windows.MessageBoxButton.YesNo);
+            MessageBoxResult messageBoxResult = MessageBox.Show(messageBoxText, messageBoxTittle, MessageBoxButton.YesNo);
             return messageBoxResult;
         }
-        private void fetchAndDisplayConflicts()
+        private void AddShortcutBinding(string shortcutcommand, string shortcutScope, string shortcutKeys)
         {
             try
             {
-                // Pull the values from the UI (Command, Scope, Shortcut)
-                string shortcutcommand = cmbCommandList.SelectedValue?.ToString();
-                string shortcutScope = cmbScopeList.SelectedValue?.ToString();
-                string shortcutKeys = txtShortcut.Text;
-
                 string shortcutBinding = shortcutScope + "::" + shortcutKeys;
-
-                if (!string.IsNullOrEmpty(shortcutcommand) && !string.IsNullOrEmpty(shortcutScope) && !string.IsNullOrEmpty(shortcutKeys))
-                {
-                    // Get all the conflict data into a list ready for display
-                    List<ConflictTableData> conflictList = PrepareConflictsTableData(shortcutcommand, shortcutScope, shortcutKeys);
-
-                    // Bind the data to the view model
-                    listConflicts.ItemsSource = conflictList;
-                    btnAddShortcut.IsEnabled = true;
-                }
-                else
-                {
-                    btnAddShortcut.IsEnabled = false;
-                }
+                ShortcutQueryEngine.BindShortcut(shortcutcommand, shortcutBinding);
+                MessageBox.Show("Shortcut added succesfully");
             }
             catch (Exception ex)
             {
@@ -218,7 +210,32 @@ namespace VSShortcutsManager.AddNewShortcut
             }
         }
 
-        private List<ConflictTableData> PrepareConflictsTableData(string shortcutcommand, string shortcutScopeText, string shortcutKeysText)
+        private void FetchAndDisplayConflicts()
+        {
+            try
+            {
+                // Pull the values from the UI (Command, Scope, Shortcut)
+                string shortcutScope = cmbScopeList.SelectedValue?.ToString().Trim('-'); // Remove any dashes
+                string shortcutKeys = txtShortcut.Text;
+
+                // Display conflicts if Scope and Shortcut fields have values
+                if (!string.IsNullOrWhiteSpace(shortcutScope) && !string.IsNullOrWhiteSpace(shortcutKeys))
+                {
+                    // Get all the conflict data into a list ready for display
+                    List<ConflictTableData> conflictList = PrepareConflictsTableData(shortcutScope, shortcutKeys);
+                    // Bind the data to the view model
+                    listConflicts.ItemsSource = conflictList;
+                }
+
+                UpdateAddShortcutEnabledState();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private List<ConflictTableData> PrepareConflictsTableData(string shortcutScopeText, string shortcutKeysText)
         {
             // Convert text like "Text Editor" and "Ctrl+R, Ctrl+O" into objects representing the Scope and key bindings
             KeybindingScope scope = ShortcutQueryEngine.GetScopeByName(shortcutScopeText);
@@ -252,6 +269,18 @@ namespace VSShortcutsManager.AddNewShortcut
 
         }
 
+        private void UpdateAddShortcutEnabledState()
+        {
+            // Enable the Add Shortcut button if there are values in all input fields.
+            string shortcutScope = cmbScopeList.SelectedValue?.ToString().Trim('-'); // Remove any dashes
+            string shortcutKeys = txtShortcut.Text;
+            string commandName = cmbCommandList.SelectedValue?.ToString();
+
+            btnAddShortcut.IsEnabled = !string.IsNullOrWhiteSpace(commandName)
+                                    && !string.IsNullOrWhiteSpace(shortcutScope)
+                                    && !string.IsNullOrWhiteSpace(shortcutKeys);
+        }
+
         private static string GetConflictTypeText(ConflictType conflictType)
         {
             switch (conflictType)
@@ -275,7 +304,10 @@ namespace VSShortcutsManager.AddNewShortcut
 
         }
 
-        private void cmbCommandList_LostFocus(object sender, RoutedEventArgs e) => fetchAndDisplayConflicts();
-        private void txtShortcut_LostFocus(object sender, RoutedEventArgs e) => fetchAndDisplayConflicts();
+        private void cmbCommandList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateAddShortcutEnabledState();
+        private void cmbScopeList_SelectionChanged(object sender, SelectionChangedEventArgs e) => FetchAndDisplayConflicts();
+        private void cmbScopeList_LostFocus(object sender, RoutedEventArgs e) => FetchAndDisplayConflicts();
+        private void txtShortcut_TextChanged(object sender, TextChangedEventArgs e) => FetchAndDisplayConflicts();
+        private void txtShortcut_LostFocus(object sender, RoutedEventArgs e) => FetchAndDisplayConflicts();
     }
 }

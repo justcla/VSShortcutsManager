@@ -17,17 +17,17 @@
 
         <Label x:Name="lblCommand" Content="Command:" HorizontalAlignment="Left" Margin="43,45,0,0" VerticalAlignment="Top" Height="26" Width="65"/>
         <local:AutoFilteredComboBox VerticalAlignment="Top" x:Name="cmbCommandList" ItemsSource="{Binding}"
-            HorizontalAlignment="Left" Height="23" Margin="198,45,0,0" Width="265" LostFocus="cmbCommandList_LostFocus">
+            HorizontalAlignment="Left" Height="23" Margin="198,45,0,0" Width="265" SelectionChanged="cmbCommandList_SelectionChanged">
         </local:AutoFilteredComboBox>
 
         <Label x:Name="lblScope" Content="Scope:" HorizontalAlignment="Left" Margin="43,95,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
         <ComboBox VerticalAlignment="Top" x:Name="cmbScopeList" ItemsSource="{Binding}"
-            HorizontalAlignment="Left" Height="23" Margin="198,95,0,0" Width="265"  LostFocus="cmbCommandList_LostFocus">
+            HorizontalAlignment="Left" Height="23" Margin="198,95,0,0" Width="265"  LostFocus="cmbScopeList_LostFocus" SelectionChanged="cmbScopeList_SelectionChanged">
         </ComboBox>
 
         <Label x:Name="lblShortcut" Content="Shortcut:" HorizontalAlignment="Left" Margin="43,145,0,0" VerticalAlignment="Top" Height="26" Width="55"/>
         <local:KeyCapturingTextBox x:Name="txtShortcut" Text="{Binding Path=Shortcut, Mode=TwoWay}" HorizontalAlignment="Left" Height="23" Margin="198,145,0,0"
-                                   TextWrapping="Wrap" VerticalAlignment="Top" Width="265" LostFocus="txtShortcut_LostFocus" />
+                                   TextWrapping="Wrap" VerticalAlignment="Top" Width="265" LostFocus="txtShortcut_LostFocus" TextChanged="txtShortcut_TextChanged"/>
         <TextBlock Text="Press Tab to move focus out of the shorcut box" HorizontalAlignment="Left" Margin="198,170,0,0" VerticalAlignment="Top" Width="265" />
 
         <Label x:Name="lblConflicts" Content="Potential Conflicts:" HorizontalAlignment="Left" Margin="43,195,0,0" VerticalAlignment="Top" Height="26" Width="105"/>
