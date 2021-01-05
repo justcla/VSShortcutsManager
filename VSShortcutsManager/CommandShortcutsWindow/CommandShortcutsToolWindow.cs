@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
+using System.Windows;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -20,22 +21,28 @@ namespace VSShortcutsManager
     /// </para>
     /// </remarks>
     [Guid("124118e3-7c75-490e-8ace-742c96f001da")]
-    public class CommandShortcuts : ToolWindowPane
+    public class CommandShortcutsToolWindow : ToolWindowPane
     {
         public const string guidVSShortcutsManagerCmdSet = "cca0811b-addf-4d7b-9dd6-fdb412c44d8a";
         public const int CommandShortcutsToolWinToolbar = 0x2004;
 
+        public static readonly Guid VSShortcutsManagerCmdSetGuid = new Guid("cca0811b-addf-4d7b-9dd6-fdb412c44d8a");
+        public const int ShowTreeViewCmdId = 0x1815;
+        public const int ShowListViewCmdId = 0x1825;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="CommandShortcuts"/> class.
+        /// Initializes a new instance of the <see cref="CommandShortcutsToolWindow"/> class.
         /// </summary>
-        public CommandShortcuts() : base(null)
+        public CommandShortcutsToolWindow() : base(null)
         {
-            this.Caption = "CommandShortcuts";
+            this.Caption = "Command Shortcuts";
 
             // This is the user control hosted by the tool window; Note that, even if this class implements IDisposable,
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on
             // the object returned by the Content property.
             this.Content = new CommandShortcutsControl();
+
+            //RegisterCommandHandlers();
         }
 
         protected override void Initialize()
@@ -45,7 +52,47 @@ namespace VSShortcutsManager
             this.ToolBar = new CommandID(new Guid(guidVSShortcutsManagerCmdSet), CommandShortcutsToolWinToolbar);
 
             ((CommandShortcutsControl)this.Content).DataContext = new CommandShortcutsControlDataContext(this);
+
+            RegisterCommandHandlers();
         }
+
+        private void RegisterCommandHandlers()
+        {
+            //IVsActivityLog log = Package.GetGlobalService(typeof(IMenuCommandService)) as IVsActivityLog;
+            //if (log == null) return;
+            if (GetService(typeof(IMenuCommandService)) is OleMenuCommandService commandService)
+            {
+                // Switch to Tree View
+                commandService.AddCommand(CreateMenuItem(ShowTreeViewCmdId, this.ShowTreeViewEventHandler));
+                // Switch to List View
+                commandService.AddCommand(CreateMenuItem(ShowListViewCmdId, this.ShowListViewEventHandler));
+            }
+        }
+
+        private void ShowTreeViewEventHandler(object sender, EventArgs e)
+        {
+            MessageBox.Show("Show Tree View");
+            ((CommandShortcutsControl)Content).contentControl.Content = new CommandShortcutsTree();
+        }
+
+        private void ShowListViewEventHandler(object sender, EventArgs e)
+        {
+            MessageBox.Show("Show List View");
+            ((CommandShortcutsControl)Content).contentControl.Content = new CommandShortcutsList();
+        }
+
+        private OleMenuCommand CreateMenuItem(int cmdId, EventHandler menuItemCallback)
+        {
+            return new OleMenuCommand(menuItemCallback, new CommandID(VSShortcutsManagerCmdSetGuid, cmdId));
+        }
+
+        private CommandShortcutsControlDataContext GetDataContext()
+        {
+            var cmdShortcutsControl = (CommandShortcutsControl)Content;
+            var cmdShortcutsDataContext = (CommandShortcutsControlDataContext)cmdShortcutsControl.DataContext;
+            return cmdShortcutsDataContext;
+        }
+
 
         #region Search
 

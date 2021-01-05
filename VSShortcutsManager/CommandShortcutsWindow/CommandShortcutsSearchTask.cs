@@ -7,10 +7,10 @@ namespace VSShortcutsManager
 {
     internal class CommandShortcutsSearchTask : VsSearchTask
     {
-        private CommandShortcuts parentWindow;
+        private CommandShortcutsToolWindow parentWindow;
         private CommandShortcutsControlDataContext searchControlDataContext;
 
-        public CommandShortcutsSearchTask(uint dwCookie, IVsSearchQuery pSearchQuery, IVsSearchCallback pSearchCallback, CommandShortcuts parentWindow)
+        public CommandShortcutsSearchTask(uint dwCookie, IVsSearchQuery pSearchQuery, IVsSearchCallback pSearchCallback, CommandShortcutsToolWindow parentWindow)
             : base(dwCookie, pSearchQuery, pSearchCallback)
         {
             this.parentWindow = parentWindow;

@@ -377,8 +377,8 @@
       <IDSymbol name="DeleteShortcutsCmdId" value="0x1740" />
       <IDSymbol name="KeyboardOptionsCmdId" value="0x1750" />
       <IDSymbol name="RefreshViewCmdId" value="0x1760" />
-      <IDSymbol name="ShowTreeViewCmdId" value="0x1810" />
-      <IDSymbol name="ShowListViewCmdId" value="0x1820" />
+      <IDSymbol name="ShowTreeViewCmdId" value="0x1815" />
+      <IDSymbol name="ShowListViewCmdId" value="0x1825" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
