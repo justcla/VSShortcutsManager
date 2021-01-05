@@ -1,5 +1,4 @@
 ﻿using System.Windows.Controls;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace VSShortcutsManager
@@ -7,9 +6,9 @@ namespace VSShortcutsManager
     /// <summary>
     /// Interaction logic for CommandShortcutList.xaml
     /// </summary>
-    public partial class CommandShortcutList : UserControl
+    public partial class CommandShortcutsList : UserControl
     {
-        public CommandShortcutList()
+        public CommandShortcutsList()
         {
             InitializeComponent();
         }

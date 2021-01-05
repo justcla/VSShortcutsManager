@@ -61,8 +61,8 @@
     </Compile>
     <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
     <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
-    <Compile Include="CommandShortcutsWindow\CommandShortcutList.xaml.cs">
-      <DependentUpon>CommandShortcutList.xaml</DependentUpon>
+    <Compile Include="CommandShortcutsWindow\CommandShortcutsList.xaml.cs">
+      <DependentUpon>CommandShortcutsList.xaml</DependentUpon>
     </Compile>
     <Compile Include="CommandTable\Command.cs" />
     <Compile Include="CommandTable\CommandTable.cs" />
@@ -73,7 +73,7 @@
     <Compile Include="Core\CommandBinding.cs" />
     <Compile Include="Core\CommandId.cs" />
     <Compile Include="CommandShortcutsWindow\CommandsFilter.cs" />
-    <Compile Include="CommandShortcutsWindow\CommandShortcuts.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandShortcutsToolWindow.cs" />
     <Compile Include="CommandShortcutsWindow\CommandShortcutsControl.xaml.cs">
       <DependentUpon>CommandShortcutsControl.xaml</DependentUpon>
     </Compile>
@@ -134,7 +134,7 @@
     <Content Include="Resources\KeyboardShortcutsMgr_icon2.png">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Page Include="CommandShortcutsWindow\CommandShortcutList.xaml">
+    <Page Include="CommandShortcutsWindow\CommandShortcutsList.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
