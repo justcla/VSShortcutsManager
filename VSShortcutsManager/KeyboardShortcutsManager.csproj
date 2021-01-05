@@ -61,6 +61,9 @@
     </Compile>
     <Compile Include="AddNewShortcut\AutoFilterComboBox.cs" />
     <Compile Include="AddNewShortcut\KeyCapturingTextBox.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandShortcutList.xaml.cs">
+      <DependentUpon>CommandShortcutList.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CommandTable\Command.cs" />
     <Compile Include="CommandTable\CommandTable.cs" />
     <Compile Include="CommandTable\HostLoadType.cs" />
@@ -77,6 +80,9 @@
     <Compile Include="CommandShortcutsWindow\CommandShortcutsControlDataContext.cs" />
     <Compile Include="CommandShortcutsWindow\CommandShortcutsSearchTask.cs" />
     <Compile Include="CommandTable\CommandTableFactory.cs" />
+    <Compile Include="CommandShortcutsWindow\CommandShortcutsTree.xaml.cs">
+      <DependentUpon>CommandShortcutsTree.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Core\ConflictType.cs" />
     <Compile Include="CommandTable\ICommandTable.cs" />
     <Compile Include="CommandTable\ItemId.cs" />
@@ -128,6 +134,14 @@
     <Content Include="Resources\KeyboardShortcutsMgr_icon2.png">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Page Include="CommandShortcutsWindow\CommandShortcutList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CommandShortcutsWindow\CommandShortcutsTree.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
     <Content Include="Resources\VSSettingsManagerPackage.ico" />
     <VSCTCompile Include="Menu\VSShortcutsManager.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>

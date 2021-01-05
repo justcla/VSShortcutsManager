@@ -12,21 +12,10 @@ namespace VSShortcutsManager
         public CommandShortcutsControl()
         {
             InitializeComponent();
+
+            this.contentControl.Content = new CommandShortcutsTree();
         }
 
-        private void DataGrid_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (!(sender is DataGrid grid))
-            {
-                return;
-            }
-
-            // Handle Delete key operation
-            if (e.Key == Key.Delete && grid.SelectedItems?.Count > 0)
-            {
-                ((CommandShortcutsControlDataContext)this.DataContext).DeleteShortcuts(grid.SelectedItems.Cast<CommandShortcut>());
-                e.Handled = true;
-            }
-        }
     }
+
 }

@@ -44,6 +44,9 @@
       <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarReferenceGroup" priority="0x0100">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
       </Group>
+      <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarViewGroup" priority="0x0150">
+        <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
+      </Group>
       <Group guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" priority="0x0200">
         <Parent guid="guidVSShortcutsManagerCmdSet" id="CommandShortcutsToolWinToolbar" />
       </Group>
@@ -214,6 +217,25 @@
       </Button>
 
       <!-- Buttons on Command Shortcuts Tool Window Toolbar -->
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ShowTreeViewCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;Tree</ButtonText>
+          <MenuText>&amp;Tree View</MenuText>
+          <ToolTipText>Show commands in Tree View</ToolTipText>
+          <CanonicalName>CmdShortcuts.Filter.ShowTreeView</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.Filter.ShowTreeView</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidVSShortcutsManagerCmdSet" id="ShowListViewCmdId" type="Button">
+        <Strings>
+          <ButtonText>&amp;List</ButtonText>
+          <MenuText>&amp;List View</MenuText>
+          <ToolTipText>Show commands in List View</ToolTipText>
+          <CanonicalName>CmdShortcuts.Filter.ShowListView</CanonicalName>
+          <LocCanonicalName>CmdShortcuts.Filter.ShowListView</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="guidVSShortcutsManagerCmdSet" id="FilterAllShortcutsCmdId" type="Button">
         <Strings>
           <ButtonText>&amp;All</ButtonText>
@@ -270,6 +292,13 @@
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="LiveShortcutsViewCmdId" priority="0x0100">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarReferenceGroup" />
     </CommandPlacement>
+    <!-- View group -->
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="ShowTreeViewCmdId" priority="0x0100">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarViewGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="ShowListViewCmdId" priority="0x0200">
+      <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarViewGroup" />
+    </CommandPlacement>
     <!-- Filter group -->
     <CommandPlacement guid="guidVSShortcutsManagerCmdSet" id="FilterAllShortcutsCmdId" priority="0x0100">
       <Parent guid="guidVSShortcutsManagerCmdSet" id="CmdShortcutsToolWinToolbarFilterGroup" />
@@ -325,10 +354,11 @@
       <IDSymbol name="UserShortcutsGroup" value="0x1100"/>
       <IDSymbol name="GlobalToolsGroups" value="0x2003"/>
       <IDSymbol name="CommandShortcutsToolWinToolbar" value="0x2004"/>
-      <IDSymbol name="CmdShortcutsToolWinToolbarReferenceGroup" value="0x2005"/>
-      <IDSymbol name="CmdShortcutsToolWinToolbarFilterGroup" value="0x2006"/>
-      <IDSymbol name="CmdShortcutsToolWinToolbarActionsGroup" value="0x2007"/>
-      <IDSymbol name="CmdShortcutsToolWinToolbarSettingsGroup" value="0x2008"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarReferenceGroup" value="0x2040"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarViewGroup" value="0x2050"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarFilterGroup" value="0x2060"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarActionsGroup" value="0x2070"/>
+      <IDSymbol name="CmdShortcutsToolWinToolbarSettingsGroup" value="0x2080"/>
 
       <!--Commands-->
       <IDSymbol name="BackupShortcutsCmdId" value="0x1200" />
@@ -347,6 +377,8 @@
       <IDSymbol name="DeleteShortcutsCmdId" value="0x1740" />
       <IDSymbol name="KeyboardOptionsCmdId" value="0x1750" />
       <IDSymbol name="RefreshViewCmdId" value="0x1760" />
+      <IDSymbol name="ShowTreeViewCmdId" value="0x1810" />
+      <IDSymbol name="ShowListViewCmdId" value="0x1820" />
       <!-- Dynamic menu commands -->
       <!-- NOTE: The following command expands at run time to some number of ids.  
          Try not to place command ids after it (e.g. 0x2A01, 0x2A02).  
