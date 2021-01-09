@@ -211,7 +211,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Commands DTECommands
+        public Commands DTECommands
         {
             get
             {
@@ -270,7 +270,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Dictionary<string, KeybindingScope> ScopeNameToScopeInfoMap
+        public Dictionary<string, KeybindingScope> ScopeNameToScopeInfoMap
         {
             get
             {
@@ -283,7 +283,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Dictionary<Guid, KeybindingScope> ScopeGuidToScopeInfoMap
+        public Dictionary<Guid, KeybindingScope> ScopeGuidToScopeInfoMap
         {
             get
             {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -12,15 +13,32 @@ namespace VSShortcutsManager.CommandTreeView
         public CommandShortcutsTree()
         {
             InitializeComponent();
+        }
 
-            Dictionary<string, IEnumerable<string>> shortcutGroup1 = new Dictionary<string, IEnumerable<string>>();
+        private void InitializeViews()
+        {
+            List<CommandGroup> commandsData;
+            commandsData = GetDummyCommandShortcutData();
+            // Set the item source (Default to all commands)
+            trvCommands.ItemsSource = commandsData;
+        }
+
+        public IEnumerable Source
+        {
+            get => trvCommands.ItemsSource;
+            set => trvCommands.ItemsSource = value;
+        }
+
+        private static List<CommandGroup> GetDummyCommandShortcutData()
+        {
+            Dictionary<string, List<string>> shortcutGroup1 = new Dictionary<string, List<string>>();
             shortcutGroup1.Add("Text Editor", new List<string> { "Ctrl+N", "Ctrl+Shift+N" });
             shortcutGroup1.Add("Global", new List<string> { "Ctrl+O" });
-            Dictionary<string, IEnumerable<string>> shortcutGroup2 = new Dictionary<string, IEnumerable<string>>();
+            Dictionary<string, List<string>> shortcutGroup2 = new Dictionary<string, List<string>>();
             shortcutGroup2.Add("Text Editor", new List<string> { "Ctrl+R,Ctrl+R", "Ctrl+R,R" });
-            Dictionary<string, IEnumerable<string>> editUndo = new Dictionary<string, IEnumerable<string>>();
+            Dictionary<string, List<string>> editUndo = new Dictionary<string, List<string>>();
             editUndo.Add("Global", new List<string> { "Ctrl+Z", "Alt+Backspace" });
-            Dictionary<string, IEnumerable<string>> editRedo = new Dictionary<string, IEnumerable<string>>();
+            Dictionary<string, List<string>> editRedo = new Dictionary<string, List<string>>();
             editRedo.Add("Global", new List<string> { "Ctrl+Y", "Ctrl+Shift+Z", "Alt+Backspace" });
 
             List<CommandGroup> allCommands = new List<CommandGroup>();
@@ -39,10 +57,8 @@ namespace VSShortcutsManager.CommandTreeView
             editMenu.Items.Add(new CommandItem() { CommandName = "Edit.Undo", ShortcutGroup = editUndo });
             editMenu.Items.Add(new CommandItem() { CommandName = "Edit.Redo", ShortcutGroup = editRedo });
             allCommands.Add(editMenu);
-
-            trvCommands.ItemsSource = allCommands;
+            return allCommands;
         }
-
     }
     public class CommandGroup
     {
@@ -68,7 +84,7 @@ namespace VSShortcutsManager.CommandTreeView
         /// <summary>
         ///  Map[Scope => List of shortcut text combinations]
         /// </summary>
-        public Dictionary<string, IEnumerable<string>> ShortcutGroup { get; internal set; }
+        public Dictionary<string, List<string>> ShortcutGroup { get; internal set; }
     }
 
 }

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -30,6 +32,23 @@ namespace VSShortcutsManager
         public const int ShowTreeViewCmdId = 0x1815;
         public const int ShowListViewCmdId = 0x1825;
 
+        private CommandTreeView.CommandShortcutsTree treeControl;
+        public CommandTreeView.CommandShortcutsTree TreeControl
+        {
+            get
+            {
+                if (treeControl == null)
+                {
+                    treeControl = new CommandTreeView.CommandShortcutsTree();
+                }
+                return treeControl;
+            }
+            set => treeControl = value;
+        }
+
+        private VSShortcutQueryEngine QueryEngine;
+        EnvDTE.Commands DTECommands;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandShortcutsToolWindow"/> class.
         /// </summary>
@@ -41,19 +60,104 @@ namespace VSShortcutsManager
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on
             // the object returned by the Content property.
             this.Content = new CommandShortcutsControl();
-
-            //RegisterCommandHandlers();
         }
 
         protected override void Initialize()
         {
             base.Initialize();
 
+            this.QueryEngine = VSShortcutsManager.Instance.queryEngine;
+            this.DTECommands = QueryEngine.DTECommands;
+
             this.ToolBar = new CommandID(new Guid(guidVSShortcutsManagerCmdSet), CommandShortcutsToolWinToolbar);
 
             ((CommandShortcutsControl)this.Content).DataContext = new CommandShortcutsControlDataContext(this);
 
             RegisterCommandHandlers();
+
+            // Set the default initial opening layout and data
+            ((CommandShortcutsControl)this.Content).Content = TreeControl;  // Lazy-loading tree control property
+
+            // Get list of commands and shortcuts (from DTE?)
+            // Convert to the correct objects for the CommandShortcutsTree
+            List<CommandTreeView.CommandGroup> commands = GetCommandsFromDTE();
+            // Push the data onto the TreeControl
+            TreeControl.Source = commands;
+        }
+
+        public List<CommandTreeView.CommandGroup> GetCommandsFromDTE()
+        {
+            var commandItems = new ObservableCollection<object>();
+
+            // Fetch all the commands from DTE
+            foreach (EnvDTE.Command dteCommand in DTECommands)
+            {
+                // Get command name
+                string commandName = dteCommand.Name;
+                if (string.IsNullOrWhiteSpace(commandName))
+                {
+                    continue;
+                }
+
+                var commandItem = new CommandTreeView.CommandItem
+                {
+                    CommandName = commandName
+                };
+
+                // Parse the bindings (if there are any bound to the command)
+                // Note: Binding is a combination of scope and key-combo
+                if (dteCommand.Bindings != null && dteCommand.Bindings is object[] && ((object[])dteCommand.Bindings).Length > 0)
+                {
+                    var bindingsObj = (object[])dteCommand.Bindings;
+
+                    // Build a map of [Scope => (List of shortcuts)]
+                    Dictionary<string, List<string>> shortcutGroup = GetShortcutMap(bindingsObj);
+                    commandItem.ShortcutGroup = shortcutGroup;
+                }
+
+                commandItems.Add(commandItem);
+            }
+
+            // Hack: Add all the commands to a single group ("AllCommands")
+            var allCommandsGroup = new CommandTreeView.CommandGroup();
+            allCommandsGroup.GroupName = "AllCommands";
+            allCommandsGroup.Items = commandItems;
+
+            var result = new List<CommandTreeView.CommandGroup>();
+            result.Add(allCommandsGroup);
+            return result;
+        }
+
+        private Dictionary<string, List<string>> GetShortcutMap(object[] bindingsObj)
+        {
+            var shortcutGroup = new Dictionary<string, List<string>>();
+
+            // Process each binding string (Scope and keyCombo)
+            foreach (object bindingObj in bindingsObj)
+            {
+                string bindingString = (string)bindingObj;
+
+                // bindingString looks like: "Text Editor::Ctrl+R,Ctrl+M"  (Scope::Shortcut)
+                const string separator = "::";
+                if (bindingString.Contains("::"))
+                {
+                    string scopeName = bindingString.Substring(0, bindingString.IndexOf(separator));
+                    string keySequence = bindingString.Substring(bindingString.IndexOf(separator) + separator.Length);
+
+                    // Fetch the list of shortcuts for the given scope (may not exist)
+                    bool success = shortcutGroup.TryGetValue(scopeName, out List<string> shortcutKeys);
+                    if (!success)
+                    {
+                        shortcutKeys = new List<string>();
+                    }
+                    shortcutKeys.Add(keySequence);
+
+                    // Update the map with the new shortcut keys (create or update)
+                    shortcutGroup[scopeName] = shortcutKeys;
+                }
+            }
+
+            return shortcutGroup;
         }
 
         private void RegisterCommandHandlers()
@@ -71,7 +175,7 @@ namespace VSShortcutsManager
 
         private void ShowTreeViewEventHandler(object sender, EventArgs e)
         {
-            ((CommandShortcutsControl)Content).contentControl.Content = new CommandTreeView.CommandShortcutsTree();
+            ((CommandShortcutsControl)Content).contentControl.Content = TreeControl;
         }
 
         private void ShowListViewEventHandler(object sender, EventArgs e)
