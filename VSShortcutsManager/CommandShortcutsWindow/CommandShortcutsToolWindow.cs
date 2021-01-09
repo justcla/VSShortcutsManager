@@ -71,13 +71,11 @@ namespace VSShortcutsManager
 
         private void ShowTreeViewEventHandler(object sender, EventArgs e)
         {
-            MessageBox.Show("Show Tree View");
-            ((CommandShortcutsControl)Content).contentControl.Content = new CommandShortcutsTree();
+            ((CommandShortcutsControl)Content).contentControl.Content = new CommandTreeView.CommandShortcutsTree();
         }
 
         private void ShowListViewEventHandler(object sender, EventArgs e)
         {
-            MessageBox.Show("Show List View");
             ((CommandShortcutsControl)Content).contentControl.Content = new CommandShortcutsList();
         }
 

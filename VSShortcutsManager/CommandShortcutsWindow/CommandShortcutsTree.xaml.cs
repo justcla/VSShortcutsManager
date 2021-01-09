@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace VSShortcutsManager
+namespace VSShortcutsManager.CommandTreeView
 {
     /// <summary>
     /// Interaction logic for CommandShortcutsTree.xaml
@@ -42,6 +42,7 @@ namespace VSShortcutsManager
 
             trvCommands.ItemsSource = allCommands;
         }
+
     }
     public class CommandGroup
     {
