@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.Windows;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -80,52 +80,82 @@ namespace VSShortcutsManager
 
             // Get list of commands and shortcuts (from DTE?)
             // Convert to the correct objects for the CommandShortcutsTree
-            List<CommandTreeView.CommandGroup> commands = GetCommandsFromDTE();
+            IEnumerable commands = GetCommandsFromDTE();
             // Push the data onto the TreeControl
             TreeControl.Source = commands;
         }
 
-        public List<CommandTreeView.CommandGroup> GetCommandsFromDTE()
+        public IEnumerable<object> GetCommandsFromDTE()
         {
-            var commandItems = new ObservableCollection<object>();
+            IEnumerable<object> result = new ObservableCollection<object>();
 
             // Fetch all the commands from DTE
             foreach (EnvDTE.Command dteCommand in DTECommands)
             {
-                // Get command name
+                // Check for a valid command name
                 string commandName = dteCommand.Name;
                 if (string.IsNullOrWhiteSpace(commandName))
                 {
                     continue;
                 }
 
-                var commandItem = new CommandTreeView.CommandItem
-                {
-                    CommandName = commandName
-                };
+                // Create the CommandItem for this command
+                var commandItem = new CommandTreeView.CommandItem();
+                commandItem.CommandName = commandName;
 
                 // Parse the bindings (if there are any bound to the command)
                 // Note: Binding is a combination of scope and key-combo
-                if (dteCommand.Bindings != null && dteCommand.Bindings is object[] && ((object[])dteCommand.Bindings).Length > 0)
+                if (dteCommand.Bindings != null && dteCommand.Bindings is object[] bindingsObj && bindingsObj.Length > 0)
                 {
-                    var bindingsObj = (object[])dteCommand.Bindings;
-
                     // Build a map of [Scope => (List of shortcuts)]
-                    Dictionary<string, List<string>> shortcutGroup = GetShortcutMap(bindingsObj);
-                    commandItem.ShortcutGroup = shortcutGroup;
+                    commandItem.ShortcutGroup = GetShortcutMap(bindingsObj);
                 }
 
-                commandItems.Add(commandItem);
+                // Handle the Group name(s)
+                string[] commandNameParts = commandName.Split('.');
+                CommandTreeView.CommandGroup groupParent = null;
+                // Handle case where there is no group (no prefix before '.')
+                if (commandNameParts.Length < 2)
+                {
+                    // No group element to this name. Add it to "Ungrouped" group.
+                    groupParent = GetCommandGroup("Ungrouped", (Collection<object>)result);
+                }
+                else
+                {
+                    // Loop over the group parts  (not the last part - that's the command name)
+                    for (int i = 0; i < commandNameParts.Length-1; i++)
+                    {
+                        // Find the group part in the current groupParent's list of groups
+                        string groupName = commandNameParts[i];
+
+                        // Top level group. Find it in the results object
+                        // Other groups: Find the item in the Items collection of the previous group
+                        Collection<object> subGroups = (i == 0) ? (Collection<object>)result : groupParent.Items;
+
+                        groupParent = GetCommandGroup(groupName, subGroups);
+                    }
+                }
+
+                // groupParent is now the parent group the command item should be added to
+                groupParent.Items.Add(commandItem);
             }
 
-            // Hack: Add all the commands to a single group ("AllCommands")
-            var allCommandsGroup = new CommandTreeView.CommandGroup();
-            allCommandsGroup.GroupName = "AllCommands";
-            allCommandsGroup.Items = commandItems;
-
-            var result = new List<CommandTreeView.CommandGroup>();
-            result.Add(allCommandsGroup);
             return result;
+        }
+
+        private static CommandTreeView.CommandGroup GetCommandGroup(string groupName, Collection<object> groups)
+        {
+            CommandTreeView.CommandGroup groupParent;
+            var thisGroup = groups?.SingleOrDefault(item => item is CommandTreeView.CommandGroup groupItem && groupItem.GroupName.Equals(groupName));
+            // Create the CommandGroup if it doesn't exist
+            if (thisGroup == null)
+            {
+                thisGroup = new CommandTreeView.CommandGroup { GroupName = groupName };
+                groups.Add(thisGroup);
+            }
+            // store this item for the next round
+            groupParent = (CommandTreeView.CommandGroup)thisGroup;
+            return groupParent;
         }
 
         private Dictionary<string, List<string>> GetShortcutMap(object[] bindingsObj)

@@ -46,8 +46,8 @@ namespace VSShortcutsManager.CommandTreeView
             CommandGroup fileMenu = new CommandGroup() { GroupName = "File" };
             CommandGroup fileNewMenu = new CommandGroup() { GroupName = "New" };
             CommandGroup fileOpenMenu = new CommandGroup() { GroupName = "Open" };
-            fileMenu.Add(fileNewMenu);
-            fileMenu.Add(fileOpenMenu);
+            fileMenu.AddItem(fileNewMenu);
+            fileMenu.AddItem(fileOpenMenu);
             fileNewMenu.Items.Add(new CommandItem() { CommandName = "File.NewProject", ShortcutGroup = shortcutGroup1 });
             fileOpenMenu.Items.Add(new CommandItem() { CommandName = "File.OpenFile", ShortcutGroup = shortcutGroup2 });
             allCommands.Add(fileMenu);
@@ -71,7 +71,7 @@ namespace VSShortcutsManager.CommandTreeView
 
         public ObservableCollection<object> Items { get; set; }
 
-        internal void Add(object item)
+        internal void AddItem(object item)
         {
             this.Items.Add(item);
         }
