@@ -1,16 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="2.1.0" Language="en-US" Publisher="Justin Clareburt" />
+        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="3.0.0" Language="en-US" Publisher="Justin Clareburt" />
         <DisplayName>Keyboard Shortcuts Manager</DisplayName>
-        <Description xml:space="preserve">(Previously VS Shortcuts Manager) Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts. Scans for keyboard shortcuts provided by other extensions.</Description>
+        <Description xml:space="preserve">Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts. Scans for keyboard shortcuts provided by other extensions.</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=JustinClareburtMSFT.VSShortcutsManager</MoreInfo>
         <GettingStartedGuide>https://github.com/justcla/VSShortcutsManager</GettingStartedGuide>
         <ReleaseNotes>https://github.com/justcla/VSShortcutsManager/blob/master/VSShortcutsManager/ReleaseNotes.txt</ReleaseNotes>
         <Icon>Resources\KeyboardShortcutsMgr_icon2.png</Icon>
     </Metadata>
     <Installation>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0,)" />
+        <InstallationTarget Version="[17.0,)" Id="Microsoft.VisualStudio.Community">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
     </Installation>
     <Dependencies>
         <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
