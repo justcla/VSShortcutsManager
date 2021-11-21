@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="VSShortcutsManager.d8578b8b-cb70-49ee-b009-9e659c413f4b" Version="2.2.0" Language="en-US" Publisher="Justin Clareburt" />
-        <DisplayName>Keyboard Shortcuts Manager</DisplayName>
-        <Description xml:space="preserve">(Previously VS Shortcuts Manager) Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts. Scans for keyboard shortcuts provided by other extensions.</Description>
+        <Identity Id="VSShortcutsManager.05d61747-fc54-4014-82e2-bd34627b741a" Version="2.5.0" Language="en-US" Publisher="Justin Clareburt" />
+        <DisplayName>Keyboard Shortcuts Manager VS2017-VS2019</DisplayName>
+        <Description xml:space="preserve">Tools to help import and export keyboard shortcuts. Save, Load, Reset keyboard shortcuts. Scans for keyboard shortcuts provided by other extensions. Compatible with VS2017 and VS2019.</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=JustinClareburtMSFT.VSShortcutsManager</MoreInfo>
         <GettingStartedGuide>https://github.com/justcla/VSShortcutsManager</GettingStartedGuide>
         <ReleaseNotes>https://github.com/justcla/VSShortcutsManager/blob/master/VSShortcutsManager/ReleaseNotes.txt</ReleaseNotes>
