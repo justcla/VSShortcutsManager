@@ -211,7 +211,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Commands DTECommands
+        public Commands DTECommands
         {
             get
             {
@@ -270,7 +270,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Dictionary<string, KeybindingScope> ScopeNameToScopeInfoMap
+        public Dictionary<string, KeybindingScope> ScopeNameToScopeInfoMap
         {
             get
             {
@@ -283,7 +283,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private Dictionary<Guid, KeybindingScope> ScopeGuidToScopeInfoMap
+        public Dictionary<Guid, KeybindingScope> ScopeGuidToScopeInfoMap
         {
             get
             {
@@ -372,6 +372,7 @@ namespace VSShortcutsManager
 
         public async Task<Command> GetCommandByCommandIdAsync(CommandId id)
         {
+            // TODO: Check if this should call from a cached copy
             IEnumerable<Command> commands = await GetAllCommandsAsync();
             return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
         }
@@ -744,11 +745,18 @@ namespace VSShortcutsManager
 
         private string GetDisplayTextFromCTMCommand(CommandId commandId)
         {
-            CommandTable.Command command = this.commandIdToCTMCommandMap[commandId];
+            // Watch out for item not existing in the commandIdToCTMCommandMap
+            //CommandTable.Command command = this.commandIdToCTMCommandMap[commandId];
+            if (commandIdToCTMCommandMap.TryGetValue(commandId, out CommandTable.Command command))
+            {
+                string text = command?.ItemText?.ButtonText ?? command?.ItemText?.CommandWellText;
 
-            string text = command.ItemText.ButtonText ?? command.ItemText.CommandWellText;
-
-            return (string)AccessKeyRemovingConverter.Convert(text, typeof(string), null, CultureInfo.CurrentUICulture);
+                return (string)AccessKeyRemovingConverter.Convert(text, typeof(string), null, CultureInfo.CurrentUICulture);
+            }
+            else
+            {
+                return "No display text";
+            }
         }
 
         private async Task PopulateCTMCommandsAsync()

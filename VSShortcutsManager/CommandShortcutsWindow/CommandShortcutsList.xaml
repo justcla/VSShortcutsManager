@@ -1,0 +1,54 @@
+﻿<UserControl x:Class="VSShortcutsManager.CommandShortcutsList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:VSShortcutsManager"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <DockPanel LastChildFill="True" Name="ListViewPanel" Visibility="Collapsed">
+            <DataGrid
+            AlternatingRowBackground="Gainsboro" AlternationCount="2"
+            AutoGenerateColumns="False"
+            IsReadOnly="True"
+            ItemsSource="{Binding Commands}"
+            KeyUp="DataGrid_KeyUp"
+            >
+                <!--<DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="FontWeight" Value="Normal"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRemoved}" Value="True">
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="TextBlock.TextDecorations" Value="Strikethrough"/>
+                            <Setter Property="FontStyle" Value="Italic" />
+                            <Setter Property="Background" Value="DarkGray" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>-->
+                <DataGrid.Resources>
+                    <Style x:Key="tstyle" TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRemoved}" Value="True">
+                                <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
+                                <!--<Setter Property="FontWeight" Value="Bold"/>-->
+                            </DataTrigger>
+                            <!--<DataTrigger Binding="{Binding IsUserShortcut}" Value="True">-->
+                            <!--<Setter Property="FontStyle" Value="Italic"/>-->
+                            <!--<Setter Property="Foreground" Value="MediumBlue"/>-->
+                            <!--</DataTrigger>-->
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Command" Binding="{Binding CommandText, Mode=OneTime}" Width="3*" ElementStyle="{StaticResource tstyle}"/>
+                    <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneWay}" Width="1*" ElementStyle="{StaticResource tstyle}"/>
+                    <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneWay}" Width="1*" ElementStyle="{StaticResource tstyle}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+
+    </Grid>
+</UserControl>

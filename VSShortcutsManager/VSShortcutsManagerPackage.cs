@@ -14,7 +14,7 @@ namespace VSShortcutsManager
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(VSShortcutsManagerPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
-    [ProvideToolWindow(typeof(CommandShortcuts))]
+    [ProvideToolWindow(typeof(CommandShortcutsToolWindow))]
     [ProvideAutoLoad(UIContextGuids.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(UIContextGuids.NoSolution, PackageAutoLoadFlags.BackgroundLoad)]
     public sealed class VSShortcutsManagerPackage : AsyncPackage

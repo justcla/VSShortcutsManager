@@ -95,7 +95,7 @@ namespace VSShortcutsManager
             foreach (var kvp in commands)
             {
                 // Find the command in the DTE command table
-                var commandShortcut = kvp.Key;
+                CommandShortcut commandShortcut = kvp.Key;
                 var dteCommand = dte.Commands.Item(commandShortcut.CommandText);
                 if (dteCommand == null)
                 {
@@ -107,6 +107,7 @@ namespace VSShortcutsManager
                 DeleteCommandBindings(dteCommand, kvp.Value);
 
                 // Update the model object for changes to reflect on the view
+                commandShortcut.IsRemoved = true;
                 commandShortcut.Binding = null;
                 commandShortcut.ShortcutText = null;
                 commandShortcut.ScopeText = null;
@@ -222,15 +223,14 @@ namespace VSShortcutsManager
 
         private static void DeleteCommandBindings(EnvDTE.Command command, List<CommandBinding> deletedBindings)
         {
-            var deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => binding.OriginalDTEString));
+            HashSet<string> deletedBindingsSet = new HashSet<string>(deletedBindings.Select(binding => string.Concat(binding.Scope.Name, "::", binding.OriginalDTEString)));
 
-            var oldBindings = (object[])command.Bindings;
+            object[] oldBindings = (object[])command.Bindings;
 
             var newBindings = oldBindings
                 .Where(bindingText => !deletedBindingsSet.Contains(bindingText.ToString()))
                 .ToArray();
 
-            command.Bindings = new object[0]; // unexplained workaround - resetting a binding array requires resetting it to an empty array first.
             command.Bindings = newBindings;
         }
 
@@ -238,16 +238,62 @@ namespace VSShortcutsManager
 
         #region Fields
 
-        private VSCommandShortcuts allCommandsCache;
-        private VSCommandShortcuts commands;
-        private IServiceProvider serviceProvider;
-        private VSShortcutQueryEngine queryEngine;
+        private VSCommandShortcuts allCommandsCache;    // This holds all 4000+ commands in the system. Updated in PopulateCommands()
+        private VSCommandShortcuts commands;    // This is the object that is displayed on the window (the list of commands)
+        private readonly IServiceProvider serviceProvider;
+        private readonly VSShortcutQueryEngine queryEngine;
+
+        internal void ApplyAllShortcutsFilter()
+        {
+            this.Commands = allCommandsCache.Clone();
+        }
+
+        internal void ApplyPopularShortcutsFilter()
+        {
+            this.Commands = GetPopularCommands();
+        }
+
+        private VSCommandShortcuts GetPopularCommands()
+        {
+            List<string> popularCmdNames = PopularCommands.CommandList;
+            // Note: Since each command can have many shortcuts, there can be many shortcuts in allCommandsCache for each listed command
+            IEnumerable<CommandShortcut> popularCmdShortcuts = allCommandsCache.Where(command => popularCmdNames.Contains(command.CommandText));
+            return new VSCommandShortcuts(popularCmdShortcuts);
+        }
+
+        internal void ApplyUserShortcutsFilter(List<VSShortcut> userShortcuts)
+        {
+            // Convert VSShortcut objects to CommandShortcut object
+            this.Commands = ConvertVSShortcutListToVSCommandShortcuts(userShortcuts, isUserShortcut: true);
+        }
+
+        private VSCommandShortcuts ConvertVSShortcutListToVSCommandShortcuts(List<VSShortcut> userShortcuts, bool isUserShortcut = false)
+        {
+            VSCommandShortcuts vsCmdShortcuts = new VSCommandShortcuts();
+
+            foreach (VSShortcut userShortcut in userShortcuts)
+            {
+                var commandShortcut = new CommandShortcut()
+                {
+                    CommandText = userShortcut.Command,
+                    ShortcutText = userShortcut.Shortcut,
+                    ScopeText = userShortcut.Scope,
+                    IsRemoved = userShortcut.Operation.Equals("Remove"),
+                    IsUserShortcut = isUserShortcut
+                };
+                vsCmdShortcuts.Add(commandShortcut);
+            }
+            return vsCmdShortcuts;
+        }
 
         #endregion // Fields
     }
 
     public class CommandShortcut : NotifyPropertyChangedBase
     {
+
+        public CommandShortcut() { }
+
         public CommandShortcut(CommandId id, string commandText, CommandBinding binding, string shortcutText, string scopeText)
         {
             this.Id = id;
@@ -257,12 +303,20 @@ namespace VSShortcutsManager
             this.ScopeText = scopeText;
         }
 
-        public CommandId Id { get; private set; }
+        public CommandShortcut(string commandText, string shortcutText, string scopeText)
+        {
+            CommandText = commandText;
+            ShortcutText = shortcutText;
+            ScopeText = scopeText;
+        }
 
-        public string CommandText { get; private set; }
+        public CommandId Id { get; set; }
+
+        public string CommandText { get; set; }
 
         public CommandBinding Binding { get; set; }
 
+        private string shortcutText;
         public string ShortcutText
         {
             get { return shortcutText; }
@@ -273,8 +327,8 @@ namespace VSShortcutsManager
                 OnPropertyChanged();
             }
         }
-        private string shortcutText;
 
+        private string scopeText;
         public string ScopeText
         {
             get { return scopeText; }
@@ -285,7 +339,21 @@ namespace VSShortcutsManager
                 OnPropertyChanged();
             }
         }
-        private string scopeText;
+
+        private bool isRemoved = false;
+        public bool IsRemoved
+        {
+            get { return isRemoved; }
+
+            set
+            {
+                this.isRemoved = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsUserShortcut { get; set; }
+
     }
 
     public class VSCommandShortcuts : List<CommandShortcut>

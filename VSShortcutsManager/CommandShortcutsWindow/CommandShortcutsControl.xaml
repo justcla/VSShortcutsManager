@@ -6,19 +6,9 @@
              xmlns:local="clr-namespace:VSShortcutsManager"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="300">
-    <DockPanel LastChildFill="True">
-        <DataGrid
-            AlternatingRowBackground="Gainsboro" AlternationCount="2"
-            AutoGenerateColumns="False"
-            IsReadOnly="True"
-            ItemsSource="{Binding Commands}"
-            KeyUp="DataGrid_KeyUp"
-            >
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Command" Binding="{Binding CommandText, Mode=OneTime}" Width="3*" />
-                <DataGridTextColumn Header="Shortcut" Binding="{Binding ShortcutText, Mode=OneWay}" Width="1*" />
-                <DataGridTextColumn Header="Scope" Binding="{Binding ScopeText, Mode=OneWay}" Width="1*" />
-            </DataGrid.Columns>
-        </DataGrid>
-    </DockPanel>
+
+    <Grid>
+        <ContentControl x:Name="contentControl"/>
+    </Grid>
+
 </UserControl>
