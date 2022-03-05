@@ -521,6 +521,11 @@ namespace VSShortcutsManager
                 return;
             }
 
+            OpenImportShortcutsWindow(chosenFile);
+        }
+
+        private void OpenImportShortcutsWindow(string chosenFile)
+        {
             // Parse the XML of the VSSettings file
             XDocument vsSettingsXDoc = XDocument.Load(chosenFile);
             List<VSShortcut> shortcutList = ParseVSSettingsFile(vsSettingsXDoc);
@@ -906,8 +911,8 @@ namespace VSShortcutsManager
                 return;
             }
 
-            // Load the user shortcuts from the VSSettings file.
-            var success = LoadKeyboardShortcutsFromVSSettingsFile(importFilePath);
+            // Load the user shortcuts into the Import Shortcuts UI
+            OpenImportShortcutsWindow(importFilePath);
         }
 
         //---------- Mapping Schemes ----------------
