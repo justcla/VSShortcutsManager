@@ -524,6 +524,8 @@ namespace VSShortcutsManager
             // Parse the XML of the VSSettings file
             XDocument vsSettingsXDoc = XDocument.Load(chosenFile);
             List<VSShortcut> shortcutList = ParseVSSettingsFile(vsSettingsXDoc);
+            // Add the conflicts to each shortcut
+            ApplyShortcutConflicts(shortcutList);
 
             // Launch the Import Shortcuts window
             ImportShortcuts window = new ImportShortcuts(chosenFile, vsSettingsXDoc, shortcutList);
@@ -564,6 +566,7 @@ namespace VSShortcutsManager
         /// unparsed and allow it to fail at the time of import. Not all commands will always
         /// be available on a user's instance of VS. But it's good to show that the VSSettings
         /// file did include the shortcut for it.
+        /// Also, not parsing the scope text. Seems pointless.
         /// </summary>
         private VSShortcut ParseShortcutElement(XElement shortcut)
         {
@@ -581,32 +584,33 @@ namespace VSShortcutsManager
             }
             string operationDisplayName = ShortcutOperations[operationType];  // ie. convert to "Add" or "Remove"
 
-            // Validate the scope and shortcut keys
-            KeybindingScope scope = queryEngine.GetScopeByName(scopeText);
-            if (scope == null)
-            {
-                Debug.WriteLine("Unable to parse scopeText: " + scopeText);
-                return null;
-            }
-            // Parse the shortcut key combinations
-            IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
-            if (sequences == null)
-            {
-                Debug.WriteLine("Unable to parse shortcutText: " + shortcutText);
-                return null;
-            }
-
-            // Prepare the conflict list
-            List<string> conflictList = GetConflictListText(scope, sequences);
-
             return new VSShortcut
             {
                 Operation = operationDisplayName,
                 Command = commandText,
                 Scope = scopeText,
                 Shortcut = shortcutText,
-                Conflicts = conflictList
             };
+        }
+
+        private void ApplyShortcutConflicts(List<VSShortcut> shortcutList)
+        {
+            foreach (VSShortcut shortcut in shortcutList)
+            {
+                // Parse the shortcut key combinations
+                string shortcutText = shortcut.Shortcut;
+                IEnumerable<BindingSequence> sequences = queryEngine.GetBindingSequencesFromBindingString(shortcutText);
+                if (sequences == null)
+                {
+                    Debug.WriteLine("Unable to parse shortcutText: " + shortcutText);
+                    continue;
+                }
+
+                // Prepare the conflict list
+                List<string> conflictList = GetConflictListText(shortcut.Scope, sequences);
+
+                shortcut.Conflicts = conflictList;
+            }
         }
 
         public bool PerformImportUserShortcuts(string chosenFile, XDocument vsSettingsXDoc, ImportShortcuts window)
@@ -637,31 +641,51 @@ namespace VSShortcutsManager
         /// <returns>string name of the file that was created</returns>
         private string CreateSettingsFile(XDocument vsSettingsXDoc, List<VSShortcut> removeList)
         {
-            // Gather shortcuts to be removed
-            IEnumerable<XElement> userShortcuts = vsSettingsXDoc.Descendants("UserShortcuts");
-            List<XElement> shortcutsToDelete = new List<XElement>();
+            // Remove specific elements from the XML Doc, then save XML Doc to a temp file.
+            // Note: It can only remove elements that appeared in the UI and were unchecked.
+            // By default, everything else in the VSSettings file will go through untouched.
+            // All this method does is carefully pluck/remove the XML elements that were
+            // UNCHECKED by the user in the Import Shortcuts screen.
 
-            foreach (XElement userShortcut in userShortcuts)
+            // List of pointers to XML elements in the original parsed import file XDocument
+            List<XElement> shortcutElementsToDelete = new List<XElement>();
+
+            // Identify the XML elements of the shortcuts that should be removed.
+            foreach (XElement userShortcut in vsSettingsXDoc.Descendants("UserShortcuts"))
             {
-                foreach (XElement shortcut in userShortcut.Descendants("Shortcut"))
+                foreach (XElement shortcutElement in userShortcut.Descendants())
                 {
-                    if (removeList.Contains(new VSShortcut { Command = shortcut.Attribute("Command").Value, Scope = shortcut.Attribute("Scope").Value, Shortcut = shortcut.Value }))
+                    // Add or Remove shortcut?
+                    string elementName = shortcutElement.Name.LocalName;  // ie. "Shortcut" or "RemoveShortcut"
+                    string operationName = ShortcutOperations[elementName];  // ie. convert to "Add" or "Remove"
+                    if (operationName == null) continue;
+
+                    // Do we need to remove this operation shortcut from the import list?
+                    VSShortcut shortcutDef = new VSShortcut
                     {
-                        shortcutsToDelete.Add(shortcut);
+                        Operation = operationName,
+                        Command = shortcutElement.Attribute("Command").Value,
+                        Scope = shortcutElement.Attribute("Scope").Value,
+                        Shortcut = shortcutElement.Value
+                    };
+                    // TODO: Check the time complexity of this algorithm.
+                    if (removeList.Contains(shortcutDef))
+                    {
+                        shortcutElementsToDelete.Add(shortcutElement);
                     }
                 }
             }
 
-            // remove shortcuts
-            foreach (XElement shortcut in shortcutsToDelete)
+            // Now extract the XML elements of the shortcuts to be removed
+            foreach (XElement shortcutElement in shortcutElementsToDelete)
             {
-                shortcut.Remove();
+                shortcutElement.Remove();
             }
 
             // Create a new VSSettings file without the removed shortcuts
             //string saveFilePath = WriteToUniqueFilePath(vsSettingsXDoc);
 
-            // save vs settings
+            // Get a unique filename for the temporary file
             IVsProfileDataManager vsProfileDataManager = GetProfileDataManager();
             string saveFilePath = GetUniqueExportFilePath(vsProfileDataManager);
 
@@ -683,21 +707,28 @@ namespace VSShortcutsManager
             }
         }
 
-        private List<string> GetConflictListText(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        private List<string> GetConflictListText(string scopeName, IEnumerable<BindingSequence> sequences)
         {
+            if (scopeName == null)
+            {
+                List<string> list = new List<string>();
+                list.Add("! Scope not valid");
+                return list;
+            }
+
             // Get all conflicts for the given Scope/Shortcut (as objects)
-            IEnumerable<BindingConflict> conflicts = GetAllConflictObjects(scope, sequences);
+            IEnumerable<BindingConflict> conflicts = GetAllConflictObjects(scopeName, sequences);
 
             // Add the localized text for each conflict to a list and return it.
             return ConvertToLocalizedTextList(conflicts);
         }
 
-        private IEnumerable<BindingConflict> GetAllConflictObjects(KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        private IEnumerable<BindingConflict> GetAllConflictObjects(string scopeName, IEnumerable<BindingSequence> sequences)
         {
             IEnumerable<BindingConflict> conflicts = null;  // Must we really assign this to run to compile?
             ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
-                conflicts = await queryEngine.GetConflictsAsync(AllCommandsCache, scope, sequences);
+                conflicts = await queryEngine.GetConflictsAsync(AllCommandsCache, scopeName, sequences);
 
             });
             return conflicts;
