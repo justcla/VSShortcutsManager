@@ -238,14 +238,14 @@ namespace VSShortcutsManager.AddNewShortcut
         private List<ConflictTableData> PrepareConflictsTableData(string shortcutScopeText, string shortcutKeysText)
         {
             // Convert text like "Text Editor" and "Ctrl+R, Ctrl+O" into objects representing the Scope and key bindings
-            KeybindingScope scope = ShortcutQueryEngine.GetScopeByName(shortcutScopeText);
+            //KeybindingScope scope = ShortcutQueryEngine.GetScopeByName(shortcutScopeText);
             IEnumerable<BindingSequence> shortcutChords = ShortcutQueryEngine.GetBindingSequencesFromBindingString(shortcutKeysText);
 
             List<ConflictTableData> conflictList = new List<ConflictTableData>();
             ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
                 // Fetch all the conflict data for the give nScope/Shortcut combination
-                IEnumerable<BindingConflict> conflicts = await ShortcutQueryEngine.GetConflictsAsync(AllCommandsCache, scope, shortcutChords);
+                IEnumerable<BindingConflict> conflicts = await ShortcutQueryEngine.GetConflictsAsync(AllCommandsCache, shortcutScopeText, shortcutChords);
 
                 // Put each conflict into the backing object to use on the UI display
                 foreach (BindingConflict conflict in conflicts)

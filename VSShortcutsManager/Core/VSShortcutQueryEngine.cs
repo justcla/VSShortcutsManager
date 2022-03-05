@@ -377,8 +377,11 @@ namespace VSShortcutsManager
             return commands.Where((c) => { return ((c.Id.Id == id.Id) && (c.Id.Guid == id.Guid)); }).FirstOrDefault();
         }
 
-        public async Task<IEnumerable<BindingConflict>> GetConflictsAsync(IEnumerable<Command> commands, KeybindingScope scope, IEnumerable<BindingSequence> sequences)
+        public async Task<IEnumerable<BindingConflict>> GetConflictsAsync(IEnumerable<Command> commands, string scopeName, IEnumerable<BindingSequence> sequences)
         {
+            List<BindingConflict> result = new List<BindingConflict>();
+            if (commands == null || scopeName == null || sequences == null) return result;
+
             Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>> conflictsMap = new Dictionary<ConflictType, List<Tuple<CommandBinding, Command>>>();
 
             BindingSequence[] callerChord = sequences.ToArray();
@@ -420,15 +423,15 @@ namespace VSShortcutsManager
                     // will shadow it (make it inaccessible) (ConflictType.HidesGlobalBindings)
                     //
                     // 3: If this binding is in the same scope, applying the caller supplied binding will remove it (ConflictType.ReplacesBindings)
-                    if(!ScopeIsGlobal(b.Scope.Guid) && ScopeIsGlobal(scope.Guid))
+                    if (!ScopeIsGlobal(b.Scope.Name) && ScopeIsGlobal(scopeName))
                     {
                         conflictType = ConflictType.HiddenInSomeScopes;
                     }
-                    else if(ScopeIsGlobal(b.Scope.Guid) && !ScopeIsGlobal(scope.Guid))
+                    else if(ScopeIsGlobal(b.Scope.Name) && !ScopeIsGlobal(scopeName))
                     {
                         conflictType = ConflictType.HidesGlobalBindings;
                     }
-                    else if(b.Scope.Guid == scope.Guid)
+                    else if(b.Scope.Name == scopeName)
                     {
                         conflictType = ConflictType.ReplacesBindings;
                     }
@@ -449,7 +452,6 @@ namespace VSShortcutsManager
             }
 
             // Package the conflict data into BindingConflict objects (one for each conflict type)
-            List<BindingConflict> result = new List<BindingConflict>();
             foreach(var kvp in conflictsMap)
             {
                 result.Add(new BindingConflict(kvp.Key, kvp.Value));
@@ -463,7 +465,7 @@ namespace VSShortcutsManager
             KeybindingScope scope;
 
             // If the name doesnt exist in the map we will simply return null, so ignore the success/failure aspect of TryGetValue as it will set the out param to null on failure
-            ScopeNameToScopeInfoMap.TryGetValue(scopeName, out scope);
+            ScopeNameToScopeInfoMap.TryGetValue(scopeName.Replace("CSharp", "C#"), out scope);
 
             return scope;
         }
@@ -826,6 +828,11 @@ namespace VSShortcutsManager
             if (bindingSeq2 == null) return false;
             return bindingSeq1.Modifiers == bindingSeq2.Modifiers
                 && bindingSeq1.Key == bindingSeq2.Key;
+        }
+
+        public static bool ScopeIsGlobal(string scopeName)
+        {
+            return scopeName == "Global";
         }
 
         public static bool ScopeIsGlobal(Guid scope)
