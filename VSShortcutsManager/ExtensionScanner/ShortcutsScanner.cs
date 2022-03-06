@@ -250,8 +250,9 @@ namespace VSShortcutsManager
                 if (MessageBox.Show($"One new user shortcut definition was found.\n\n{PrintList(newVsSettings)}\n\nWould you like to load these shortcuts now?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     // Load the settings
+                    string chosenFile = newVsSettings.First();
                     // Hack: Trust that the VSShortcutsManager will have been initilized somehow.
-                    VSShortcutsManager.Instance.LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
+                    VSShortcutsManager.Instance.OpenImportShortcutsWindow(chosenFile);
                 }
             }
             else if (newVsSettings.Count > 1)
@@ -346,7 +347,7 @@ namespace VSShortcutsManager
             }
         }
 
-        private List<string> GetFilesFromFolder(string folder, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        private List<string> GetFilesFromFolder(string folder, string searchPattern, SearchOption searchOption = SearchOption.AllDirectories)
         {
             // PERFORMS FILE IO! We want to minimize how often this occurs, plus delay this call as long as possible.
             List<string> allFiles = new List<string>();

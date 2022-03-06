@@ -524,7 +524,7 @@ namespace VSShortcutsManager
             OpenImportShortcutsWindow(chosenFile);
         }
 
-        private void OpenImportShortcutsWindow(string chosenFile)
+        public void OpenImportShortcutsWindow(string chosenFile)
         {
             // Parse the XML of the VSSettings file
             XDocument vsSettingsXDoc = XDocument.Load(chosenFile);
