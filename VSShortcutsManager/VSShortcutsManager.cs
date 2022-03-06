@@ -881,7 +881,12 @@ namespace VSShortcutsManager
                 int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
 
                 // Add an & to the front of the menu text so that the first letter becomes the accellerator key.
-                matchedCommand.Text = GetMenuTextWithAccelerator(userShortcutsRegistry[menuItemIndex].DisplayName);
+                ShortcutFileInfo shortcutFileInfo = userShortcutsRegistry[menuItemIndex];
+                matchedCommand.Text = GetMenuTextWithAccelerator(shortcutFileInfo.DisplayName);
+
+                //// Apply Tooltip text
+                //System.Collections.IDictionary properties = matchedCommand.Properties;
+                //properties.Add("filepath", shortcutFileInfo.Filepath);
             }
 
             //Clear this out here as we are done with it for this item.
@@ -893,13 +898,24 @@ namespace VSShortcutsManager
         /// </summary>
         private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
         {
-            // Get the name of shortcuts file from the invoked menu item (Dynamic menu - can't know at compile time)
+            //// Get the name of shortcuts file from the invoked menu item (Dynamic menu - can't know at compile time)
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
             string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from the menu text
 
-            // Lookup the cache of known keyoard import files and get the full filepath
-            ShortcutFileInfo userShortcutsDef = userShortcutsManager.GetUserShortcutsInfo(shortcutDefName);
-            string importFilePath = userShortcutsDef.Filepath;
+            //// Lookup the cache of known keyoard import files and get the full filepath
+            //ShortcutFileInfo userShortcutsDef = userShortcutsManager.GetUserShortcutsInfo(shortcutDefName);
+            //string importFilePath = userShortcutsDef.Filepath;
+
+            // Get the FilePath from the ShortcutInfo - based on the index in the menu from the invoked menuCommand
+            // First, find the order of the item in the menu
+            int cmdId = invokedCommand.MatchedCommandId;    // This is the selected Item
+            int rootMenuId = invokedCommand.CommandID.ID;   // This is the root of the DynamicRootCommand
+            int menuItemIndex = cmdId - rootMenuId;     // Get the index in the menu
+            // Second, find the matching item in the registry (based on the order)
+            List<ShortcutFileInfo> userShortcutsRegistry = userShortcutsManager.GetUserShortcutsRegistry();
+            ShortcutFileInfo shortcutFileInfo = userShortcutsRegistry[menuItemIndex];
+            // Now pull out the file path
+            string importFilePath = shortcutFileInfo.Filepath;
 
             // If file is not available on the drive, abort and offer to remove it from the list.
             if (!File.Exists(importFilePath))
