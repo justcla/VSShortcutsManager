@@ -17,10 +17,10 @@
 
     <Grid>
 
-        <Label Content="Import selected shortcuts" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30"/>
+        <Label Content="{Binding Path=displayName}" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30"/>
 
         <DataGrid
-            Margin="0, 30, 0, 45"
+            Margin="0, 30, 0, 90"
             AlternatingRowBackground="Gainsboro" AlternationCount="2"
             AutoGenerateColumns="False" 
             ItemsSource="{Binding VSShortcutUIs}"
@@ -58,10 +58,18 @@
         </DataGrid>
 
         <DockPanel HorizontalAlignment="Stretch" VerticalAlignment="Bottom" LastChildFill="False">
+            <Label Content="{Binding Path=filepath}" DockPanel.Dock="Bottom">
+                <Label.Resources>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="TextWrapping" Value="Wrap" />
+                    </Style>
+                </Label.Resources>
+            </Label>
             <Button Content="_Import Shortcuts" Name="OkButton" Height="25" Width="100" Margin="10" VerticalAlignment="Bottom" DockPanel.Dock="Left" 
                     Click="OkButton_Click" ClickMode="Release"/>
             <Button Content="_Cancel" Name="CancelButton" Height="25" Width="100" Margin="10" VerticalAlignment="Bottom" DockPanel.Dock="Right" 
                     Click="CancelButton_Click" ClickMode="Release" IsCancel="True" />
         </DockPanel>
+
     </Grid>
 </ui:DialogWindow>

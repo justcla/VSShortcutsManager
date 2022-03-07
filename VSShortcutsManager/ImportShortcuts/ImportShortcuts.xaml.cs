@@ -33,7 +33,9 @@ namespace VSShortcutsManager
                 shortcutUIs.Add(new VSShortcutUI(true, shortcut, setSelectAllFalse));
             }
 
-            var importShortcutsDataModel = new ImportShortcutsDataModel(shortcutUIs);
+            ShortcutFileInfo shortcutFileInfo = new ShortcutFileInfo(chosenFile);
+
+            var importShortcutsDataModel = new ImportShortcutsDataModel(shortcutFileInfo, shortcutUIs);
             this.DataContext = importShortcutsDataModel;
             InitializeComponent();
             ((FrameworkElement)this.Resources["ProxyElement"]).DataContext = importShortcutsDataModel;
@@ -42,11 +44,15 @@ namespace VSShortcutsManager
         public class ImportShortcutsDataModel : INotifyPropertyChanged
         {
             private bool isSelectAll { get; set; }
+            public string filepath { get; private set; }
+            public string displayName { get; private set; }
             private List<VSShortcutUI> vSShortcutUIs { get; }
 
-            public ImportShortcutsDataModel(List<VSShortcutUI> vSShortcutUIs)
+            public ImportShortcutsDataModel(ShortcutFileInfo shortcutFileInfo, List<VSShortcutUI> vSShortcutUIs)
             {
                 this.isSelectAll = true;
+                this.filepath = shortcutFileInfo.Filepath;
+                this.displayName = shortcutFileInfo.DisplayName;
                 this.vSShortcutUIs = vSShortcutUIs;
             }
 
