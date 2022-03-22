@@ -439,17 +439,17 @@ namespace VSShortcutsManager
                 }
             }
 
-            // Check if name already used
-            if (userShortcutsManager.HasUserShortcuts(shortcutsName))
-            {
-                // Prompt to overwrite
-                if (MessageBox.Show($"Settings already exist with the name: {saveFilePath}\n\nDo you want to replace these settings?", MSG_CAPTION_SAVE_SHORTCUTS, MessageBoxButtons.YesNo) != DialogResult.Yes)
-                {
-                    // Duplicate file. User does not want to overwrite. Exit out.
-                    // TODO: Consider returning the user to the file name dialog.
-                    return;
-                }
-            }
+            //// Check if name already used
+            //if (userShortcutsManager.HasUserShortcuts(shortcutsName))
+            //{
+            //    // Prompt to overwrite
+            //    if (MessageBox.Show($"Settings already exist with the name: {saveFilePath}\n\nDo you want to replace these settings?", MSG_CAPTION_SAVE_SHORTCUTS, MessageBoxButtons.YesNo) != DialogResult.Yes)
+            //    {
+            //        // Duplicate file. User does not want to overwrite. Exit out.
+            //        // TODO: Consider returning the user to the file name dialog.
+            //        return;
+            //    }
+            //}
 
             // Do the export
             IVsProfileSettingsTree keyboardOnlyExportSettings = GetShortcutsSettingsTreeForExport(vsProfileDataManager);
@@ -878,10 +878,11 @@ namespace VSShortcutsManager
                 //'root' id given to that object on construction, only if that match fails will it try and call the dynamic id check, since it won't fail for
                 //the root item we need to 'special case' it here as MatchedCommandId will be 0 in that case.
                 bool isRootItem = (matchedCommand.MatchedCommandId == 0);
-                int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - DynamicUserShortcutsStartCmdId);
+                int menuItemIndex = isRootItem ? 0 : (matchedCommand.MatchedCommandId - matchedCommand.CommandID.ID);
 
                 // Add an & to the front of the menu text so that the first letter becomes the accellerator key.
-                matchedCommand.Text = GetMenuTextWithAccelerator(userShortcutsRegistry[menuItemIndex].DisplayName);
+                ShortcutFileInfo shortcutFileInfo = userShortcutsRegistry[menuItemIndex];
+                matchedCommand.Text = GetMenuTextWithAccelerator(shortcutFileInfo.DisplayName);
             }
 
             //Clear this out here as we are done with it for this item.
@@ -893,20 +894,23 @@ namespace VSShortcutsManager
         /// </summary>
         private void ExecuteUserShortcutsCommand(object sender, EventArgs args)
         {
-            // Get the name of shortcuts file from the invoked menu item (Dynamic menu - can't know at compile time)
+            // Get the FilePath from the ShortcutInfo - based on the index in the menu from the invoked menuCommand
             DynamicItemMenuCommand invokedCommand = (DynamicItemMenuCommand)sender;
-            string shortcutDefName = invokedCommand.Text.Replace("&", "");  // Remove the & (keyboard accelerator) from the menu text
-
-            // Lookup the cache of known keyoard import files and get the full filepath
-            ShortcutFileInfo userShortcutsDef = userShortcutsManager.GetUserShortcutsInfo(shortcutDefName);
-            string importFilePath = userShortcutsDef.Filepath;
+            // First, find the order of the item in the menu
+            bool isRootItem = (invokedCommand.MatchedCommandId == 0);   // Special case for the first item in the list.
+            int menuItemIndex = isRootItem ? 0 : (invokedCommand.MatchedCommandId - invokedCommand.CommandID.ID);
+            // Second, find the matching item in the registry (based on the order)
+            List<ShortcutFileInfo> userShortcutsRegistry = userShortcutsManager.GetUserShortcutsRegistry();
+            ShortcutFileInfo shortcutFileInfo = userShortcutsRegistry[menuItemIndex];
+            // Now pull out the file path
+            string importFilePath = shortcutFileInfo.Filepath;
 
             // If file is not available on the drive, abort and offer to remove it from the list.
             if (!File.Exists(importFilePath))
             {
                 if (MessageBox.Show($"File does not exist: {importFilePath}\nRemove from shortcuts registry?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    userShortcutsManager.DeleteUserShortcutsDef(shortcutDefName);
+                    userShortcutsManager.DeleteUserShortcutsDef(shortcutFileInfo);
                 }
                 return;
             }

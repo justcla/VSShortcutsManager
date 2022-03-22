@@ -52,9 +52,10 @@ namespace VSShortcutsManager
             List<ShortcutFileInfo> shortcutFiles = new List<ShortcutFileInfo>();
             if (UserSettingsStore.CollectionExists(collectionName))
             {
-                foreach (var shortcutDef in UserSettingsStore.GetSubCollectionNames(collectionName))
+                // shortcutDefId will be a Hash of the filepath
+                foreach (string shortcutDefId in UserSettingsStore.GetSubCollectionNames(collectionName))
                 {
-                    shortcutFiles.Add(ExtractShortcutsInfoFromSettingsStore(collectionName, shortcutDef));
+                    shortcutFiles.Add(ExtractShortcutsInfoFromSettingsStore(collectionName, shortcutDefId));
                 }
             }
             return shortcutFiles;
@@ -82,8 +83,9 @@ namespace VSShortcutsManager
 
         private void SaveShortcutFileInfoToSettingsStore(string collectionPrefix, ShortcutFileInfo shortcutFileInfo)
         {
-            // Store values in UserSettingsStore. Use the "Name" property as the Collection key
-            string collectionPath = $"{collectionPrefix}\\{shortcutFileInfo.DisplayName}";
+            // Store values in UserSettingsStore as a hash of the filepath as the Collection key
+            string collectionKey = GetRegistryKey(shortcutFileInfo);
+            string collectionPath = $"{collectionPrefix}\\{collectionKey}";
             UserSettingsStore.CreateCollection(collectionPath);
             UserSettingsStore.SetString(collectionPath, NAME, shortcutFileInfo.DisplayName);
             UserSettingsStore.SetString(collectionPath, FILEPATH, shortcutFileInfo.Filepath);
@@ -96,19 +98,16 @@ namespace VSShortcutsManager
 
         public List<ShortcutFileInfo> GetUserShortcutsRegistry()
         {
-            if (UserShortcutsRegistry == null)
-            {
-                UserShortcutsRegistry = FetchShortcutFileInfo(USER_SHORTCUTS_DEFS);
-            }
-            return UserShortcutsRegistry;
+            // Always fetch it fresh from the registry
+            return FetchShortcutFileInfo(USER_SHORTCUTS_DEFS);
         }
 
         internal void AddUserShortcutsDef(ShortcutFileInfo shortcutFileInfo)
         {
-            // Remove any item with the same display name
-            if (HasUserShortcuts(shortcutFileInfo.DisplayName))
+            // Remove any item with the same filepath
+            if (HasUserShortcuts(shortcutFileInfo.Filepath))
             {
-                DeleteUserShortcutsDef(shortcutFileInfo.DisplayName);
+                DeleteUserShortcutsDef(shortcutFileInfo);
             }
             UserShortcutsRegistry.Add(shortcutFileInfo);
             UpdateShortcutsDefInSettingsStore(shortcutFileInfo);
@@ -121,30 +120,37 @@ namespace VSShortcutsManager
 
         public void ResetUserShortcutsRegistry()
         {
-            UserShortcutsRegistry.Clear();
+            UserShortcutsRegistry = new List<ShortcutFileInfo>();
             UserSettingsStore.DeleteCollection(USER_SHORTCUTS_DEFS);
         }
 
-        public void DeleteUserShortcutsDef(string shortcutDef)
+        public void DeleteUserShortcutsDef(ShortcutFileInfo shortcutFileInfo)
         {
             // Remove the shortcuts definition from the in-memory registry
-            if (HasUserShortcuts(shortcutDef))
+            if (HasUserShortcuts(shortcutFileInfo.Filepath))
             {
-                UserShortcutsRegistry.Remove(GetUserShortcutsInfo(shortcutDef));
+                UserShortcutsRegistry.Remove(GetUserShortcutsInfo(shortcutFileInfo.Filepath));
             }
             // Update the settings store
-            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDef}";
+            string shortcutDefHashStr = GetRegistryKey(shortcutFileInfo);
+            string collectionPath = $"{USER_SHORTCUTS_DEFS}\\{shortcutDefHashStr}";
             UserSettingsStore.DeleteCollection(collectionPath);
         }
 
-        public bool HasUserShortcuts(string shortcutsName)
+        private static string GetRegistryKey(ShortcutFileInfo shortcutFileInfo)
         {
-            return UserShortcutsRegistry.Exists(x => x.DisplayName == shortcutsName);
+            // Use the Hash of the filepath as the CollectionKey for the registry entries
+            return shortcutFileInfo.Filepath.GetHashCode().ToString();
         }
 
-        public ShortcutFileInfo GetUserShortcutsInfo(string shortcutDefName)
+        public bool HasUserShortcuts(string shortcutsFilepath)
         {
-            ShortcutFileInfo userShortcutsDef = UserShortcutsRegistry.First(x => x.DisplayName.Equals(shortcutDefName));
+            return UserShortcutsRegistry.Exists(x => x.Filepath == shortcutsFilepath);
+        }
+
+        public ShortcutFileInfo GetUserShortcutsInfo(string shortcutFilepath)
+        {
+            ShortcutFileInfo userShortcutsDef = UserShortcutsRegistry.First(x => x.Filepath.Equals(shortcutFilepath));
             return userShortcutsDef;
         }
 

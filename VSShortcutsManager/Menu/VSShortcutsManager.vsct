@@ -195,7 +195,7 @@
         <CommandFlag>TextChanges</CommandFlag>  
         <Strings>
           <!-- This text does not appear on a DynamicItem -->  
-          <ButtonText>Dynamic List Root</ButtonText>
+          <ButtonText>Loading User Shortcuts List...</ButtonText>
         </Strings>
       </Button>
 
@@ -212,7 +212,7 @@
         <Parent guid="guidVSShortcutsManagerCmdSet" id="ShortcutSchemesGroup"/>
         <CommandFlag>DynamicItemStart</CommandFlag>
         <Strings>
-          <ButtonText>Dynamic List Root</ButtonText>
+          <ButtonText>Loading Mapping Schemes...</ButtonText>
         </Strings>
       </Button>
 
