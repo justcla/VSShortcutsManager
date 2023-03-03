@@ -44,6 +44,8 @@ namespace VSShortcutsManager
         public const int FilterPopularShortcutsCmdId = 0x1720;
         public const int FilterUserShortcutsCmdId = 0x1730;
 
+        public const string RESET_SHORTCUTS_FILENAME = "ResetShortcuts.vssettings";
+
         private const string BACKUP_FILE_PATH = "BackupFilePath";
         private const string MSG_CAPTION_IMPORT = "Import Keyboard Shortcuts";
         private const string MSG_CAPTION_SAVE_SHORTCUTS = "Save Keyboard Shortcuts";
@@ -375,9 +377,8 @@ namespace VSShortcutsManager
 
         private IVsProfileSettingsFileInfo GetDefaultProfileSettingsFileInfo(IVsProfileDataManager manager)
         {
-            const string DEFAULT_SHORTCUTS_FILENAME = "DefaultShortcuts.vssettings";
             string extensionDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string resetFilePath = Path.Combine(extensionDir, "Resources", DEFAULT_SHORTCUTS_FILENAME);
+            string resetFilePath = Path.Combine(extensionDir, "Resources", RESET_SHORTCUTS_FILENAME);
             return GetProfileSettingsFileInfo(resetFilePath);
         }
 

@@ -249,10 +249,16 @@ namespace VSShortcutsManager
                 // Prompt to load the new VSSettings
                 if (MessageBox.Show($"One new user shortcut definition was found.\n\n{PrintList(newVsSettings)}\n\nWould you like to load these shortcuts now?", MSG_CAPTION_IMPORT, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    // Load the settings
-                    string chosenFile = newVsSettings.First();
-                    // Hack: Trust that the VSShortcutsManager will have been initilized somehow.
-                    VSShortcutsManager.Instance.OpenImportShortcutsWindow(chosenFile);
+                    // Attempt to load the settings
+                    // Beware! The VSShortcutsManager might not have been initilized yet.
+                    try
+                    {
+                        VSShortcutsManager.Instance.LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
+                    }
+                    catch (Exception e)
+                    {
+                        MessageBox.Show("Something went wrong trying to load the shortcuts.\nPlease try again later from the menu at Tools->Keyboard Shortcuts->Load.\n\nLikely cause is that the Shortcuts Manager hasn't loaded yet.\n\n" + e.Message, MSG_CAPTION_IMPORT);
+                    }
                 }
             }
             else if (newVsSettings.Count > 1)
@@ -360,7 +366,15 @@ namespace VSShortcutsManager
                 allFiles.AddRange(matchingFiles);
             }
 
+            // Hack: Don't let the inbuilt shortcuts file from this extension get included in the list
+            allFiles.RemoveAll(IsInbuiltResetShortcutsFile);
+
             return allFiles;
+        }
+
+        private bool IsInbuiltResetShortcutsFile(String s)
+        {
+            return s.EndsWith(VSShortcutsManager.RESET_SHORTCUTS_FILENAME);
         }
 
         private string GetAllUsersExtensionsPath()
