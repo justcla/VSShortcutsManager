@@ -253,7 +253,7 @@ namespace VSShortcutsManager
                     // Beware! The VSShortcutsManager might not have been initilized yet.
                     try
                     {
-                        VSShortcutsManager.Instance.LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
+                        VSShortcutsManager.LoadKeyboardShortcutsFromVSSettingsFile(newVsSettings.First());
                     }
                     catch (Exception e)
                     {

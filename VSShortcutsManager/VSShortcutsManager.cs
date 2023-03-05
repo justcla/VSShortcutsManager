@@ -774,7 +774,7 @@ namespace VSShortcutsManager
             return FileUtils.BrowseForFile(vsSettingsFilter, initialFileOrFolder: lastSavedFile);
         }
 
-        public bool LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
+        public static bool LoadKeyboardShortcutsFromVSSettingsFile(string importFilePath)
         {
             if (!File.Exists(importFilePath))
             {
@@ -783,7 +783,7 @@ namespace VSShortcutsManager
             }
 
             // Handle the change in mapping scheme, if there is one.
-            string preloadMappingScheme = GetMappingScheme();
+            string preloadMappingScheme = GetCurrentMappingScheme();
 
             // Import the User Shortcuts from the .vssettings file
             IVsProfileSettingsTree importShortcutsSettingsTree = GetShortcutsSettingsTreeForImport(importFilePath);
@@ -798,10 +798,10 @@ namespace VSShortcutsManager
         }
 
 
-        private void RevertMappingSchemeIfRequired(string preloadMappingScheme)
+        private static void RevertMappingSchemeIfRequired(string preloadMappingScheme)
         {
             // Check if the mapping scheme changed.If so, alert the user.
-            string postLoadMappingScheme = GetMappingScheme();
+            string postLoadMappingScheme = GetCurrentMappingScheme();
             if (postLoadMappingScheme != preloadMappingScheme)
             {
                 // Alert the user that the mapping scheme changed. Ask if they want to revert it.
@@ -1023,17 +1023,17 @@ namespace VSShortcutsManager
             return false;
         }
 
-        private void SetMappingScheme(string mappingSchemeName)
+        private static void SetMappingScheme(string mappingSchemeName)
         {
-            DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+            DTE dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
             Properties props = dte.Properties["Environment", "Keyboard"];
             Property prop = props.Item("SchemeName");
             prop.Value = mappingSchemeName == DEFAULT_MAPPING_SCHEME_NAME ? "" : mappingSchemeName + ".vsk";
         }
 
-        private string GetMappingScheme()
+        private static string GetCurrentMappingScheme()
         {
-            DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+            DTE dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
             Properties props = dte.Properties["Environment", "Keyboard"];
             Property prop = props.Item("SchemeName");
             return (string)prop.Value;
